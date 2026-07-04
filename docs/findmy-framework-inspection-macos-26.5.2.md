@@ -1,6 +1,6 @@
 # Find My Framework Inspection
 
-Generated on macOS 26.5 from the 17 `FindMy*.framework` references in `FindMy/MacOS-16+/BlueBubblesHelper.xcodeproj`.
+Generated on macOS 26.5.2 (25F84) from the 17 `FindMy*.framework` references in `FindMy/MacOS-16+/BlueBubblesHelper.xcodeproj`.
 
 Raw class-dump/ktool outputs and logs are preserved in this repo:
 
