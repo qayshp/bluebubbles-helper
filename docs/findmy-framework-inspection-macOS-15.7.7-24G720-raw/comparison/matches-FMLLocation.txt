@@ -1,0 +1,173 @@
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01: FMFLocation: created from FMLLocation %s with secure label: '%s'
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation .cxx_destruct]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation address]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation altitude]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation coarseAddressLabel]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation debugDescription]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation description]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation floorLevel]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation horizontalAccuracy]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation initWithAddress:altitude:longitude:speed:floorLevel:horizontalAccuracy:labels:latitude:timestamp:verticalAccuracy:locationType:coarseAddressLabel:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation labels]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation latitude]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation locationTypeDescription]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation locationType]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation longitude]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation setAddress:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation setAltitude:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation setCoarseAddressLabel:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation setFloorLevel:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation setHorizontalAccuracy:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation setLabels:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation setLatitude:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation setLocationType:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation setLongitude:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation setSpeed:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation setTimestamp:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation setVerticalAccuracy:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation speed]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation timestamp]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation type]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLLocation verticalAccuracy]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:1"'NySo9FMLHandleCSo11FMLLocationCG
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:2cachedCanShareLocationWithHandle_11isFromGroupSo011FMLLocationI5StateVSo9FMLHandleC_SbtF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:4cachedLocation3for14includeAddressSo11FMLLocationCSgSo9FMLHandleC_SbtF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:5friendshipStateWithHandle_11isFromGroupSo016FMLLocationShareH0VSo9FMLHandleC_SbtYaKF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:6canShareLocationWithHandle_11isFromGroupSo011FMLLocationH5StateVSo9FMLHandleC_SbtYaKF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:FMLLocationShareState
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:SDySo9FMLHandleCSo11FMLLocationCG
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:So11FMLLocationC
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:So11FMLLocationCSg
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:So11FMLLocationCSgSo9FMLHandleCIeghgg_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:So11FMLLocationCSgSo9FMLHandleCIeyBhyy_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:So11FMLLocationCSgSo9FMLHandleCytIeghnnr_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_CLASS_$_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLLocation._address
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLLocation._altitude
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLLocation._coarseAddressLabel
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLLocation._floorLevel
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLLocation._horizontalAccuracy
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLLocation._labels
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLLocation._latitude
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLLocation._locationType
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLLocation._longitude
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLLocation._speed
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLLocation._timestamp
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLLocation._type
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLLocation._verticalAccuracy
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_METACLASS_$_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:__OBJC_$_INSTANCE_METHODS_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:__OBJC_$_INSTANCE_VARIABLES_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:__OBJC_$_PROP_LIST_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:__OBJC_CLASS_RO_$_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:__OBJC_METACLASS_RO_$_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic SDySo9FMLHandleCSo11FMLLocationCG
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic Sccy___________pG So21FMLLocationShareStateV s5ErrorP
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic So11FMLLocationC
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic So11FMLLocationCSg
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic So11FMLLocationCSgSo9FMLHandleCIeghgg_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic So11FMLLocationCSgSo9FMLHandleCIeyBhyy_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic So11FMLLocationCSgSo9FMLHandleCytIeghnnr_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic _____ So21FMLLocationShareStateV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic _____So7NSErrorCSgIeyByy_ So21FMLLocationShareStateV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic _____ySo9FMLHandleCSo11FMLLocationCG s18_DictionaryStorageC
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic ySo11FMLLocationCSg_So9FMLHandleCtYbcSg
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:locationUpdateCallbackySo11FMLLocationCSg_So9FMLHandleCtYbcSgv
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:v24@?0@"FMLLocation"8@"FMLHandle"16
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:ySo11FMLLocationCSg_So9FMLHandleCtYbcSg
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:@"FMLLocation"
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:T@"FMLLocation",R,N,V_fmlLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:locationWithFMLLocation:
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:v24@?0@"FMLLocation"8@"FMLHandle"16
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.01:@"FMLLocation"
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.01:T@"FMLLocation",R,N,V_fmlLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.01:locationWithFMLLocation:
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.01:v24@?0@"FMLLocation"8@"FMLHandle"16
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:@"FMLLocation"
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:T@"FMLLocation",R,N,V_fmlLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:locationWithFMLLocation:
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:v24@?0@"FMLLocation"8@"FMLHandle"16
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03: FMFLocation: created from FMLLocation %s with secure label: '%s'
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation .cxx_destruct]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation address]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation altitude]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation coarseAddressLabel]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation debugDescription]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation description]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation floorLevel]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation horizontalAccuracy]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation initWithAddress:altitude:longitude:speed:floorLevel:horizontalAccuracy:labels:latitude:timestamp:verticalAccuracy:locationType:coarseAddressLabel:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation labels]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation latitude]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation locationTypeDescription]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation locationType]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation longitude]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation setAddress:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation setAltitude:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation setCoarseAddressLabel:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation setFloorLevel:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation setHorizontalAccuracy:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation setLabels:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation setLatitude:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation setLocationType:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation setLongitude:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation setSpeed:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation setTimestamp:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation setVerticalAccuracy:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation speed]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation timestamp]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation type]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLLocation verticalAccuracy]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:2cachedCanShareLocationWithHandle_11isFromGroupSo011FMLLocationI5StateVSo9FMLHandleC_SbtF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:4cachedLocation3for14includeAddressSo11FMLLocationCSgSo9FMLHandleC_SbtF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:5friendshipStateWithHandle_11isFromGroupSo016FMLLocationShareH0VSo9FMLHandleC_SbtYaKF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:6canShareLocationWithHandle_11isFromGroupSo011FMLLocationH5StateVSo9FMLHandleC_SbtYaKF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:A'ySo9FMLHandleCSo11FMLLocationCG
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:FMLLocationShareState
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:SDySo9FMLHandleCSo11FMLLocationCG
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:So11FMLLocationC
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:So11FMLLocationCSg
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:So11FMLLocationCSgSo9FMLHandleCIeghgg_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:So11FMLLocationCSgSo9FMLHandleCIeyBhyy_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:So11FMLLocationCSgSo9FMLHandleCytIeghnnr_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_CLASS_$_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._address
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._altitude
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._coarseAddressLabel
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._floorLevel
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._horizontalAccuracy
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._labels
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._latitude
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._locationType
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._longitude
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._speed
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._timestamp
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._type
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._verticalAccuracy
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_METACLASS_$_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_METHODS_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_VARIABLES_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:__OBJC_$_PROP_LIST_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:__OBJC_CLASS_RO_$_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:__OBJC_METACLASS_RO_$_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic SDySo9FMLHandleCSo11FMLLocationCG
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic Sccy___________pG So21FMLLocationShareStateV s5ErrorP
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic So11FMLLocationC
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic So11FMLLocationCSg
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic So11FMLLocationCSgSo9FMLHandleCIeghgg_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic So11FMLLocationCSgSo9FMLHandleCIeyBhyy_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic So11FMLLocationCSgSo9FMLHandleCytIeghnnr_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic _____ So21FMLLocationShareStateV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic _____So7NSErrorCSgIeyByy_ So21FMLLocationShareStateV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic _____ySo9FMLHandleCSo11FMLLocationCG s18_DictionaryStorageC
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic ySo11FMLLocationCSg_So9FMLHandleCtYbcSg
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:locationUpdateCallbackySo11FMLLocationCSg_So9FMLHandleCtYbcSgv
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:v24@?0@"FMLLocation"8@"FMLHandle"16
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:ySo11FMLLocationCSg_So9FMLHandleCtYbcSg
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.05:_OBJC_CLASS_$_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.05:_OBJC_METACLASS_$_FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64:FMLLocation
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64:locationWithFMLLocation:

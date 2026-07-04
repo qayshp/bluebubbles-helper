@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/bluebubbles-helper-findmy-docs/../.venv-0cyn-ktool/bin/ktool", line 6, in <module>
+    sys.exit(main())
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/tools/ktool-src/src/ktool/ktool_script.py", line 394, in main
+    raise ex
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/tools/ktool-src/src/ktool/ktool_script.py", line 390, in main
+    args.func(args)
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/tools/ktool-src/src/ktool/ktool_script.py", line 866, in info
+    with open(args.filename, 'rb') as fp:
+FileNotFoundError: [Errno 2] No such file or directory: '/System/Library/PrivateFrameworks/FindMyLocate.framework/Versions/Current/FindMyLocate'

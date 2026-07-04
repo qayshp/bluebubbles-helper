@@ -1,0 +1,230 @@
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.01:__im_findMyHandlesWithFMLFriends:
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.01:_postFMLFriendshipChangeForHandleID:handleType:updateType:isFromMessages:
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.01:v24@?0@"FMLFriend"8q16
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:"CNFMLFriend"8q16l
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:#4friendshipUpdateCallbackyyXl_AA015CNFMLFriendshipH4TypeOtYbcSgv
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend .cxx_destruct]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend comparisonIdentifier]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend createdAt]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend debugDescription]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend description]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend expiry]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend handleType]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend handle]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend hash]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend initWithHandle:handleType:createDate:expiry:origin:originatedFromTheSameClient:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend isEqual:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend origin]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend originatedFromTheSameClient]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend setCreatedAt:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend setExpiry:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend setHandle:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend setHandleType:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend setOrigin:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:-[CNFMLFriend setOriginatedFromTheSameClient:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:0CNFMLFriendshipStateO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:1CNFMLFriendship
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:CNFMLFriendshipExpiration
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:CNFMLFriendshipState
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:CNFMLFriendshipUpdateType
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_OBJC_CLASS_$_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLFriend._createdAt
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLFriend._expiry
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLFriend._handle
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLFriend._handleType
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLFriend._origin
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLFriend._originatedFromTheSameClient
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_OBJC_METACLASS_$_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:__OBJC_$_INSTANCE_METHODS_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:__OBJC_$_INSTANCE_VARIABLES_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:__OBJC_$_PROP_LIST_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:__OBJC_CLASS_RO_$_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:__OBJC_METACLASS_RO_$_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:__im_findMyHandlesWithFMLFriends:
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_associated conformance 10ContactsUI20CNFMLFriendshipStateOSHAASQ
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_associated conformance 10ContactsUI25CNFMLFriendshipExpirationOSHAASQ
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_associated conformance 10ContactsUI25CNFMLFriendshipUpdateTypeOSHAASQ
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_symbolic _____ 10ContactsUI20CNFMLFriendshipStateO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_symbolic _____ 10ContactsUI25CNFMLFriendshipExpirationO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_symbolic _____ 10ContactsUI25CNFMLFriendshipUpdateTypeO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_symbolic _____y_____G 10ContactsUI14UnsafeSendableC AA20CNFMLFriendshipStateO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_symbolic yXl_____Ieghgy_ 10ContactsUI25CNFMLFriendshipUpdateTypeO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_symbolic yXl_____IeyBhyy_ 10ContactsUI25CNFMLFriendshipUpdateTypeO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_symbolic yXl_____ytIeghnnr_ 10ContactsUI25CNFMLFriendshipUpdateTypeO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:_symbolic yyXl______tYbcSg 10ContactsUI25CNFMLFriendshipUpdateTypeO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:endFriendshipOffer2to3end11isFromGroup10completionySayyXlG_AA25CNFMLFriendshipExpirationOSbys5Error_pSgctFT
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:friendshipStateyAA015CNFMLFriendshipH0OyXlFT
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.02:v24@?0@"CNFMLFriend"8q16
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend .cxx_destruct]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend comparisonIdentifier]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend createdAt]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend debugDescription]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend description]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend expiry]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend handleType]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend handle]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend hash]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend initWithHandle:handleType:createDate:expiry:origin:originatedFromTheSameClient:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend isEqual:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend origin]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend originatedFromTheSameClient]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend setCreatedAt:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend setExpiry:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend setHandle:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend setHandleType:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend setOrigin:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:-[FMLFriend setOriginatedFromTheSameClient:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:022cachedFriendsFollowingB8LocationSaySo9FMLFriendCGyF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:0getFriends4withSaySo9FMLFriendCGSo13FMLHandleTypeV_tYaKF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:12FindMyLocate20FriendshipExpirationO0abC11ObjCWrapperE7wrappedSo013FMLFriendshipE0Vv
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:4cachedFriendsSharingLocationWithMeSaySo9FMLFriendCGyF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:4friendshipUpdateCallbackySo9FMLFriendC_So013FMLFriendshipH4TypeVtYbcSgv
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:FMLFriendshipExpiration
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:FMLFriendshipUpdateType
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:SaySo9FMLFriendCG
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:So9FMLFriendC
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:So9FMLFriendC23FindMyLocateObjCWrapperE
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_CLASS_$_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLFriend._createdAt
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLFriend._expiry
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLFriend._handle
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLFriend._handleType
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLFriend._origin
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLFriend._originatedFromTheSameClient
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_OBJC_METACLASS_$_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_METHODS_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_VARIABLES_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:__OBJC_$_PROP_LIST_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:__OBJC_CLASS_RO_$_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:__OBJC_METACLASS_RO_$_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic SaySo9FMLFriendCG
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic So9FMLFriendC_____Ieghgy_ So23FMLFriendshipUpdateTypeV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic So9FMLFriendC_____IeyBhyy_ So23FMLFriendshipUpdateTypeV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic So9FMLFriendC_____ytIeghnnr_ So23FMLFriendshipUpdateTypeV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic _____ So23FMLFriendshipExpirationV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic _____ So23FMLFriendshipUpdateTypeV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:_symbolic ySo9FMLFriendC______tYbcSg So23FMLFriendshipUpdateTypeV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:cachedFriendsWithPendingOffersSaySo9FMLFriendCGyF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:endFriendshipOffer2to4from3end11isFromGroupySaySo9FMLHandleCG_AJSgSo23FMLFriendshipExpirationVSbtYaKF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:v24@?0@"FMLFriend"8q16
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:ySo9FMLFriendC_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.05:_OBJC_CLASS_$_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.05:_OBJC_METACLASS_$_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64:CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64:FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64:__im_findMyHandlesWithFMLFriends:
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64:_postFMLFriendshipChangeForHandleID:handleType:updateType:isFromMessages:
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend .cxx_destruct]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend comparisonIdentifier]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend createdAt]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend debugDescription]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend description]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend expiry]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend handleType]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend handle]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend hash]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend initWithHandle:handleType:createDate:expiry:origin:originatedFromTheSameClient:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend isEqual:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend origin]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend originatedFromTheSameClient]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend setCreatedAt:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend setExpiry:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend setHandle:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend setHandleType:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend setOrigin:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:-[FMLFriend setOriginatedFromTheSameClient:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:022cachedFriendsFollowingB8LocationSaySo9FMLFriendCGyF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:0getFriends4withSaySo9FMLFriendCGSo13FMLHandleTypeV_tYaKF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:12FindMyLocate20FriendshipExpirationO0abC11ObjCWrapperE7wrappedSo013FMLFriendshipE0Vv
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:4cachedFriendsSharingLocationWithMeSaySo9FMLFriendCGyF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:4friendshipUpdateCallbackySo9FMLFriendC_So013FMLFriendshipH4TypeVtYbcSgv
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:FMLFriendshipExpiration
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:FMLFriendshipUpdateType
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:SaySo9FMLFriendCG
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:So9FMLFriendC
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:So9FMLFriendC23FindMyLocateObjCWrapperE
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_CLASS_$_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLFriend._createdAt
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLFriend._expiry
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLFriend._handle
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLFriend._handleType
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLFriend._origin
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_IVAR_$_FMLFriend._originatedFromTheSameClient
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_OBJC_METACLASS_$_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:__OBJC_$_INSTANCE_METHODS_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:__OBJC_$_INSTANCE_VARIABLES_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:__OBJC_$_PROP_LIST_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:__OBJC_CLASS_RO_$_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:__OBJC_METACLASS_RO_$_FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic SaySo9FMLFriendCG
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic So9FMLFriendC_____Ieghgy_ So23FMLFriendshipUpdateTypeV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic So9FMLFriendC_____IeyBhyy_ So23FMLFriendshipUpdateTypeV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic So9FMLFriendC_____ytIeghnnr_ So23FMLFriendshipUpdateTypeV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic _____ So23FMLFriendshipExpirationV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic _____ So23FMLFriendshipUpdateTypeV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_symbolic ySo9FMLFriendC______tYbcSg So23FMLFriendshipUpdateTypeV
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:cachedFriendsWithPendingOffersSaySo9FMLFriendCGyF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:endFriendshipOffer2to4from3end11isFromGroupySaySo9FMLHandleCG_AJSgSo23FMLFriendshipExpirationVSbtYaKF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:v24@?0@"FMLFriend"8q16
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:ySo9FMLFriendC_
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:"CNFMLFriend"8q16lw32l8
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:#4friendshipUpdateCallbackyyXl_AA015CNFMLFriendshipH4TypeOtYbcSgv
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend .cxx_destruct]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend comparisonIdentifier]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend createdAt]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend debugDescription]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend description]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend expiry]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend handleType]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend handle]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend hash]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend initWithHandle:handleType:createDate:expiry:origin:originatedFromTheSameClient:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend isEqual:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend origin]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend originatedFromTheSameClient]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend setCreatedAt:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend setExpiry:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend setHandle:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend setHandleType:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend setOrigin:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:-[CNFMLFriend setOriginatedFromTheSameClient:]
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:0CNFMLFriendshipStateO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:1CNFMLFriendship
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:CNFMLFriendshipExpiration
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:CNFMLFriendshipState
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:CNFMLFriendshipUpdateType
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:FMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_OBJC_CLASS_$_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_OBJC_IVAR_$_CNFMLFriend._createdAt
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_OBJC_IVAR_$_CNFMLFriend._expiry
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_OBJC_IVAR_$_CNFMLFriend._handle
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_OBJC_IVAR_$_CNFMLFriend._handleType
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_OBJC_IVAR_$_CNFMLFriend._origin
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_OBJC_IVAR_$_CNFMLFriend._originatedFromTheSameClient
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_OBJC_METACLASS_$_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:__OBJC_$_INSTANCE_METHODS_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:__OBJC_$_INSTANCE_VARIABLES_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:__OBJC_$_PROP_LIST_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:__OBJC_CLASS_RO_$_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:__OBJC_METACLASS_RO_$_CNFMLFriend
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:__im_findMyHandlesWithFMLFriends:
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_associated conformance 10ContactsUI20CNFMLFriendshipStateOSHAASQ
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_associated conformance 10ContactsUI25CNFMLFriendshipExpirationOSHAASQ
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_associated conformance 10ContactsUI25CNFMLFriendshipUpdateTypeOSHAASQ
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_postFMLFriendshipChangeForHandleID:handleType:updateType:isFromMessages:
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_symbolic _____ 10ContactsUI20CNFMLFriendshipStateO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_symbolic _____ 10ContactsUI25CNFMLFriendshipExpirationO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_symbolic _____ 10ContactsUI25CNFMLFriendshipUpdateTypeO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_symbolic _____y_____G 10ContactsUI14UnsafeSendableC AA20CNFMLFriendshipStateO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_symbolic yXl_____Ieghgy_ 10ContactsUI25CNFMLFriendshipUpdateTypeO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_symbolic yXl_____IeyBhyy_ 10ContactsUI25CNFMLFriendshipUpdateTypeO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_symbolic yXl_____ytIeghnnr_ 10ContactsUI25CNFMLFriendshipUpdateTypeO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:_symbolic yyXl______tYbcSg 10ContactsUI25CNFMLFriendshipUpdateTypeO
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:endFriendshipOffer2to3end11isFromGroup10completionySayyXlG_AA25CNFMLFriendshipExpirationOSbys5Error_pSgctFT
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:friendshipStateyAA015CNFMLFriendshipH0OyXlFT
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:v24@?0@"CNFMLFriend"8q16
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:v24@?0@"FMLFriend"8q16

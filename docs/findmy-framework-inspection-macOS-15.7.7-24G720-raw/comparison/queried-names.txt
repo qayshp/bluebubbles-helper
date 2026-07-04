@@ -1,0 +1,17 @@
+FMLDevice
+FMLFriend
+FMLHandle
+FMLLocation
+FMLPlaceMark
+FindMyLocateSession
+cachedFriendsSharingLocationWithMe
+cachedFriendsSharingLocationsWithMe
+cachedLocationForHandle:includeAddress:
+cachedLocationFor:includeAddress:
+startRefreshingLocationForHandles:priority:isFromGroup:completion:
+startRefreshingLocationForHandles:priority:isFromGroup:reverseGeocode:completion:
+stopRefreshingLocationForHandles:priority:isFromGroup:completion:
+getActiveLocationSharingDeviceWithCompletion:
+setActiveLocationSharingDevice:completion:
+canShareLocationWithHandle:isFromGroup:completion:
+friendshipStateWithHandle:isFromGroup:completion:

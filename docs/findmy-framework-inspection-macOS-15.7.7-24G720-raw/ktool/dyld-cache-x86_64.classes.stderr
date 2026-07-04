@@ -1,0 +1,3 @@
+ERROR - ktool.macho:L#131:MachOFile:__init__() - Bad Magic: 0x64796c64
+Encountered an Error (FiletypeError):
+/System/Volumes/Preboot/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64 is not a valid MachO Binary

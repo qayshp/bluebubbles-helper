@@ -1,0 +1,844 @@
+dyld_shared_cache_x86_64.01:-[FMFSession cachedLocationForHandleByHandle]
+dyld_shared_cache_x86_64.01:-[FMFSession didChangeActiveLocationSharingDevice:]
+dyld_shared_cache_x86_64.01:-[FMFSession(Admin) canShareLocationWithHandle:groupId:callerId:completion:]
+dyld_shared_cache_x86_64.01:-[FMFSession(Admin) getActiveLocationSharingDevice:]
+dyld_shared_cache_x86_64.01:-[FMFSession(Data) cachedLocationForHandle:]
+dyld_shared_cache_x86_64.01:-[FMFSession(Data) canShareLocationWithHandle:groupId:callerId:]
+dyld_shared_cache_x86_64.01:-[FMFSession(Internal) getActiveLocationSharingDevice]
+dyld_shared_cache_x86_64.01:-[FMFSessionProxy didChangeActiveLocationSharingDevice:]
+dyld_shared_cache_x86_64.01:-[ICInAppMessageEntry cachedLocationForResourceWithIdentifier:]
+dyld_shared_cache_x86_64.01:-[PHAsset _uncachedLocation]
+dyld_shared_cache_x86_64.01:-[PLManagedAsset cachedLocation]
+dyld_shared_cache_x86_64.01:@"FMLDevice"
+dyld_shared_cache_x86_64.01:@"FMLHandle"
+dyld_shared_cache_x86_64.01:@"FMLLocation"
+dyld_shared_cache_x86_64.01:@"FindMyLocateSession"
+dyld_shared_cache_x86_64.01:Calling FindMyLocateSession getActiveLocationSharingDeviceWithCompletion
+dyld_shared_cache_x86_64.01:Could not call FindMyLocateSession startRefreshingLocationForHandles either because there are no handles, or because fmlSession didn't respond to the selector
+dyld_shared_cache_x86_64.01:Error with FindMyLocateSession startRefreshingLocationForHandles. Handles: %@, error: %@
+dyld_shared_cache_x86_64.01:Error with FindMyLocateSession stopRefreshingLocationForHandles: %@, error: %@
+dyld_shared_cache_x86_64.01:FMF didChangeActiveLocationSharingDevice %@
+dyld_shared_cache_x86_64.01:FMLHandle
+dyld_shared_cache_x86_64.01:FindMyLocateSession
+dyld_shared_cache_x86_64.01:FindMyLocateSession cachedCanShareLocationWithHandle: %@ isGroup: %@ shareState: %lu canShare: %@
+dyld_shared_cache_x86_64.01:FindMyLocateSession class not found! Is FindMyLocate installed correctly? This breaks FindMy functionality in Messages, please file a radar.
+dyld_shared_cache_x86_64.01:FindMyLocateSession could not set a friendship update callback because the FindMyLocateSession did not respond to the expected selector. This breaks FindMy functionality in Messages! Please file a radar.
+dyld_shared_cache_x86_64.01:FindMyLocateSession could not set a location update callback because the FindMyLocateSession did not respond to the expected selector. This breaks FindMy functionality in Messages! Please file a radar.
+dyld_shared_cache_x86_64.01:FindMyLocateSession could not set a me device update callback because the FindMyLocateSession did not respond to the expected selector. This breaks FindMy functionality in Messages! Please file a radar.
+dyld_shared_cache_x86_64.01:FindMyLocateSession did not respond to the expected selector: getFriendsSharingLocationsWithMeWithCompletion. Is FindMyLocate installed correctly? This breaks our ability to get FindMy friendship updates throughout the app. If you see this error, please file a radar to the FindMy team.
+dyld_shared_cache_x86_64.01:FindMyLocateSession did not respond to the expected selector: startMonitoringActiveLocationSharingDeviceChangeWithCompletion. Is FindMyLocate installed correctly? This breaks our ability to detect when the active FindMy device changes. If you see this error, please file a radar to the FindMy team.
+dyld_shared_cache_x86_64.01:FindMyLocateSession did not respond to the expected selector: startUpdatingFriendsWithCompletion. Is FindMyLocate installed correctly? This breaks our ability to get FindMy friendship updates throughout the app. If you see this error, please file a radar to the FindMy team.
+dyld_shared_cache_x86_64.01:FindMyLocateSession friendShipUpdateCallback. updateFriend: %@, updateType: %lu
+dyld_shared_cache_x86_64.01:FindMyLocateSession friendShipUpdateCallback: Not posting a status change because the updateFriend did not respond to the expected selectors: %@
+dyld_shared_cache_x86_64.01:FindMyLocateSession getActiveLocationSharingDeviceWithCompletion device: %@
+dyld_shared_cache_x86_64.01:FindMyLocateSession getActiveLocationSharingDeviceWithCompletion device: %@ error %@
+dyld_shared_cache_x86_64.01:FindMyLocateSession getFriendsFollowingMyLocationWithCompletion completed initial fetch with friends: %@. Posting notifications for these handles now
+dyld_shared_cache_x86_64.01:FindMyLocateSession getFriendsSharingLocationsWithMeWithCompletion completed initial fetch with friends: %@. Posting notifications for these handles now
+dyld_shared_cache_x86_64.01:FindMyLocateSession is disabled. Attempting to configure the legacy FMFSession.
+dyld_shared_cache_x86_64.01:FindMyLocateSession is enabled. Attempting to configure the session.
+dyld_shared_cache_x86_64.01:FindMyLocateSession makeThisDeviceActiveDevice is not implemented
+dyld_shared_cache_x86_64.01:FindMyLocateSession meDeviceUpdateCallback: %@
+dyld_shared_cache_x86_64.01:FindMyLocateSession startMonitoringActiveLocationSharingDeviceChangeWithCompletion completed without an error.
+dyld_shared_cache_x86_64.01:FindMyLocateSession startMonitoringActiveLocationSharingDeviceChangeWithCompletion failed with an error. This breaks our ability to detect when the active FindMy device changes. If you see this error, please file a radar to the FindMy team. Error: %@
+dyld_shared_cache_x86_64.01:FindMyLocateSession startRefreshingLocationForHandles completed for handles: %@
+dyld_shared_cache_x86_64.01:FindMyLocateSession startUpdatingFriendsWithCompletion completed without an error
+dyld_shared_cache_x86_64.01:FindMyLocateSession startUpdatingFriendsWithCompletion failed with an error. This breaks our ability to get FindMy friendship updates throughout the app. If you see this error, please file a radar to the FindMy team. Error: %@
+dyld_shared_cache_x86_64.01:FindMyLocateSession stopRefreshingLocationForHandles completed for handles: %@
+dyld_shared_cache_x86_64.01:FindMyLocateSession stopSharingLocationWith completed for handles: %@, isFromGroup: %@
+dyld_shared_cache_x86_64.01:FindMyLocateSession stopSharingLocationWith returned error: %@, handles: %@, isFromGroup: %@
+dyld_shared_cache_x86_64.01:T@"CLLocation",&,N,V_cachedLocation
+dyld_shared_cache_x86_64.01:T@"FMLDevice",R,N,V_fmlDevice
+dyld_shared_cache_x86_64.01:T@"FMLHandle",R,N,V_fmlHandle
+dyld_shared_cache_x86_64.01:T@"FMLLocation",R,N,V_fmlLocation
+dyld_shared_cache_x86_64.01:T@"FindMyLocateSession",&,N,V_fmlSession
+dyld_shared_cache_x86_64.01:T@"NSMutableDictionary",&,N,V_cachedLocationForHandleByHandle
+dyld_shared_cache_x86_64.01:Tc,R,N,GisFindMyLocateSessionEnabled
+dyld_shared_cache_x86_64.01:_OBJC_IVAR_$_FMFSession._cachedLocationForHandleByHandle
+dyld_shared_cache_x86_64.01:_OBJC_IVAR_$_PLManagedAsset._cachedLocation
+dyld_shared_cache_x86_64.01:___51-[FMFSession didChangeActiveLocationSharingDevice:]_block_invoke
+dyld_shared_cache_x86_64.01:___52-[FMFSession(Admin) getActiveLocationSharingDevice:]_block_invoke
+dyld_shared_cache_x86_64.01:___52-[FMFSession(Admin) getActiveLocationSharingDevice:]_block_invoke.12
+dyld_shared_cache_x86_64.01:___52-[FMFSession(Admin) getActiveLocationSharingDevice:]_block_invoke.15
+dyld_shared_cache_x86_64.01:___52-[FMFSession(Admin) getActiveLocationSharingDevice:]_block_invoke.3
+dyld_shared_cache_x86_64.01:___52-[FMFSession(Admin) getActiveLocationSharingDevice:]_block_invoke_2
+dyld_shared_cache_x86_64.01:___54-[FMFSession(Internal) getActiveLocationSharingDevice]_block_invoke
+dyld_shared_cache_x86_64.01:___63-[ICInAppMessageEntry cachedLocationForResourceWithIdentifier:]_block_invoke
+dyld_shared_cache_x86_64.01:__im_findMyHandlesWithFMLFriends:
+dyld_shared_cache_x86_64.01:__im_findMyHandlesWithFMLHandles:
+dyld_shared_cache_x86_64.01:_cachedLocation
+dyld_shared_cache_x86_64.01:_cachedLocationForHandleByHandle
+dyld_shared_cache_x86_64.01:_canShareLocationWithFMLHandle: could not call FindMyLocate SPI for handle: %@. Either the handle is nil or the FMLSession did not respond to the expected selector.
+dyld_shared_cache_x86_64.01:_canShareLocationWithFMLHandle:isFromGroup:
+dyld_shared_cache_x86_64.01:_configureFindMyLocateSession
+dyld_shared_cache_x86_64.01:_postFMLFriendshipChangeForHandleID:handleType:updateType:isFromMessages:
+dyld_shared_cache_x86_64.01:_setUpFindMyLocateSessionCallbacks
+dyld_shared_cache_x86_64.01:_startRefreshingLocationForFMLHandles handles: %@, priority: %ld, isFromGroup: %@
+dyld_shared_cache_x86_64.01:_startRefreshingLocationForFMLHandles:priority:isFromGroup:
+dyld_shared_cache_x86_64.01:_startSharingWithFMLHandles calling sendFriendshipOfferToHandles: %@, with duration: %ld
+dyld_shared_cache_x86_64.01:_startSharingWithFMLHandles not sharing because we've left the chat
+dyld_shared_cache_x86_64.01:_startSharingWithFMLHandles:inChat:withDuration:
+dyld_shared_cache_x86_64.01:_stopSharingWithFMLHandles %@ inChat: %@
+dyld_shared_cache_x86_64.01:_stopSharingWithFMLHandles:inChat:
+dyld_shared_cache_x86_64.01:_stopTrackingLocationForFMLHandles handles: %@, priority: %ld, isFromGroup: %@
+dyld_shared_cache_x86_64.01:_stopTrackingLocationForFMLHandles:priority:isFromGroup:
+dyld_shared_cache_x86_64.01:_uncachedLocation
+dyld_shared_cache_x86_64.01:cachedFriendsFollowingMyLocation
+dyld_shared_cache_x86_64.01:cachedFriendsSharingLocationsWithMe
+dyld_shared_cache_x86_64.01:cachedLocation
+dyld_shared_cache_x86_64.01:cachedLocationForHandle:
+dyld_shared_cache_x86_64.01:cachedLocationForHandle: %@: %@
+dyld_shared_cache_x86_64.01:cachedLocationForHandleByHandle
+dyld_shared_cache_x86_64.01:cachedLocationForResourceWithIdentifier:
+dyld_shared_cache_x86_64.01:canShareLocationWithHandle: %@: %d groupId: %@
+dyld_shared_cache_x86_64.01:canShareLocationWithHandle:groupId:callerId:
+dyld_shared_cache_x86_64.01:canShareLocationWithHandle:groupId:callerId:completion:
+dyld_shared_cache_x86_64.01:deviceWithFMLDevice:
+dyld_shared_cache_x86_64.01:didChangeActiveLocationSharingDevice:
+dyld_shared_cache_x86_64.01:findMyLocationForFindMyHandle: fmlSession did not respond to the selector cachedLocationForHandle:
+dyld_shared_cache_x86_64.01:getActiveLocationSharingDevice
+dyld_shared_cache_x86_64.01:getActiveLocationSharingDevice calling completion with result: %@, error: %@
+dyld_shared_cache_x86_64.01:getActiveLocationSharingDevice completed.
+dyld_shared_cache_x86_64.01:getActiveLocationSharingDevice interrupted. Finishing with error.
+dyld_shared_cache_x86_64.01:getActiveLocationSharingDevice invalidated. Finishing with error.
+dyld_shared_cache_x86_64.01:getActiveLocationSharingDevice:
+dyld_shared_cache_x86_64.01:getActiveLocationSharingDeviceWithCompletion:
+dyld_shared_cache_x86_64.01:handleWithFMLHandle:
+dyld_shared_cache_x86_64.01:isFindMyLocateSessionEnabled
+dyld_shared_cache_x86_64.01:locationWithFMLLocation:
+dyld_shared_cache_x86_64.01:startMonitoringActiveLocationSharingDeviceChangeWithCompletion:
+dyld_shared_cache_x86_64.01:startRefreshingLocationForHandles:priority:isFromGroup:reverseGeocode:completion:
+dyld_shared_cache_x86_64.01:stopRefreshingLocationForHandles:priority:isFromGroup:completion:
+dyld_shared_cache_x86_64.01:v24@?0@"FMLFriend"8q16
+dyld_shared_cache_x86_64.01:v24@?0@"FMLLocation"8@"FMLHandle"16
+dyld_shared_cache_x86_64.02:"CNFMLFriend"8q16l
+dyld_shared_cache_x86_64.02:#4friendshipUpdateCallbackyyXl_AA015CNFMLFriendshipH4TypeOtYbcSgv
+dyld_shared_cache_x86_64.02:+[CNFMLHandle handleWithIdentifier:]
+dyld_shared_cache_x86_64.02:-[CNFMLFindMyLocateSession .cxx_destruct]
+dyld_shared_cache_x86_64.02:-[CNFMLFindMyLocateSession init]
+dyld_shared_cache_x86_64.02:-[CNFMLFindMyLocateSession sendFriendshipOfferTo:end:isFromGroup:completion:]
+dyld_shared_cache_x86_64.02:-[CNFMLFindMyLocateSession session]
+dyld_shared_cache_x86_64.02:-[CNFMLFindMyLocateSession setSession:]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend .cxx_destruct]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend comparisonIdentifier]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend createdAt]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend debugDescription]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend description]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend expiry]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend handleType]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend handle]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend hash]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend initWithHandle:handleType:createDate:expiry:origin:originatedFromTheSameClient:]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend isEqual:]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend origin]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend originatedFromTheSameClient]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend setCreatedAt:]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend setExpiry:]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend setHandle:]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend setHandleType:]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend setOrigin:]
+dyld_shared_cache_x86_64.02:-[CNFMLFriend setOriginatedFromTheSameClient:]
+dyld_shared_cache_x86_64.02:-[CNFMLHandle .cxx_destruct]
+dyld_shared_cache_x86_64.02:-[CNFMLHandle comparisonIdentifier]
+dyld_shared_cache_x86_64.02:-[CNFMLHandle debugDescription]
+dyld_shared_cache_x86_64.02:-[CNFMLHandle description]
+dyld_shared_cache_x86_64.02:-[CNFMLHandle hash]
+dyld_shared_cache_x86_64.02:-[CNFMLHandle identifier]
+dyld_shared_cache_x86_64.02:-[CNFMLHandle isEqual:]
+dyld_shared_cache_x86_64.02:-[CNFMLHandle setIdentifier:]
+dyld_shared_cache_x86_64.02:-[CNShareLocationController friendshipStateWithCompletion:]
+dyld_shared_cache_x86_64.02:-[CNShareLocationController setFindMyLocateSession:]
+dyld_shared_cache_x86_64.02:-[HMDHomeLocationHandler cachedLocation]
+dyld_shared_cache_x86_64.02:-[WFLocationQueryGeocodeCacheManager cachedLocationForKey:]
+dyld_shared_cache_x86_64.02:0CNFMLFriendshipStateO
+dyld_shared_cache_x86_64.02:1CNFMLFriendship
+dyld_shared_cache_x86_64.02:9FindMyLocateSession
+dyld_shared_cache_x86_64.02:@"CNFMLHandle"
+dyld_shared_cache_x86_64.02:@"FMLDevice"
+dyld_shared_cache_x86_64.02:@"FMLHandle"
+dyld_shared_cache_x86_64.02:@"FMLLocation"
+dyld_shared_cache_x86_64.02:@"_TtC10ContactsUI19FindMyLocateSession"
+dyld_shared_cache_x86_64.02:CNFMLFindMyLocateSession
+dyld_shared_cache_x86_64.02:CNFMLFriend
+dyld_shared_cache_x86_64.02:CNFMLFriendshipExpiration
+dyld_shared_cache_x86_64.02:CNFMLFriendshipState
+dyld_shared_cache_x86_64.02:CNFMLFriendshipUpdateType
+dyld_shared_cache_x86_64.02:CNFMLHandle
+dyld_shared_cache_x86_64.02:Calling FindMyLocateSession getActiveLocationSharingDeviceWithCompletion
+dyld_shared_cache_x86_64.02:Could not call FindMyLocateSession startRefreshingLocationForHandles either because there are no handles, or because fmlSession didn't respond to the selector
+dyld_shared_cache_x86_64.02:Error with FindMyLocateSession startRefreshingLocationForHandles. Handles: %@, error: %@
+dyld_shared_cache_x86_64.02:Error with FindMyLocateSession stopRefreshingLocationForHandles: %@, error: %@
+dyld_shared_cache_x86_64.02:FMF didChangeActiveLocationSharingDevice %@
+dyld_shared_cache_x86_64.02:FMLHandle
+dyld_shared_cache_x86_64.02:FindMyLocateSession
+dyld_shared_cache_x86_64.02:FindMyLocateSession building shareMyLocation actions menu.
+dyld_shared_cache_x86_64.02:FindMyLocateSession cachedCanShareLocationWithHandle: %@ isGroup: %@ shareState: %lu canShare: %@
+dyld_shared_cache_x86_64.02:FindMyLocateSession class not found! Is FindMyLocate installed correctly? This breaks FindMy functionality in Messages, please file a radar.
+dyld_shared_cache_x86_64.02:FindMyLocateSession could not set a friendship update callback because the FindMyLocateSession did not respond to the expected selector. This breaks FindMy functionality in Messages! Please file a radar.
+dyld_shared_cache_x86_64.02:FindMyLocateSession could not set a location update callback because the FindMyLocateSession did not respond to the expected selector. This breaks FindMy functionality in Messages! Please file a radar.
+dyld_shared_cache_x86_64.02:FindMyLocateSession could not set a me device update callback because the FindMyLocateSession did not respond to the expected selector. This breaks FindMy functionality in Messages! Please file a radar.
+dyld_shared_cache_x86_64.02:FindMyLocateSession did not respond to the expected selector: getFriendsSharingLocationsWithMeWithCompletion. Is FindMyLocate installed correctly? This breaks our ability to get FindMy friendship updates throughout the app. If you see this error, please file a radar to the FindMy team.
+dyld_shared_cache_x86_64.02:FindMyLocateSession did not respond to the expected selector: startMonitoringActiveLocationSharingDeviceChangeWithCompletion. Is FindMyLocate installed correctly? This breaks our ability to detect when the active FindMy device changes. If you see this error, please file a radar to the FindMy team.
+dyld_shared_cache_x86_64.02:FindMyLocateSession did not respond to the expected selector: startUpdatingFriendsWithCompletion. Is FindMyLocate installed correctly? This breaks our ability to get FindMy friendship updates throughout the app. If you see this error, please file a radar to the FindMy team.
+dyld_shared_cache_x86_64.02:FindMyLocateSession friendShipUpdateCallback. updateFriend: %@, updateType: %lu
+dyld_shared_cache_x86_64.02:FindMyLocateSession friendShipUpdateCallback: Not posting a status change because the updateFriend did not respond to the expected selectors: %@
+dyld_shared_cache_x86_64.02:FindMyLocateSession getActiveLocationSharingDeviceWithCompletion device: %@
+dyld_shared_cache_x86_64.02:FindMyLocateSession getActiveLocationSharingDeviceWithCompletion device: %@ error %@
+dyld_shared_cache_x86_64.02:FindMyLocateSession getFriendsFollowingMyLocationWithCompletion completed initial fetch with friends: %@. Posting notifications for these handles now
+dyld_shared_cache_x86_64.02:FindMyLocateSession getFriendsSharingLocationsWithMeWithCompletion completed initial fetch with friends: %@. Posting notifications for these handles now
+dyld_shared_cache_x86_64.02:FindMyLocateSession is disabled. Attempting to configure the legacy FMFSession.
+dyld_shared_cache_x86_64.02:FindMyLocateSession is enabled. Attempting to configure the session.
+dyld_shared_cache_x86_64.02:FindMyLocateSession makeThisDeviceActiveDevice is not implemented
+dyld_shared_cache_x86_64.02:FindMyLocateSession meDeviceUpdateCallback: %@
+dyld_shared_cache_x86_64.02:FindMyLocateSession shareMyLocation actions menu complete.
+dyld_shared_cache_x86_64.02:FindMyLocateSession startMonitoringActiveLocationSharingDeviceChangeWithCompletion completed without an error.
+dyld_shared_cache_x86_64.02:FindMyLocateSession startMonitoringActiveLocationSharingDeviceChangeWithCompletion failed with an error. This breaks our ability to detect when the active FindMy device changes. If you see this error, please file a radar to the FindMy team. Error: %@
+dyld_shared_cache_x86_64.02:FindMyLocateSession startRefreshingLocationForHandles completed for handles: %@
+dyld_shared_cache_x86_64.02:FindMyLocateSession startUpdatingFriendsWithCompletion completed without an error
+dyld_shared_cache_x86_64.02:FindMyLocateSession startUpdatingFriendsWithCompletion completed.
+dyld_shared_cache_x86_64.02:FindMyLocateSession startUpdatingFriendsWithCompletion failed with an error. %@ 
+dyld_shared_cache_x86_64.02:FindMyLocateSession startUpdatingFriendsWithCompletion failed with an error. This breaks our ability to get FindMy friendship updates throughout the app. If you see this error, please file a radar to the FindMy team. Error: %@
+dyld_shared_cache_x86_64.02:FindMyLocateSession stop updating friends!
+dyld_shared_cache_x86_64.02:FindMyLocateSession stopRefreshingLocationForHandles completed for handles: %@
+dyld_shared_cache_x86_64.02:FindMyLocateSession stopSharingLocationWith completed for handles: %@, isFromGroup: %@
+dyld_shared_cache_x86_64.02:FindMyLocateSession stopSharingLocationWith returned error: %@, handles: %@, isFromGroup: %@
+dyld_shared_cache_x86_64.02:FindMyLocateSession stopUpdatingFriendsWithCompletion completed.
+dyld_shared_cache_x86_64.02:FindMyLocateSession stopUpdatingFriendsWithCompletion failed with an error. %@ 
+dyld_shared_cache_x86_64.02:FindMyLocateSession: Init in progress; appending continuation.
+dyld_shared_cache_x86_64.02:FindMyLocateSession: Init is done. Resume all.
+dyld_shared_cache_x86_64.02:FindMyLocateSession: Missing FindMyLocate.Session!
+dyld_shared_cache_x86_64.02:FindMyLocateSession: Share state for handle: %s : %s
+dyld_shared_cache_x86_64.02:FindMyLocateSession: Successfully sent friendship offer to %s
+dyld_shared_cache_x86_64.02:FindMyLocateSession: Successfully startUpdatingFriends
+dyld_shared_cache_x86_64.02:FindMyLocateSession: Successfully startUpdatingFriends stream
+dyld_shared_cache_x86_64.02:FindMyLocateSession: Successfully stop location share with %s
+dyld_shared_cache_x86_64.02:FindMyLocateSession: Successfully stopUpdatingFriends
+dyld_shared_cache_x86_64.02:FindMyLocateSession: Timed out waiting for cachedOfferExpiration
+dyld_shared_cache_x86_64.02:FindMyLocateSession: Unknown friendship update type %s
+dyld_shared_cache_x86_64.02:FindMyLocateSession: sendFriendshipOffer failed %s
+dyld_shared_cache_x86_64.02:FindMyLocateSession: sendFriendshipOffer result: %s
+dyld_shared_cache_x86_64.02:FindMyLocateSession: stopSharingLocation result: %s
+dyld_shared_cache_x86_64.02:FindMyLocateSession: stopSharingLocationFailed %s
+dyld_shared_cache_x86_64.02:FindMyLocateSessionC
+dyld_shared_cache_x86_64.02:So11CNFMLHandleC
+dyld_shared_cache_x86_64.02:T@"CLLocation",&,N,V_cachedLocation
+dyld_shared_cache_x86_64.02:T@"CLLocation",N,&,VcachedLocation
+dyld_shared_cache_x86_64.02:T@"CNFMLHandle",&,N,V_handle
+dyld_shared_cache_x86_64.02:T@"FMLDevice",R,N,V_fmlDevice
+dyld_shared_cache_x86_64.02:T@"FMLHandle",R,N,V_fmlHandle
+dyld_shared_cache_x86_64.02:T@"FMLLocation",R,N,V_fmlLocation
+dyld_shared_cache_x86_64.02:T@"_TtC10ContactsUI19FindMyLocateSession",&,N,V_findMyLocateSession
+dyld_shared_cache_x86_64.02:T@"_TtC10ContactsUI19FindMyLocateSession",&,N,V_session
+dyld_shared_cache_x86_64.02:T@"_TtC10ContactsUI19FindMyLocateSession",R,N,V_findMyLocateSession
+dyld_shared_cache_x86_64.02:_OBJC_CLASS_$_CNFMLFindMyLocateSession
+dyld_shared_cache_x86_64.02:_OBJC_CLASS_$_CNFMLFriend
+dyld_shared_cache_x86_64.02:_OBJC_CLASS_$_CNFMLHandle
+dyld_shared_cache_x86_64.02:_OBJC_CLASS_$__TtC10ContactsUI19FindMyLocateSession
+dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLFindMyLocateSession._session
+dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLFriend._createdAt
+dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLFriend._expiry
+dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLFriend._handle
+dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLFriend._handleType
+dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLFriend._origin
+dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLFriend._originatedFromTheSameClient
+dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_CNFMLHandle._identifier
+dyld_shared_cache_x86_64.02:_OBJC_IVAR_$_HMDHomeLocationHandler._cachedLocation
+dyld_shared_cache_x86_64.02:_OBJC_METACLASS_$_CNFMLFindMyLocateSession
+dyld_shared_cache_x86_64.02:_OBJC_METACLASS_$_CNFMLFriend
+dyld_shared_cache_x86_64.02:_OBJC_METACLASS_$_CNFMLHandle
+dyld_shared_cache_x86_64.02:_OBJC_METACLASS_$__TtC10ContactsUI19FindMyLocateSession
+dyld_shared_cache_x86_64.02:_TtC10ContactsUI19FindMyLocateSession
+dyld_shared_cache_x86_64.02:__CLASS_METHODS__TtC10ContactsUI19FindMyLocateSession
+dyld_shared_cache_x86_64.02:__DATA__TtC10ContactsUI19FindMyLocateSession
+dyld_shared_cache_x86_64.02:__INSTANCE_METHODS__TtC10ContactsUI19FindMyLocateSession
+dyld_shared_cache_x86_64.02:__IVARS__TtC10ContactsUI19FindMyLocateSession
+dyld_shared_cache_x86_64.02:__METACLASS_DATA__TtC10ContactsUI19FindMyLocateSession
+dyld_shared_cache_x86_64.02:__OBJC_$_CLASS_METHODS_CNFMLHandle
+dyld_shared_cache_x86_64.02:__OBJC_$_INSTANCE_METHODS_CNFMLFindMyLocateSession
+dyld_shared_cache_x86_64.02:__OBJC_$_INSTANCE_METHODS_CNFMLFriend
+dyld_shared_cache_x86_64.02:__OBJC_$_INSTANCE_METHODS_CNFMLHandle
+dyld_shared_cache_x86_64.02:__OBJC_$_INSTANCE_VARIABLES_CNFMLFindMyLocateSession
+dyld_shared_cache_x86_64.02:__OBJC_$_INSTANCE_VARIABLES_CNFMLFriend
+dyld_shared_cache_x86_64.02:__OBJC_$_INSTANCE_VARIABLES_CNFMLHandle
+dyld_shared_cache_x86_64.02:__OBJC_$_PROP_LIST_CNFMLFindMyLocateSession
+dyld_shared_cache_x86_64.02:__OBJC_$_PROP_LIST_CNFMLFriend
+dyld_shared_cache_x86_64.02:__OBJC_$_PROP_LIST_CNFMLHandle
+dyld_shared_cache_x86_64.02:__OBJC_CLASS_RO_$_CNFMLFindMyLocateSession
+dyld_shared_cache_x86_64.02:__OBJC_CLASS_RO_$_CNFMLFriend
+dyld_shared_cache_x86_64.02:__OBJC_CLASS_RO_$_CNFMLHandle
+dyld_shared_cache_x86_64.02:__OBJC_METACLASS_RO_$_CNFMLFindMyLocateSession
+dyld_shared_cache_x86_64.02:__OBJC_METACLASS_RO_$_CNFMLFriend
+dyld_shared_cache_x86_64.02:__OBJC_METACLASS_RO_$_CNFMLHandle
+dyld_shared_cache_x86_64.02:__PROPERTIES__TtC10ContactsUI19FindMyLocateSession
+dyld_shared_cache_x86_64.02:___59-[CNShareLocationController friendshipStateWithCompletion:]_block_invoke
+dyld_shared_cache_x86_64.02:__im_findMyHandlesWithFMLFriends:
+dyld_shared_cache_x86_64.02:__im_findMyHandlesWithFMLHandles:
+dyld_shared_cache_x86_64.02:_associated conformance 10ContactsUI20CNFMLFriendshipStateOSHAASQ
+dyld_shared_cache_x86_64.02:_associated conformance 10ContactsUI25CNFMLFriendshipExpirationOSHAASQ
+dyld_shared_cache_x86_64.02:_associated conformance 10ContactsUI25CNFMLFriendshipUpdateTypeOSHAASQ
+dyld_shared_cache_x86_64.02:_cachedLocation
+dyld_shared_cache_x86_64.02:_canShareLocationWithFMLHandle: could not call FindMyLocate SPI for handle: %@. Either the handle is nil or the FMLSession did not respond to the expected selector.
+dyld_shared_cache_x86_64.02:_canShareLocationWithFMLHandle:isFromGroup:
+dyld_shared_cache_x86_64.02:_configureFindMyLocateSession
+dyld_shared_cache_x86_64.02:_setUpFindMyLocateSessionCallbacks
+dyld_shared_cache_x86_64.02:_startRefreshingLocationForFMLHandles handles: %@, priority: %ld, isFromGroup: %@
+dyld_shared_cache_x86_64.02:_startRefreshingLocationForFMLHandles:priority:isFromGroup:
+dyld_shared_cache_x86_64.02:_startSharingWithFMLHandles calling sendFriendshipOfferToHandles: %@, with duration: %ld
+dyld_shared_cache_x86_64.02:_startSharingWithFMLHandles not sharing because we've left the chat
+dyld_shared_cache_x86_64.02:_startSharingWithFMLHandles:inChat:withDuration:
+dyld_shared_cache_x86_64.02:_stopSharingWithFMLHandles %@ inChat: %@
+dyld_shared_cache_x86_64.02:_stopSharingWithFMLHandles:inChat:
+dyld_shared_cache_x86_64.02:_stopTrackingLocationForFMLHandles handles: %@, priority: %ld, isFromGroup: %@
+dyld_shared_cache_x86_64.02:_stopTrackingLocationForFMLHandles:priority:isFromGroup:
+dyld_shared_cache_x86_64.02:_symbolic So11CNFMLHandleC
+dyld_shared_cache_x86_64.02:_symbolic _____ 10ContactsUI19FindMyLocateSessionC
+dyld_shared_cache_x86_64.02:_symbolic _____ 10ContactsUI20CNFMLFriendshipStateO
+dyld_shared_cache_x86_64.02:_symbolic _____ 10ContactsUI25CNFMLFriendshipExpirationO
+dyld_shared_cache_x86_64.02:_symbolic _____ 10ContactsUI25CNFMLFriendshipUpdateTypeO
+dyld_shared_cache_x86_64.02:_symbolic _____y_____G 10ContactsUI14UnsafeSendableC AA20CNFMLFriendshipStateO
+dyld_shared_cache_x86_64.02:_symbolic yXl_____Ieghgy_ 10ContactsUI25CNFMLFriendshipUpdateTypeO
+dyld_shared_cache_x86_64.02:_symbolic yXl_____IeyBhyy_ 10ContactsUI25CNFMLFriendshipUpdateTypeO
+dyld_shared_cache_x86_64.02:_symbolic yXl_____ytIeghnnr_ 10ContactsUI25CNFMLFriendshipUpdateTypeO
+dyld_shared_cache_x86_64.02:_symbolic yyXl______tYbcSg 10ContactsUI25CNFMLFriendshipUpdateTypeO
+dyld_shared_cache_x86_64.02:cachedFriendsFollowingMyLocation
+dyld_shared_cache_x86_64.02:cachedFriendsSharingLocationsWithMe
+dyld_shared_cache_x86_64.02:cachedLocation
+dyld_shared_cache_x86_64.02:cachedLocationForHandle:
+dyld_shared_cache_x86_64.02:cachedLocationForKey:
+dyld_shared_cache_x86_64.02:cachedLocationSo10CLLocationCSgv
+dyld_shared_cache_x86_64.02:canShareLocationWithHandle:groupId:callerId:
+dyld_shared_cache_x86_64.02:deviceWithFMLDevice:
+dyld_shared_cache_x86_64.02:didChangeActiveLocationSharingDevice:
+dyld_shared_cache_x86_64.02:endFriendshipOffer2to3end11isFromGroup10completionySayyXlG_AA25CNFMLFriendshipExpirationOSbys5Error_pSgctFT
+dyld_shared_cache_x86_64.02:findMyLocationForFindMyHandle: fmlSession did not respond to the selector cachedLocationForHandle:
+dyld_shared_cache_x86_64.02:friendshipState:
+dyld_shared_cache_x86_64.02:friendshipStateWithCompletion:
+dyld_shared_cache_x86_64.02:friendshipStateyAA015CNFMLFriendshipH0OyXlFT
+dyld_shared_cache_x86_64.02:getActiveLocationSharingDevice:
+dyld_shared_cache_x86_64.02:getActiveLocationSharingDeviceWithCompletion:
+dyld_shared_cache_x86_64.02:handleWithFMLHandle:
+dyld_shared_cache_x86_64.02:isFindMyLocateSessionEnabled
+dyld_shared_cache_x86_64.02:locationWithFMLLocation:
+dyld_shared_cache_x86_64.02:setFindMyLocateSession:
+dyld_shared_cache_x86_64.02:startMonitoringActiveLocationSharingDeviceChangeWithCompletion:
+dyld_shared_cache_x86_64.02:startRefreshingLocationForHandles:priority:isFromGroup:reverseGeocode:completion:
+dyld_shared_cache_x86_64.02:stopRefreshingLocationForHandles:priority:isFromGroup:completion:
+dyld_shared_cache_x86_64.02:v24@?0@"CNFMLFriend"8q16
+dyld_shared_cache_x86_64.02:v24@?0@"FMLLocation"8@"FMLHandle"16
+dyld_shared_cache_x86_64.03:meDeviceUpdateCallbackySo9FMLDeviceCSgYbcSgv
+dyld_shared_cache_x86_64.03: FMFLocation: created from FMLLocation %s with secure label: '%s'
+dyld_shared_cache_x86_64.03:+[FMLHandle handleWithIdentifier:]
+dyld_shared_cache_x86_64.03:+[FindMyLocateSession FMFRestricted]
+dyld_shared_cache_x86_64.03:-[FMLDevice .cxx_destruct]
+dyld_shared_cache_x86_64.03:-[FMLDevice comparisonIdentifier]
+dyld_shared_cache_x86_64.03:-[FMLDevice debugDescription]
+dyld_shared_cache_x86_64.03:-[FMLDevice description]
+dyld_shared_cache_x86_64.03:-[FMLDevice deviceName]
+dyld_shared_cache_x86_64.03:-[FMLDevice hash]
+dyld_shared_cache_x86_64.03:-[FMLDevice identifier]
+dyld_shared_cache_x86_64.03:-[FMLDevice idsDeviceId]
+dyld_shared_cache_x86_64.03:-[FMLDevice initWithIdentifier:deviceName:idsDeviceId:isActive:isThisDevice:isCompanion:isAutoMeCapable:]
+dyld_shared_cache_x86_64.03:-[FMLDevice isActive]
+dyld_shared_cache_x86_64.03:-[FMLDevice isAutoMeCapable]
+dyld_shared_cache_x86_64.03:-[FMLDevice isCompanion]
+dyld_shared_cache_x86_64.03:-[FMLDevice isEqual:]
+dyld_shared_cache_x86_64.03:-[FMLDevice isThisDevice]
+dyld_shared_cache_x86_64.03:-[FMLDevice setDeviceName:]
+dyld_shared_cache_x86_64.03:-[FMLDevice setIdentifier:]
+dyld_shared_cache_x86_64.03:-[FMLDevice setIdsDeviceId:]
+dyld_shared_cache_x86_64.03:-[FMLDevice setIsActive:]
+dyld_shared_cache_x86_64.03:-[FMLDevice setIsAutoMeCapable:]
+dyld_shared_cache_x86_64.03:-[FMLDevice setIsCompanion:]
+dyld_shared_cache_x86_64.03:-[FMLDevice setIsThisDevice:]
+dyld_shared_cache_x86_64.03:-[FMLFriend .cxx_destruct]
+dyld_shared_cache_x86_64.03:-[FMLFriend comparisonIdentifier]
+dyld_shared_cache_x86_64.03:-[FMLFriend createdAt]
+dyld_shared_cache_x86_64.03:-[FMLFriend debugDescription]
+dyld_shared_cache_x86_64.03:-[FMLFriend description]
+dyld_shared_cache_x86_64.03:-[FMLFriend expiry]
+dyld_shared_cache_x86_64.03:-[FMLFriend handleType]
+dyld_shared_cache_x86_64.03:-[FMLFriend handle]
+dyld_shared_cache_x86_64.03:-[FMLFriend hash]
+dyld_shared_cache_x86_64.03:-[FMLFriend initWithHandle:handleType:createDate:expiry:origin:originatedFromTheSameClient:]
+dyld_shared_cache_x86_64.03:-[FMLFriend isEqual:]
+dyld_shared_cache_x86_64.03:-[FMLFriend origin]
+dyld_shared_cache_x86_64.03:-[FMLFriend originatedFromTheSameClient]
+dyld_shared_cache_x86_64.03:-[FMLFriend setCreatedAt:]
+dyld_shared_cache_x86_64.03:-[FMLFriend setExpiry:]
+dyld_shared_cache_x86_64.03:-[FMLFriend setHandle:]
+dyld_shared_cache_x86_64.03:-[FMLFriend setHandleType:]
+dyld_shared_cache_x86_64.03:-[FMLFriend setOrigin:]
+dyld_shared_cache_x86_64.03:-[FMLFriend setOriginatedFromTheSameClient:]
+dyld_shared_cache_x86_64.03:-[FMLHandle .cxx_destruct]
+dyld_shared_cache_x86_64.03:-[FMLHandle comparisonIdentifier]
+dyld_shared_cache_x86_64.03:-[FMLHandle debugDescription]
+dyld_shared_cache_x86_64.03:-[FMLHandle description]
+dyld_shared_cache_x86_64.03:-[FMLHandle hash]
+dyld_shared_cache_x86_64.03:-[FMLHandle identifier]
+dyld_shared_cache_x86_64.03:-[FMLHandle isEqual:]
+dyld_shared_cache_x86_64.03:-[FMLHandle setIdentifier:]
+dyld_shared_cache_x86_64.03:-[FMLLocation .cxx_destruct]
+dyld_shared_cache_x86_64.03:-[FMLLocation address]
+dyld_shared_cache_x86_64.03:-[FMLLocation altitude]
+dyld_shared_cache_x86_64.03:-[FMLLocation coarseAddressLabel]
+dyld_shared_cache_x86_64.03:-[FMLLocation debugDescription]
+dyld_shared_cache_x86_64.03:-[FMLLocation description]
+dyld_shared_cache_x86_64.03:-[FMLLocation floorLevel]
+dyld_shared_cache_x86_64.03:-[FMLLocation horizontalAccuracy]
+dyld_shared_cache_x86_64.03:-[FMLLocation initWithAddress:altitude:longitude:speed:floorLevel:horizontalAccuracy:labels:latitude:timestamp:verticalAccuracy:locationType:coarseAddressLabel:]
+dyld_shared_cache_x86_64.03:-[FMLLocation labels]
+dyld_shared_cache_x86_64.03:-[FMLLocation latitude]
+dyld_shared_cache_x86_64.03:-[FMLLocation locationTypeDescription]
+dyld_shared_cache_x86_64.03:-[FMLLocation locationType]
+dyld_shared_cache_x86_64.03:-[FMLLocation longitude]
+dyld_shared_cache_x86_64.03:-[FMLLocation setAddress:]
+dyld_shared_cache_x86_64.03:-[FMLLocation setAltitude:]
+dyld_shared_cache_x86_64.03:-[FMLLocation setCoarseAddressLabel:]
+dyld_shared_cache_x86_64.03:-[FMLLocation setFloorLevel:]
+dyld_shared_cache_x86_64.03:-[FMLLocation setHorizontalAccuracy:]
+dyld_shared_cache_x86_64.03:-[FMLLocation setLabels:]
+dyld_shared_cache_x86_64.03:-[FMLLocation setLatitude:]
+dyld_shared_cache_x86_64.03:-[FMLLocation setLocationType:]
+dyld_shared_cache_x86_64.03:-[FMLLocation setLongitude:]
+dyld_shared_cache_x86_64.03:-[FMLLocation setSpeed:]
+dyld_shared_cache_x86_64.03:-[FMLLocation setTimestamp:]
+dyld_shared_cache_x86_64.03:-[FMLLocation setVerticalAccuracy:]
+dyld_shared_cache_x86_64.03:-[FMLLocation speed]
+dyld_shared_cache_x86_64.03:-[FMLLocation timestamp]
+dyld_shared_cache_x86_64.03:-[FMLLocation type]
+dyld_shared_cache_x86_64.03:-[FMLLocation verticalAccuracy]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark .cxx_destruct]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark administrativeArea]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark comparisonIdentifier]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark country]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark debugDescription]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark description]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark formattedAddressLines]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark hash]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark initWithLocality:administrativeArea:country:stateCode:streetAddress:streetName:formattedAddressLines:]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark isEqual:]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark locality]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark setAdministrativeArea:]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark setCountry:]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark setFormattedAddressLines:]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark setLocality:]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark setStateCode:]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark setStreetAddress:]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark setStreetName:]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark stateCode]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark streetAddress]
+dyld_shared_cache_x86_64.03:-[FMLPlaceMark streetName]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession .cxx_destruct]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession cachedCanShareLocationWithHandle:isFromGroup:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession cachedFriendsFollowingMyLocation]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession cachedFriendsSharingLocationsWithMe]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession cachedLocationForHandle:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession cachedLocationForHandle:includeAddress:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession cachedOfferExpirationForHandle:groupId:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession canShareLocationWithHandle:isFromGroup:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession friendshipStateWithHandle:isFromGroup:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession friendshipUpdateCallback]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession getActiveLocationSharingDeviceWithCompletion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession getFriendsFollowingMyLocationWithCompletion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession getFriendsSharingLocationsWithMeWithCompletion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession getOfferExpirationForHandle:groupId:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession init]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession locationUpdateCallback]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession meDeviceUpdateCallback]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession sendFriendshipInviteToHandle:from:isFromGroup:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession sendFriendshipInviteToHandle:isFromGroup:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession sendFriendshipOfferToHandles:expiration:isFromGroup:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession sendFriendshipOfferToHandles:from:expiration:isFromGroup:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession setActiveLocationSharingDevice:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession setFriendshipUpdateCallback:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession setLocationUpdateCallback:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession setMeDeviceUpdateCallback:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession setTrampoline:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession startMonitoringActiveLocationSharingDeviceChangeWithCompletion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession startRefreshingLocationForHandles:priority:isFromGroup:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession startRefreshingLocationForHandles:priority:isFromGroup:reverseGeocode:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession startUpdatingFriendsWithInitialUpdates:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession stopRefreshingLocationForHandles:priority:isFromGroup:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession stopRefreshingLocationWithCompletion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession stopSharingLocationWith:from:isFromGroup:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession stopSharingLocationWith:isFromGroup:completion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession stopUpdatingFriendsWithCompletion:]
+dyld_shared_cache_x86_64.03:-[FindMyLocateSession trampoline]
+dyld_shared_cache_x86_64.03:022cachedFriendsFollowingB8LocationSaySo9FMLFriendCGyF
+dyld_shared_cache_x86_64.03:0getActiveLocationSharingDeviceAA11DNDFMDeviceCyYaKFT
+dyld_shared_cache_x86_64.03:0getFriends4withSaySo9FMLFriendCGSo13FMLHandleTypeV_tYaKF
+dyld_shared_cache_x86_64.03:12FindMyLocate20FriendshipExpirationO0abC11ObjCWrapperE7wrappedSo013FMLFriendshipE0Vv
+dyld_shared_cache_x86_64.03:1cachedOfferExpiration3for7groupId10Foundation4DateVSgSo9FMLHandleC_SSSgtF
+dyld_shared_cache_x86_64.03:2cachedCanShareLocationWithHandle_11isFromGroupSo011FMLLocationI5StateVSo9FMLHandleC_SbtF
+dyld_shared_cache_x86_64.03:2cachedFriends
+dyld_shared_cache_x86_64.03:3cachedFriendsRequestedToShareLocationWithMeSayAA6FriendVGyYaF
+dyld_shared_cache_x86_64.03:3for8priority11isFromGroupySaySo9FMLHandleCG_So17FMLLocatePriorityVSbtYaKF
+dyld_shared_cache_x86_64.03:3startRefreshingLocation3for8priority11isFromGroup14reverseGeocodeySaySo9FMLHandleCG_So17FMLLocatePriorityVS2btYaKF
+dyld_shared_cache_x86_64.03:42startMonitoringActiveLocationSharingDeviceyyYaKF
+dyld_shared_cache_x86_64.03:4cachedFriendsSharingLocationWithMeSaySo9FMLFriendCGyF
+dyld_shared_cache_x86_64.03:4cachedLocation3for14includeAddressSo11FMLLocationCSgSo9FMLHandleC_SbtF
+dyld_shared_cache_x86_64.03:4friendshipUpdateCallbackySo9FMLFriendC_So013FMLFriendshipH4TypeVtYbcSgv
+dyld_shared_cache_x86_64.03:5cachedFriendsSharingLocationsWithMeSayAA6FriendVGyYaF
+dyld_shared_cache_x86_64.03:5friendshipStateWithHandle_11isFromGroupSo016FMLLocationShareH0VSo9FMLHandleC_SbtYaKF
+dyld_shared_cache_x86_64.03:6canShareLocationWithHandle_11isFromGroupSo011FMLLocationH5StateVSo9FMLHandleC_SbtYaKF
+dyld_shared_cache_x86_64.03:7getOfferExpirationForHandle_7groupId10Foundation4DateVSgSo9FMLHandleC_SSSgtYaKF
+dyld_shared_cache_x86_64.03:8startMonitoringActiveLocationSharingDeviceChangeScSyAA0j6StreamK0OGyYaKF
+dyld_shared_cache_x86_64.03:9FindMyLocateSession
+dyld_shared_cache_x86_64.03:9FindMyLocateSessionC
+dyld_shared_cache_x86_64.03:@"FMLHandle"
+dyld_shared_cache_x86_64.03:@"FMLPlaceMark"
+dyld_shared_cache_x86_64.03:@"_TtC18DoNotDisturbServer19FindMyLocateSession"
+dyld_shared_cache_x86_64.03:A'ySo9FMLHandleCSo11FMLLocationCG
+dyld_shared_cache_x86_64.03:FMLDevice
+dyld_shared_cache_x86_64.03:FMLDevicesChangedNotification
+dyld_shared_cache_x86_64.03:FMLFriend
+dyld_shared_cache_x86_64.03:FMLFriendshipExpiration
+dyld_shared_cache_x86_64.03:FMLFriendshipUpdateType
+dyld_shared_cache_x86_64.03:FMLHandle
+dyld_shared_cache_x86_64.03:FMLHandleType
+dyld_shared_cache_x86_64.03:FMLLocation
+dyld_shared_cache_x86_64.03:FMLLocationShareState
+dyld_shared_cache_x86_64.03:FMLPlaceMark
+dyld_shared_cache_x86_64.03:FindMyLocateSession
+dyld_shared_cache_x86_64.03:FindMyLocateSession: Successfully stopMonitoringPreferencesChange
+dyld_shared_cache_x86_64.03:R9FindMyLocateSession
+dyld_shared_cache_x86_64.03:SDySo9FMLHandleCSo11FMLLocationCG
+dyld_shared_cache_x86_64.03:SaySo9FMLFriendCG
+dyld_shared_cache_x86_64.03:SharingLocation4with4from11isFromGroupySaySo9FMLHandleCG_AISgSbtYaKF
+dyld_shared_cache_x86_64.03:So11FMLLocationC
+dyld_shared_cache_x86_64.03:So11FMLLocationCSg
+dyld_shared_cache_x86_64.03:So11FMLLocationCSgSo9FMLHandleCIeghgg_
+dyld_shared_cache_x86_64.03:So11FMLLocationCSgSo9FMLHandleCIeyBhyy_
+dyld_shared_cache_x86_64.03:So11FMLLocationCSgSo9FMLHandleCytIeghnnr_
+dyld_shared_cache_x86_64.03:So9FMLDeviceCSgIeghg_
+dyld_shared_cache_x86_64.03:So9FMLDeviceCSgIeyBhy_
+dyld_shared_cache_x86_64.03:So9FMLDeviceCSgSo7NSErrorCSgIeyByy_
+dyld_shared_cache_x86_64.03:So9FMLDeviceCSgytIeghnr_
+dyld_shared_cache_x86_64.03:So9FMLFriendC
+dyld_shared_cache_x86_64.03:So9FMLFriendC23FindMyLocateObjCWrapperE
+dyld_shared_cache_x86_64.03:So9FMLHandleC
+dyld_shared_cache_x86_64.03:So9FMLHandleCSg
+dyld_shared_cache_x86_64.03:Successfully startMonitoringActiveLocationSharingDevice
+dyld_shared_cache_x86_64.03:T@"FMLHandle",&,V_handle
+dyld_shared_cache_x86_64.03:T@"FMLPlaceMark",&,V_address
+dyld_shared_cache_x86_64.03:\30setActiveLocationSharingDeviceyySSYaKFT
+dyld_shared_cache_x86_64.03:_OBJC_CLASS_$_FMLDevice
+dyld_shared_cache_x86_64.03:_OBJC_CLASS_$_FMLFriend
+dyld_shared_cache_x86_64.03:_OBJC_CLASS_$_FMLHandle
+dyld_shared_cache_x86_64.03:_OBJC_CLASS_$_FMLLocation
+dyld_shared_cache_x86_64.03:_OBJC_CLASS_$_FMLPlaceMark
+dyld_shared_cache_x86_64.03:_OBJC_CLASS_$_FindMyLocateSession
+dyld_shared_cache_x86_64.03:_OBJC_CLASS_$__TtC18DoNotDisturbServer19FindMyLocateSession
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLDevice._deviceName
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLDevice._identifier
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLDevice._idsDeviceId
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLDevice._isActive
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLDevice._isAutoMeCapable
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLDevice._isCompanion
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLDevice._isThisDevice
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLFriend._createdAt
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLFriend._expiry
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLFriend._handle
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLFriend._handleType
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLFriend._origin
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLFriend._originatedFromTheSameClient
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLHandle._identifier
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._address
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._altitude
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._coarseAddressLabel
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._floorLevel
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._horizontalAccuracy
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._labels
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._latitude
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._locationType
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._longitude
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._speed
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._timestamp
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._type
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLLocation._verticalAccuracy
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLPlaceMark._administrativeArea
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLPlaceMark._country
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLPlaceMark._formattedAddressLines
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLPlaceMark._locality
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLPlaceMark._stateCode
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLPlaceMark._streetAddress
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FMLPlaceMark._streetName
+dyld_shared_cache_x86_64.03:_OBJC_IVAR_$_FindMyLocateSession._trampoline
+dyld_shared_cache_x86_64.03:_OBJC_METACLASS_$_FMLDevice
+dyld_shared_cache_x86_64.03:_OBJC_METACLASS_$_FMLFriend
+dyld_shared_cache_x86_64.03:_OBJC_METACLASS_$_FMLHandle
+dyld_shared_cache_x86_64.03:_OBJC_METACLASS_$_FMLLocation
+dyld_shared_cache_x86_64.03:_OBJC_METACLASS_$_FMLPlaceMark
+dyld_shared_cache_x86_64.03:_OBJC_METACLASS_$_FindMyLocateSession
+dyld_shared_cache_x86_64.03:_OBJC_METACLASS_$__TtC18DoNotDisturbServer19FindMyLocateSession
+dyld_shared_cache_x86_64.03:_TtC18DoNotDisturbServer19FindMyLocateSession
+dyld_shared_cache_x86_64.03:__DATA__TtC18DoNotDisturbServer19FindMyLocateSession
+dyld_shared_cache_x86_64.03:__INSTANCE_METHODS__TtC18DoNotDisturbServer19FindMyLocateSession
+dyld_shared_cache_x86_64.03:__IVARS__TtC18DoNotDisturbServer19FindMyLocateSession
+dyld_shared_cache_x86_64.03:__METACLASS_DATA__TtC18DoNotDisturbServer19FindMyLocateSession
+dyld_shared_cache_x86_64.03:__OBJC_$_CLASS_METHODS_FMLHandle
+dyld_shared_cache_x86_64.03:__OBJC_$_CLASS_METHODS_FindMyLocateSession
+dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_METHODS_FMLDevice
+dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_METHODS_FMLFriend
+dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_METHODS_FMLHandle
+dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_METHODS_FMLLocation
+dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_METHODS_FMLPlaceMark
+dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_METHODS_FindMyLocateSession
+dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_VARIABLES_FMLDevice
+dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_VARIABLES_FMLFriend
+dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_VARIABLES_FMLHandle
+dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_VARIABLES_FMLLocation
+dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_VARIABLES_FMLPlaceMark
+dyld_shared_cache_x86_64.03:__OBJC_$_INSTANCE_VARIABLES_FindMyLocateSession
+dyld_shared_cache_x86_64.03:__OBJC_$_PROP_LIST_FMLDevice
+dyld_shared_cache_x86_64.03:__OBJC_$_PROP_LIST_FMLFriend
+dyld_shared_cache_x86_64.03:__OBJC_$_PROP_LIST_FMLHandle
+dyld_shared_cache_x86_64.03:__OBJC_$_PROP_LIST_FMLLocation
+dyld_shared_cache_x86_64.03:__OBJC_$_PROP_LIST_FMLPlaceMark
+dyld_shared_cache_x86_64.03:__OBJC_$_PROP_LIST_FindMyLocateSession
+dyld_shared_cache_x86_64.03:__OBJC_CLASS_RO_$_FMLDevice
+dyld_shared_cache_x86_64.03:__OBJC_CLASS_RO_$_FMLFriend
+dyld_shared_cache_x86_64.03:__OBJC_CLASS_RO_$_FMLHandle
+dyld_shared_cache_x86_64.03:__OBJC_CLASS_RO_$_FMLLocation
+dyld_shared_cache_x86_64.03:__OBJC_CLASS_RO_$_FMLPlaceMark
+dyld_shared_cache_x86_64.03:__OBJC_CLASS_RO_$_FindMyLocateSession
+dyld_shared_cache_x86_64.03:__OBJC_METACLASS_RO_$_FMLDevice
+dyld_shared_cache_x86_64.03:__OBJC_METACLASS_RO_$_FMLFriend
+dyld_shared_cache_x86_64.03:__OBJC_METACLASS_RO_$_FMLHandle
+dyld_shared_cache_x86_64.03:__OBJC_METACLASS_RO_$_FMLLocation
+dyld_shared_cache_x86_64.03:__OBJC_METACLASS_RO_$_FMLPlaceMark
+dyld_shared_cache_x86_64.03:__OBJC_METACLASS_RO_$_FindMyLocateSession
+dyld_shared_cache_x86_64.03:__PROPERTIES__TtC18DoNotDisturbServer19FindMyLocateSession
+dyld_shared_cache_x86_64.03:_symbolic SDySo9FMLHandleCSo11FMLLocationCG
+dyld_shared_cache_x86_64.03:_symbolic SaySo9FMLFriendCG
+dyld_shared_cache_x86_64.03:_symbolic Sccy___________pG So21FMLLocationShareStateV s5ErrorP
+dyld_shared_cache_x86_64.03:_symbolic So11FMLLocationC
+dyld_shared_cache_x86_64.03:_symbolic So11FMLLocationCSg
+dyld_shared_cache_x86_64.03:_symbolic So11FMLLocationCSgSo9FMLHandleCIeghgg_
+dyld_shared_cache_x86_64.03:_symbolic So11FMLLocationCSgSo9FMLHandleCIeyBhyy_
+dyld_shared_cache_x86_64.03:_symbolic So11FMLLocationCSgSo9FMLHandleCytIeghnnr_
+dyld_shared_cache_x86_64.03:_symbolic So9FMLDeviceCSgIeghg_
+dyld_shared_cache_x86_64.03:_symbolic So9FMLDeviceCSgIeyBhy_
+dyld_shared_cache_x86_64.03:_symbolic So9FMLDeviceCSgSo7NSErrorCSgIeyByy_
+dyld_shared_cache_x86_64.03:_symbolic So9FMLDeviceCSgytIeghnr_
+dyld_shared_cache_x86_64.03:_symbolic So9FMLFriendC_____Ieghgy_ So23FMLFriendshipUpdateTypeV
+dyld_shared_cache_x86_64.03:_symbolic So9FMLFriendC_____IeyBhyy_ So23FMLFriendshipUpdateTypeV
+dyld_shared_cache_x86_64.03:_symbolic So9FMLFriendC_____ytIeghnnr_ So23FMLFriendshipUpdateTypeV
+dyld_shared_cache_x86_64.03:_symbolic So9FMLHandleC
+dyld_shared_cache_x86_64.03:_symbolic So9FMLHandleCSg
+dyld_shared_cache_x86_64.03:_symbolic _____ 18DoNotDisturbServer19FindMyLocateSessionC
+dyld_shared_cache_x86_64.03:_symbolic _____ So13FMLHandleTypeV
+dyld_shared_cache_x86_64.03:_symbolic _____ So21FMLLocationShareStateV
+dyld_shared_cache_x86_64.03:_symbolic _____ So23FMLFriendshipExpirationV
+dyld_shared_cache_x86_64.03:_symbolic _____ So23FMLFriendshipUpdateTypeV
+dyld_shared_cache_x86_64.03:_symbolic _____So7NSErrorCSgIeyByy_ So21FMLLocationShareStateV
+dyld_shared_cache_x86_64.03:_symbolic _____XDXMT 18DoNotDisturbServer19FindMyLocateSessionC
+dyld_shared_cache_x86_64.03:_symbolic _____ySo9FMLHandleCSo11FMLLocationCG s18_DictionaryStorageC
+dyld_shared_cache_x86_64.03:_symbolic ySo11FMLLocationCSg_So9FMLHandleCtYbcSg
+dyld_shared_cache_x86_64.03:_symbolic ySo9FMLDeviceCSgYbcSg
+dyld_shared_cache_x86_64.03:_symbolic ySo9FMLFriendC______tYbcSg So23FMLFriendshipUpdateTypeV
+dyld_shared_cache_x86_64.03:cachedFriendsFollowingMyLocation
+dyld_shared_cache_x86_64.03:cachedFriendsFollowingMyLocation()
+dyld_shared_cache_x86_64.03:cachedFriendsSharingLocationWithMe
+dyld_shared_cache_x86_64.03:cachedFriendsSharingLocationWithMe()
+dyld_shared_cache_x86_64.03:cachedFriendsSharingLocationsWithMe
+dyld_shared_cache_x86_64.03:cachedFriendsWithPendingOffers
+dyld_shared_cache_x86_64.03:cachedFriendsWithPendingOffers()
+dyld_shared_cache_x86_64.03:cachedFriendsWithPendingOffersSayAA6FriendVGyYaF
+dyld_shared_cache_x86_64.03:cachedFriendsWithPendingOffersSaySo9FMLFriendCGyF
+dyld_shared_cache_x86_64.03:cachedLocation for %{private,mask.hash}s, includeAddress: %{bool}d
+dyld_shared_cache_x86_64.03:cachedLocation(for:includeAddress:)
+dyld_shared_cache_x86_64.03:cachedLocation(for:includeAddress:followingsFromCached:)
+dyld_shared_cache_x86_64.03:cachedLocation3for
+dyld_shared_cache_x86_64.03:cachedLocationFor:includeAddress:
+dyld_shared_cache_x86_64.03:cachedLocationForHandle:
+dyld_shared_cache_x86_64.03:cachedLocationForHandle:includeAddress:
+dyld_shared_cache_x86_64.03:cachedLocations:%{private,mask.hash}s
+dyld_shared_cache_x86_64.03:canShareLocationWithHandle:isFromGroup:completion:
+dyld_shared_cache_x86_64.03:canShareLocationWithHandle:isFromGroup:completionHandler:
+dyld_shared_cache_x86_64.03:didChangeActiveLocationSharingDevice:
+dyld_shared_cache_x86_64.03:endFriendshipInvite2to4from11isFromGroupySo9FMLHandleC_AISgSbtYaKF
+dyld_shared_cache_x86_64.03:endFriendshipOffer2to4from3end11isFromGroupySaySo9FMLHandleCG_AJSgSo23FMLFriendshipExpirationVSbtYaKF
+dyld_shared_cache_x86_64.03:friendshipState
+dyld_shared_cache_x86_64.03:friendshipState(_:)
+dyld_shared_cache_x86_64.03:friendshipStateWithHandle:isFromGroup:completion:
+dyld_shared_cache_x86_64.03:friendshipStateWithHandle:isFromGroup:completionHandler:
+dyld_shared_cache_x86_64.03:friendshipStateWithRequest:completion:
+dyld_shared_cache_x86_64.03:friendshipStateyAA0dG0VAA0D23CanShareLocationRequestVYaKFT
+dyld_shared_cache_x86_64.03:getActiveLocationSharingDeviceSo9FMLDeviceCyYaKF
+dyld_shared_cache_x86_64.03:getActiveLocationSharingDeviceWithCompletion:
+dyld_shared_cache_x86_64.03:getActiveLocationSharingDeviceWithCompletionHandler:
+dyld_shared_cache_x86_64.03:locationUpdateCallbackySo11FMLLocationCSg_So9FMLHandleCtYbcSgv
+dyld_shared_cache_x86_64.03:setActiveLocationSharingDevice succeeded: %s
+dyld_shared_cache_x86_64.03:setActiveLocationSharingDevice(_:)
+dyld_shared_cache_x86_64.03:setActiveLocationSharingDevice:completion:
+dyld_shared_cache_x86_64.03:setActiveLocationSharingDevice:completionHandler:
+dyld_shared_cache_x86_64.03:setActiveLocationSharingDeviceyySSYaKF
+dyld_shared_cache_x86_64.03:shouldForwardLocationBasedOnLocatePriorityForHandle(handle:location:cachedLocation:)
+dyld_shared_cache_x86_64.03:startMonitoringActiveLocationSharingDeviceChange()
+dyld_shared_cache_x86_64.03:startMonitoringActiveLocationSharingDeviceChangeWithCompletion:
+dyld_shared_cache_x86_64.03:startMonitoringActiveLocationSharingDeviceWithCompletionHandler:
+dyld_shared_cache_x86_64.03:startRefreshingLocationForHandles:priority:isFromGroup:completion:
+dyld_shared_cache_x86_64.03:startRefreshingLocationForHandles:priority:isFromGroup:reverseGeocode:completion:
+dyld_shared_cache_x86_64.03:stopRefreshingLocationForHandles:priority:isFromGroup:completion:
+dyld_shared_cache_x86_64.03:v16@?0@"FMLDevice"8
+dyld_shared_cache_x86_64.03:v24@0:8@?<v@?@"FMLDevice"@"NSError">16
+dyld_shared_cache_x86_64.03:v24@?0@"FMLFriend"8q16
+dyld_shared_cache_x86_64.03:v24@?0@"FMLLocation"8@"FMLHandle"16
+dyld_shared_cache_x86_64.03:v36@0:8@"FMLHandle"16c24@?<v@?q@"NSError">28
+dyld_shared_cache_x86_64.03:v40@0:8@"FMLHandle"16@"NSString"24@?<v@?@"NSDate"@"NSError">32
+dyld_shared_cache_x86_64.03:v44@0:8@"FMLHandle"16@"FMLHandle"24c32@?<v@?@"NSError">36
+dyld_shared_cache_x86_64.03:v44@0:8@"NSArray"16@"FMLHandle"24c32@?<v@?@"NSError">36
+dyld_shared_cache_x86_64.03:v52@0:8@"NSArray"16@"FMLHandle"24q32c40@?<v@?@"NSError">44
+dyld_shared_cache_x86_64.03:ySo11FMLLocationCSg_So9FMLHandleCtYbcSg
+dyld_shared_cache_x86_64.03:ySo9FMLDeviceCSgYbcSg
+dyld_shared_cache_x86_64.03:ySo9FMLFriendC_
+dyld_shared_cache_x86_64.04:-[ATXLocationManager cachedLocationOfInterestAtCurrentLocation]
+dyld_shared_cache_x86_64.04:Cannot set cached location on cachedLocation status that is not .available
+dyld_shared_cache_x86_64.04:_OBJC_IVAR_$_PIEPhotoAnalyzer._cachedLocationInfo
+dyld_shared_cache_x86_64.04:___63-[ATXLocationManager cachedLocationOfInterestAtCurrentLocation]_block_invoke
+dyld_shared_cache_x86_64.04:_cachedLocationInfo
+dyld_shared_cache_x86_64.04:cachedLocationOfInterestAtCurrentLocation
+dyld_shared_cache_x86_64.04:locationManager.cachedLocation
+dyld_shared_cache_x86_64.05:FindMyLocateSession
+dyld_shared_cache_x86_64.05:-[HULocationDeviceManager didChangeActiveLocationSharingDevice:]
+dyld_shared_cache_x86_64.05:-[WFLocationQueryGeocodeCacheManager cachedLocationForKey:]
+dyld_shared_cache_x86_64.05:036setActiveLocationSharingDeviceToThisK0yyYaKFT
+dyld_shared_cache_x86_64.05:0getActiveLocationSharingDeviceSo010HULocationK0CyYaKFT
+dyld_shared_cache_x86_64.05:@"_TtC6HomeUI19FindMyLocateSession"
+dyld_shared_cache_x86_64.05:FindMyLocateSession
+dyld_shared_cache_x86_64.05:FindMyLocateSession: Successfully stopMonitoringPreferencesChange
+dyld_shared_cache_x86_64.05:FindMyLocateSessionC
+dyld_shared_cache_x86_64.05:SavedLocationsReader: found cachedLocationsDictionaries count: %ld
+dyld_shared_cache_x86_64.05:T@"_TtC6HomeUI19FindMyLocateSession",R,N,V_findMyLocateSession
+dyld_shared_cache_x86_64.05:_$s12FindMyLocate7SessionC15friendshipState3for11isFromGroupAA010FriendshipF0VAA6HandleV_SbSgtYaKF
+dyld_shared_cache_x86_64.05:_$s12FindMyLocate7SessionC15friendshipState3for11isFromGroupAA010FriendshipF0VAA6HandleV_SbSgtYaKFTu
+dyld_shared_cache_x86_64.05:_$s12FindMyLocate7SessionC30setActiveLocationSharingDeviceyySSYaKF
+dyld_shared_cache_x86_64.05:_$s12FindMyLocate7SessionC30setActiveLocationSharingDeviceyySSYaKFTu
+dyld_shared_cache_x86_64.05:_OBJC_CLASS_$_FMLDevice
+dyld_shared_cache_x86_64.05:_OBJC_CLASS_$_FMLFriend
+dyld_shared_cache_x86_64.05:_OBJC_CLASS_$_FMLHandle
+dyld_shared_cache_x86_64.05:_OBJC_CLASS_$_FMLLocation
+dyld_shared_cache_x86_64.05:_OBJC_CLASS_$_FMLPlaceMark
+dyld_shared_cache_x86_64.05:_OBJC_CLASS_$_FindMyLocateSession
+dyld_shared_cache_x86_64.05:_OBJC_CLASS_$__TtC6HomeUI19FindMyLocateSession
+dyld_shared_cache_x86_64.05:_OBJC_METACLASS_$_FMLDevice
+dyld_shared_cache_x86_64.05:_OBJC_METACLASS_$_FMLFriend
+dyld_shared_cache_x86_64.05:_OBJC_METACLASS_$_FMLHandle
+dyld_shared_cache_x86_64.05:_OBJC_METACLASS_$_FMLLocation
+dyld_shared_cache_x86_64.05:_OBJC_METACLASS_$_FMLPlaceMark
+dyld_shared_cache_x86_64.05:_OBJC_METACLASS_$_FindMyLocateSession
+dyld_shared_cache_x86_64.05:_OBJC_METACLASS_$__TtC6HomeUI19FindMyLocateSession
+dyld_shared_cache_x86_64.05:_TtC6HomeUI19FindMyLocateSession
+dyld_shared_cache_x86_64.05:__DATA__TtC6HomeUI19FindMyLocateSession
+dyld_shared_cache_x86_64.05:__INSTANCE_METHODS__TtC6HomeUI19FindMyLocateSession
+dyld_shared_cache_x86_64.05:__IVARS__TtC6HomeUI19FindMyLocateSession
+dyld_shared_cache_x86_64.05:__METACLASS_DATA__TtC6HomeUI19FindMyLocateSession
+dyld_shared_cache_x86_64.05:__PROPERTIES__TtC6HomeUI19FindMyLocateSession
+dyld_shared_cache_x86_64.05:___64-[HULocationDeviceManager didChangeActiveLocationSharingDevice:]_block_invoke
+dyld_shared_cache_x86_64.05:_symbolic _____ 6HomeUI19FindMyLocateSessionC
+dyld_shared_cache_x86_64.05:_symbolic _____XDXMT 6HomeUI19FindMyLocateSessionC
+dyld_shared_cache_x86_64.05:cachedLocation: is expired (older than 18 hours). lastUpdated=%s ago.
+dyld_shared_cache_x86_64.05:cachedLocation: is valid. lastUpdated=%s ago.
+dyld_shared_cache_x86_64.05:cachedLocationForHandle:
+dyld_shared_cache_x86_64.05:cachedLocationForKey:
+dyld_shared_cache_x86_64.05:cachedLocationForResourceWithIdentifier:
+dyld_shared_cache_x86_64.05:cachedLocationIsAuthorized
+dyld_shared_cache_x86_64.05:didChangeActiveLocationSharingDevice:
+dyld_shared_cache_x86_64.05:findmylocate: didChangeActiveLocationSharingDevice: %@
+dyld_shared_cache_x86_64.05:getActiveLocationSharingDeviceWithCompletionHandler:
+dyld_shared_cache_x86_64.05:setActiveLocationSharingDeviceToThisDeviceWithCompletionHandler:
+dyld_shared_cache_x86_64:%s, YES, no significant change detected for cachedLocations count, %lu, no progress distance threshold, %.2f
+dyld_shared_cache_x86_64:%s, cachedLocations dateInterval pre-filter, %@, dateInterval of interest, %@, cachedLocations dateInterval post-filter, %@
+dyld_shared_cache_x86_64:-[PKPaymentProvisioningController cachedLocation]
+dyld_shared_cache_x86_64:-[RTPlaceInferenceManager cachedLocationIndex]
+dyld_shared_cache_x86_64:-[RTPlaceInferenceManager cachedLocations]
+dyld_shared_cache_x86_64:-[SMTriggerDestination _cachedLocationsDateInterval]
+dyld_shared_cache_x86_64:-[SMTriggerDestination cachedLocationEvents]
+dyld_shared_cache_x86_64:CNFMLFindMyLocateSession
+dyld_shared_cache_x86_64:CNFMLFriend
+dyld_shared_cache_x86_64:CNFMLHandle
+dyld_shared_cache_x86_64:FMLDevice
+dyld_shared_cache_x86_64:FMLFriend
+dyld_shared_cache_x86_64:FMLHandle
+dyld_shared_cache_x86_64:FMLLocation
+dyld_shared_cache_x86_64:FMLPlaceMark
+dyld_shared_cache_x86_64:FindMyLocateSession
+dyld_shared_cache_x86_64:T@"CLLocation",R,N,V_cachedLocation
+dyld_shared_cache_x86_64:T@"NSMutableArray",&,N,V_cachedLocationEvents
+dyld_shared_cache_x86_64:T@"NSMutableArray",R,N,V_cachedLocations
+dyld_shared_cache_x86_64:TQ,R,N,V_cachedLocationIndex
+dyld_shared_cache_x86_64:Tc,R,N,GisFindMyLocateSessionEnabled
+dyld_shared_cache_x86_64:_OBJC_IVAR_$_EKEvent._cachedLocationPrediction
+dyld_shared_cache_x86_64:_OBJC_IVAR_$_EKEvent._cachedLocationPredictionExpirationDate
+dyld_shared_cache_x86_64:_OBJC_IVAR_$_NSLayoutManager._cachedLocation
+dyld_shared_cache_x86_64:_OBJC_IVAR_$_NSLayoutManager._cachedLocationGlyphIndex
+dyld_shared_cache_x86_64:_OBJC_IVAR_$_NSLayoutManager._cachedLocationNominalGlyphRange
+dyld_shared_cache_x86_64:_OBJC_IVAR_$_PKPaymentProvisioningController._cachedLocation
+dyld_shared_cache_x86_64:_OBJC_IVAR_$_RTPlaceInferenceManager._cachedLocationIndex
+dyld_shared_cache_x86_64:_OBJC_IVAR_$_RTPlaceInferenceManager._cachedLocations
+dyld_shared_cache_x86_64:_OBJC_IVAR_$_SMTriggerDestination._cachedLocationEvents
+dyld_shared_cache_x86_64:_TtC10ContactsUI19FindMyLocateSession
+dyld_shared_cache_x86_64:_TtC18DoNotDisturbServer19FindMyLocateSession
+dyld_shared_cache_x86_64:_TtC6HomeUI19FindMyLocateSession
+dyld_shared_cache_x86_64:__im_findMyHandlesWithFMLFriends:
+dyld_shared_cache_x86_64:__im_findMyHandlesWithFMLHandles:
+dyld_shared_cache_x86_64:_cachedLocation
+dyld_shared_cache_x86_64:_cachedLocationEvents
+dyld_shared_cache_x86_64:_cachedLocationGlyphIndex
+dyld_shared_cache_x86_64:_cachedLocationIndex
+dyld_shared_cache_x86_64:_cachedLocationNominalGlyphRange
+dyld_shared_cache_x86_64:_cachedLocationPrediction
+dyld_shared_cache_x86_64:_cachedLocationPredictionExpirationDate
+dyld_shared_cache_x86_64:_cachedLocations
+dyld_shared_cache_x86_64:_cachedLocationsDateInterval
+dyld_shared_cache_x86_64:_canShareLocationWithFMLHandle:isFromGroup:
+dyld_shared_cache_x86_64:_configureFindMyLocateSession
+dyld_shared_cache_x86_64:_postFMLFriendshipChangeForHandleID:handleType:updateType:isFromMessages:
+dyld_shared_cache_x86_64:_setUpFindMyLocateSessionCallbacks
+dyld_shared_cache_x86_64:_startRefreshingLocationForFMLHandles:priority:isFromGroup:
+dyld_shared_cache_x86_64:_startSharingWithFMLHandles:inChat:withDuration:
+dyld_shared_cache_x86_64:_stopSharingWithFMLHandles:inChat:
+dyld_shared_cache_x86_64:_stopTrackingLocationForFMLHandles:priority:isFromGroup:
+dyld_shared_cache_x86_64:_uncachedLocation
+dyld_shared_cache_x86_64:cachedFriendsFollowingMyLocation
+dyld_shared_cache_x86_64:cachedFriendsSharingLocationWithMe
+dyld_shared_cache_x86_64:cachedFriendsSharingLocationsWithMe
+dyld_shared_cache_x86_64:cachedFriendsWithPendingOffers
+dyld_shared_cache_x86_64:cachedLocation
+dyld_shared_cache_x86_64:cachedLocationEvents
+dyld_shared_cache_x86_64:cachedLocationFor:includeAddress:
+dyld_shared_cache_x86_64:cachedLocationForHandle:
+dyld_shared_cache_x86_64:cachedLocationForHandle:includeAddress:
+dyld_shared_cache_x86_64:cachedLocationForHandleByHandle
+dyld_shared_cache_x86_64:cachedLocationForKey:
+dyld_shared_cache_x86_64:cachedLocationForResourceWithIdentifier:
+dyld_shared_cache_x86_64:cachedLocationIndex
+dyld_shared_cache_x86_64:cachedLocationOfInterestAtCurrentLocation
+dyld_shared_cache_x86_64:cachedLocations
+dyld_shared_cache_x86_64:canShareLocationWithHandle:groupId:callerId:
+dyld_shared_cache_x86_64:canShareLocationWithHandle:groupId:callerId:completion:
+dyld_shared_cache_x86_64:canShareLocationWithHandle:isFromGroup:completion:
+dyld_shared_cache_x86_64:canShareLocationWithHandle:isFromGroup:completionHandler:
+dyld_shared_cache_x86_64:deviceWithFMLDevice:
+dyld_shared_cache_x86_64:didChangeActiveLocationSharingDevice:
+dyld_shared_cache_x86_64:friendshipState:
+dyld_shared_cache_x86_64:friendshipStateWithCompletion:
+dyld_shared_cache_x86_64:friendshipStateWithHandle:isFromGroup:completion:
+dyld_shared_cache_x86_64:friendshipStateWithHandle:isFromGroup:completionHandler:
+dyld_shared_cache_x86_64:friendshipStateWithRequest:completion:
+dyld_shared_cache_x86_64:getActiveLocationSharingDevice
+dyld_shared_cache_x86_64:getActiveLocationSharingDevice:
+dyld_shared_cache_x86_64:getActiveLocationSharingDeviceWithCompletion:
+dyld_shared_cache_x86_64:getActiveLocationSharingDeviceWithCompletionHandler:
+dyld_shared_cache_x86_64:handleWithFMLHandle:
+dyld_shared_cache_x86_64:isFindMyLocateSessionEnabled
+dyld_shared_cache_x86_64:locationWithFMLLocation:
+dyld_shared_cache_x86_64:setActiveLocationSharingDevice:completion:
+dyld_shared_cache_x86_64:setActiveLocationSharingDevice:completionHandler:
+dyld_shared_cache_x86_64:setActiveLocationSharingDeviceToThisDeviceWithCompletionHandler:
+dyld_shared_cache_x86_64:setFindMyLocateSession:
+dyld_shared_cache_x86_64:startMonitoringActiveLocationSharingDeviceChangeWithCompletion:
+dyld_shared_cache_x86_64:startMonitoringActiveLocationSharingDeviceWithCompletionHandler:
+dyld_shared_cache_x86_64:startRefreshingLocationForHandles:priority:isFromGroup:completion:
+dyld_shared_cache_x86_64:startRefreshingLocationForHandles:priority:isFromGroup:reverseGeocode:completion:
+dyld_shared_cache_x86_64:stopRefreshingLocationForHandles:priority:isFromGroup:completion:

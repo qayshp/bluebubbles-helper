@@ -1,0 +1,25 @@
+== FindMyLocateObjCWrapper ==
+lrwxr-xr-x  1 root  wheel  40 Apr 30 07:12 /System/Library/PrivateFrameworks/FindMyLocateObjCWrapper.framework/FindMyLocateObjCWrapper -> Versions/Current/FindMyLocateObjCWrapper
+/System/Library/PrivateFrameworks/FindMyLocateObjCWrapper.framework/FindMyLocateObjCWrapper: broken symbolic link to Versions/Current/FindMyLocateObjCWrapper
+ls: /System/Library/PrivateFrameworks/FindMyLocateObjCWrapper.framework/Versions/Current/FindMyLocateObjCWrapper: No such file or directory
+/System/Library/PrivateFrameworks/FindMyLocateObjCWrapper.framework/Versions/Current/FindMyLocateObjCWrapper: cannot open `/System/Library/PrivateFrameworks/FindMyLocateObjCWrapper.framework/Versions/Current/FindMyLocateObjCWrapper' (No such file or directory)
+== FindMyLocate ==
+lrwxr-xr-x  1 root  wheel  29 Apr 30 07:12 /System/Library/PrivateFrameworks/FindMyLocate.framework/FindMyLocate -> Versions/Current/FindMyLocate
+/System/Library/PrivateFrameworks/FindMyLocate.framework/FindMyLocate: broken symbolic link to Versions/Current/FindMyLocate
+ls: /System/Library/PrivateFrameworks/FindMyLocate.framework/Versions/Current/FindMyLocate: No such file or directory
+/System/Library/PrivateFrameworks/FindMyLocate.framework/Versions/Current/FindMyLocate: cannot open `/System/Library/PrivateFrameworks/FindMyLocate.framework/Versions/Current/FindMyLocate' (No such file or directory)
+== FindMyCore ==
+lrwxr-xr-x  1 root  wheel  27 Apr 30 07:12 /System/Library/PrivateFrameworks/FindMyCore.framework/FindMyCore -> Versions/Current/FindMyCore
+/System/Library/PrivateFrameworks/FindMyCore.framework/FindMyCore: broken symbolic link to Versions/Current/FindMyCore
+ls: /System/Library/PrivateFrameworks/FindMyCore.framework/Versions/Current/FindMyCore: No such file or directory
+/System/Library/PrivateFrameworks/FindMyCore.framework/Versions/Current/FindMyCore: cannot open `/System/Library/PrivateFrameworks/FindMyCore.framework/Versions/Current/FindMyCore' (No such file or directory)
+== FindMyDevice ==
+lrwxr-xr-x  1 root  wheel  29 Apr 30 07:12 /System/Library/PrivateFrameworks/FindMyDevice.framework/FindMyDevice -> Versions/Current/FindMyDevice
+/System/Library/PrivateFrameworks/FindMyDevice.framework/FindMyDevice: broken symbolic link to Versions/Current/FindMyDevice
+ls: /System/Library/PrivateFrameworks/FindMyDevice.framework/Versions/Current/FindMyDevice: No such file or directory
+/System/Library/PrivateFrameworks/FindMyDevice.framework/Versions/Current/FindMyDevice: cannot open `/System/Library/PrivateFrameworks/FindMyDevice.framework/Versions/Current/FindMyDevice' (No such file or directory)
+== FindMyMessaging ==
+lrwxr-xr-x  1 root  wheel  32 Apr 30 07:12 /System/Library/PrivateFrameworks/FindMyMessaging.framework/FindMyMessaging -> Versions/Current/FindMyMessaging
+/System/Library/PrivateFrameworks/FindMyMessaging.framework/FindMyMessaging: broken symbolic link to Versions/Current/FindMyMessaging
+ls: /System/Library/PrivateFrameworks/FindMyMessaging.framework/Versions/Current/FindMyMessaging: No such file or directory
+/System/Library/PrivateFrameworks/FindMyMessaging.framework/Versions/Current/FindMyMessaging: cannot open `/System/Library/PrivateFrameworks/FindMyMessaging.framework/Versions/Current/FindMyMessaging' (No such file or directory)

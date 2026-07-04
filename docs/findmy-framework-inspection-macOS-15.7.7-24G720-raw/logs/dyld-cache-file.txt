@@ -1,0 +1,2 @@
+/System/Volumes/Preboot/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_x86_64: Dyld shared cache version 1 x86_64
+/System/Volumes/Preboot/Cryptexes/OS/System/Library/dyld/dyld_shared_cache_arm64e: Dyld shared cache version 1 arm64e

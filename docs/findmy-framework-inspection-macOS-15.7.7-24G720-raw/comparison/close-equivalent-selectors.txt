@@ -1,0 +1,53 @@
+-[CNFMLFindMyLocateSession sendFriendshipOfferTo:end:isFromGroup:completion:]
+-[FMFSession(Data) cachedLocationForHandle:]
+-[FindMyLocateSession cachedCanShareLocationWithHandle:isFromGroup:]
+-[FindMyLocateSession cachedLocationForHandle:]
+-[FindMyLocateSession cachedLocationForHandle:includeAddress:]
+-[FindMyLocateSession getFriendsFollowingMyLocationWithCompletion:]
+-[FindMyLocateSession getFriendsSharingLocationsWithMeWithCompletion:]
+-[FindMyLocateSession sendFriendshipInviteToHandle:from:isFromGroup:completion:]
+-[FindMyLocateSession sendFriendshipInviteToHandle:isFromGroup:completion:]
+-[FindMyLocateSession sendFriendshipOfferToHandles:expiration:isFromGroup:completion:]
+-[FindMyLocateSession sendFriendshipOfferToHandles:from:expiration:isFromGroup:completion:]
+-[FindMyLocateSession startMonitoringActiveLocationSharingDeviceChangeWithCompletion:]
+-[FindMyLocateSession startUpdatingFriendsWithInitialUpdates:completion:]
+-[FindMyLocateSession stopSharingLocationWith:from:isFromGroup:completion:]
+-[FindMyLocateSession stopSharingLocationWith:isFromGroup:completion:]
+-[FindMyLocateSession stopUpdatingFriendsWithCompletion:]
+2cachedCanShareLocationWithHandle_11isFromGroupSo011FMLLocationI5StateVSo9FMLHandleC_SbtF
+42startMonitoringActiveLocationSharingDeviceyyYaKF
+8startMonitoringActiveLocationSharingDeviceChangeScSyAA0j6StreamK0OGyYaKF
+FindMyLocateSession cachedCanShareLocationWithHandle: %@ isGroup: %@ shareState: %lu canShare: %@
+FindMyLocateSession did not respond to the expected selector: getFriendsSharingLocationsWithMeWithCompletion. Is FindMyLocate installed correctly? This breaks our ability to get FindMy friendship updates throughout the app. If you see this error, please file a radar to the FindMy team.
+FindMyLocateSession did not respond to the expected selector: startMonitoringActiveLocationSharingDeviceChangeWithCompletion. Is FindMyLocate installed correctly? This breaks our ability to detect when the active FindMy device changes. If you see this error, please file a radar to the FindMy team.
+FindMyLocateSession did not respond to the expected selector: startUpdatingFriendsWithCompletion. Is FindMyLocate installed correctly? This breaks our ability to get FindMy friendship updates throughout the app. If you see this error, please file a radar to the FindMy team.
+FindMyLocateSession getFriendsFollowingMyLocationWithCompletion completed initial fetch with friends: %@. Posting notifications for these handles now
+FindMyLocateSession getFriendsSharingLocationsWithMeWithCompletion completed initial fetch with friends: %@. Posting notifications for these handles now
+FindMyLocateSession startMonitoringActiveLocationSharingDeviceChangeWithCompletion completed without an error.
+FindMyLocateSession startMonitoringActiveLocationSharingDeviceChangeWithCompletion failed with an error. This breaks our ability to detect when the active FindMy device changes. If you see this error, please file a radar to the FindMy team. Error: %@
+FindMyLocateSession startUpdatingFriendsWithCompletion completed without an error
+FindMyLocateSession startUpdatingFriendsWithCompletion completed.
+FindMyLocateSession startUpdatingFriendsWithCompletion failed with an error. %@ 
+FindMyLocateSession startUpdatingFriendsWithCompletion failed with an error. This breaks our ability to get FindMy friendship updates throughout the app. If you see this error, please file a radar to the FindMy team. Error: %@
+FindMyLocateSession stopSharingLocationWith completed for handles: %@, isFromGroup: %@
+FindMyLocateSession stopSharingLocationWith returned error: %@, handles: %@, isFromGroup: %@
+FindMyLocateSession stopUpdatingFriendsWithCompletion completed.
+FindMyLocateSession stopUpdatingFriendsWithCompletion failed with an error. %@ 
+FindMyLocateSession: Successfully startUpdatingFriends
+FindMyLocateSession: Successfully startUpdatingFriends stream
+FindMyLocateSession: Successfully stopUpdatingFriends
+FindMyLocateSession: sendFriendshipOffer failed %s
+FindMyLocateSession: sendFriendshipOffer result: %s
+FindMyLocateSession: stopSharingLocation result: %s
+FindMyLocateSession: stopSharingLocationFailed %s
+Successfully startMonitoringActiveLocationSharingDevice
+_objc_msgSend$cachedLocationForHandle:
+_objc_msgSend$startMonitoringActiveLocationSharingDeviceWithCompletionHandler:
+_startSharingWithFMLHandles calling sendFriendshipOfferToHandles: %@, with duration: %ld
+cachedLocationForHandle:
+cachedLocationForHandle: %@: %@
+cachedLocationForHandle:includeAddress:
+findMyLocationForFindMyHandle: fmlSession did not respond to the selector cachedLocationForHandle:
+startMonitoringActiveLocationSharingDeviceChange()
+startMonitoringActiveLocationSharingDeviceChangeWithCompletion:
+startMonitoringActiveLocationSharingDeviceWithCompletionHandler:

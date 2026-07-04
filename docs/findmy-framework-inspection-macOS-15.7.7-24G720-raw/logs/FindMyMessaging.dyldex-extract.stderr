@@ -1,0 +1,370 @@
+-- >> -- :: [/]
+Slide Info Rebaser >> -- :: [-]
+Slide Info Rebaser >> Rebasing Pages :: [\]
+Optimize Linkedit >> Rebasing Pages :: [|]
+Optimize Linkedit >> Copy Binding Info :: [/]
+Optimize Linkedit >> Copy Weak Binding Info :: [-]
+Optimize Linkedit >> Copy Lazy Binding Info :: [\]
+Optimize Linkedit >> Copy Export Info :: [|]
+Optimize Linkedit >> Search Redacted Symbols :: [/]
+Optimize Linkedit >> Copy Local Symbols :: [-]
+00:58:46:633 [  ERROR  ] linkedit_optimizer.py:271 : Symbols Cache doesn't contain local symbols.
+Optimize Linkedit >> Copy Imported Symbols :: [\]
+Optimize Linkedit >> Copy Function Starts :: [|]
+Optimize Linkedit >> Copy Data In Code :: [/]
+Optimize Linkedit >> Copy Indirect Symbol Table :: [-]
+Optimize Linkedit >> Copy String Pool :: [\]
+Stub Fixer >> Copy String Pool :: [|]
+Stub Fixer >> Caching Symbols :: [/]
+Stub Fixer >> Caching Symbols :: [-]
+Stub Fixer >> Caching Symbols :: [\]
+Stub Fixer >> Caching Symbols :: [|]
+Stub Fixer >> Caching Symbols :: [/]
+Stub Fixer >> Caching Symbols :: [-]
+Stub Fixer >> Caching Symbols :: [\]
+Stub Fixer >> Caching Symbols :: [|]
+Stub Fixer >> Caching Symbols :: [/]
+Stub Fixer >> Caching Symbols :: [-]
+Stub Fixer >> Fixing Stubs :: [\]
+00:58:48:625 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6010
+00:58:48:625 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6016
+00:58:48:626 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc601c
+00:58:48:626 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6022
+00:58:48:626 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6028
+00:58:48:626 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc602e
+00:58:48:626 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6034
+00:58:48:626 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc603a
+00:58:48:626 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6040
+00:58:48:626 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6046
+00:58:48:627 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc604c
+00:58:48:627 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6052
+00:58:48:627 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6058
+00:58:48:627 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc605e
+00:58:48:627 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6064
+00:58:48:627 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc606a
+00:58:48:627 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6070
+00:58:48:627 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6076
+00:58:48:628 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc607c
+00:58:48:628 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6082
+00:58:48:628 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6088
+00:58:48:628 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc608e
+00:58:48:628 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6094
+00:58:48:628 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc609a
+00:58:48:628 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60a0
+00:58:48:628 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60a6
+00:58:48:629 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60ac
+00:58:48:629 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60b2
+00:58:48:629 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60b8
+00:58:48:629 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60be
+00:58:48:629 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60c4
+00:58:48:629 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60ca
+00:58:48:629 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60d0
+00:58:48:629 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60d6
+00:58:48:630 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60dc
+00:58:48:630 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60e2
+00:58:48:630 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60e8
+00:58:48:630 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60ee
+00:58:48:630 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60f4
+00:58:48:630 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc60fa
+00:58:48:630 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6100
+00:58:48:630 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6106
+00:58:48:631 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc610c
+00:58:48:631 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6112
+00:58:48:631 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6118
+00:58:48:631 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc611e
+00:58:48:631 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6124
+00:58:48:631 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc612a
+00:58:48:631 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6130
+00:58:48:632 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6136
+00:58:48:632 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc613c
+00:58:48:632 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6142
+00:58:48:632 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6148
+00:58:48:632 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc614e
+00:58:48:632 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6154
+00:58:48:632 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc615a
+00:58:48:632 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6160
+00:58:48:633 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6166
+00:58:48:633 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc616c
+00:58:48:633 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6172
+00:58:48:633 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6178
+00:58:48:633 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc617e
+00:58:48:633 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6184
+00:58:48:633 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc618a
+00:58:48:634 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6190
+00:58:48:634 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6196
+00:58:48:634 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc619c
+00:58:48:634 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61a2
+00:58:48:634 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61a8
+00:58:48:634 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61ae
+00:58:48:634 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61b4
+00:58:48:634 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61ba
+00:58:48:635 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61c0
+00:58:48:635 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61c6
+00:58:48:635 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61cc
+00:58:48:635 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61d2
+00:58:48:635 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61d8
+00:58:48:635 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61de
+00:58:48:635 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61e4
+00:58:48:636 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61ea
+00:58:48:636 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61f0
+00:58:48:636 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61f6
+00:58:48:636 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc61fc
+00:58:48:636 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6202
+00:58:48:636 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6208
+00:58:48:636 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc620e
+00:58:48:636 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6214
+00:58:48:637 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc621a
+00:58:48:637 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6220
+00:58:48:637 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6226
+00:58:48:637 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc622c
+00:58:48:637 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6232
+00:58:48:637 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6238
+00:58:48:637 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc623e
+00:58:48:638 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6244
+00:58:48:638 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc624a
+00:58:48:638 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6250
+00:58:48:638 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6256
+00:58:48:638 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc625c
+00:58:48:638 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6262
+00:58:48:638 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6268
+00:58:48:639 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc626e
+00:58:48:639 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6274
+00:58:48:639 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc627a
+00:58:48:639 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6280
+00:58:48:639 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6286
+00:58:48:639 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc628c
+00:58:48:639 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6292
+00:58:48:640 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6298
+00:58:48:640 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc629e
+00:58:48:640 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62a4
+00:58:48:640 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62aa
+00:58:48:640 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62b0
+00:58:48:640 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62b6
+00:58:48:640 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62bc
+00:58:48:640 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62c2
+00:58:48:641 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62c8
+00:58:48:641 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62ce
+00:58:48:641 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62d4
+00:58:48:641 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62da
+00:58:48:641 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62e0
+00:58:48:641 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62e6
+00:58:48:641 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62ec
+00:58:48:641 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62f2
+00:58:48:642 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62f8
+00:58:48:642 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc62fe
+00:58:48:642 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6304
+00:58:48:642 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc630a
+00:58:48:642 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6310
+00:58:48:642 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6316
+00:58:48:642 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc631c
+00:58:48:642 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6322
+00:58:48:643 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6328
+00:58:48:643 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc632e
+00:58:48:643 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6334
+00:58:48:643 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc633a
+00:58:48:643 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6340
+00:58:48:643 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6346
+00:58:48:643 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc634c
+00:58:48:643 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6352
+00:58:48:644 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6358
+00:58:48:644 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc635e
+00:58:48:644 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6364
+00:58:48:644 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc636a
+00:58:48:644 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6370
+00:58:48:644 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6376
+00:58:48:644 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc637c
+00:58:48:644 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6382
+00:58:48:645 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6388
+00:58:48:645 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc638e
+00:58:48:645 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6394
+00:58:48:645 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc639a
+00:58:48:645 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63a0
+00:58:48:645 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63a6
+00:58:48:645 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63ac
+00:58:48:646 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63b2
+00:58:48:646 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63b8
+00:58:48:646 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63be
+00:58:48:646 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63c4
+00:58:48:646 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63ca
+00:58:48:646 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63d0
+00:58:48:646 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63d6
+00:58:48:647 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63dc
+00:58:48:647 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63e2
+00:58:48:647 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63e8
+00:58:48:647 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63ee
+00:58:48:647 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63f4
+00:58:48:647 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc63fa
+00:58:48:647 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6400
+00:58:48:647 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6406
+00:58:48:648 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc640c
+00:58:48:648 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6412
+00:58:48:648 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6418
+00:58:48:648 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc641e
+00:58:48:648 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6424
+00:58:48:648 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc642a
+00:58:48:648 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6430
+00:58:48:648 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6436
+00:58:48:649 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc643c
+00:58:48:649 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6442
+00:58:48:649 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6448
+00:58:48:649 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc644e
+00:58:48:649 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6454
+00:58:48:649 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc645a
+00:58:48:649 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6460
+00:58:48:650 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6466
+00:58:48:650 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc646c
+00:58:48:650 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6472
+00:58:48:650 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6478
+00:58:48:650 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc647e
+00:58:48:651 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6484
+00:58:48:651 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc648a
+00:58:48:651 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6490
+00:58:48:651 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6496
+00:58:48:651 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc649c
+00:58:48:652 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64a2
+00:58:48:652 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64a8
+00:58:48:652 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64ae
+00:58:48:652 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64b4
+00:58:48:652 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64ba
+00:58:48:652 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64c0
+00:58:48:652 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64c6
+00:58:48:653 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64cc
+00:58:48:653 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64d2
+00:58:48:653 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64d8
+00:58:48:653 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64de
+00:58:48:653 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64e4
+00:58:48:653 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64ea
+00:58:48:653 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64f0
+00:58:48:653 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64f6
+00:58:48:654 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc64fc
+00:58:48:654 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6502
+00:58:48:654 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6508
+00:58:48:654 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc650e
+00:58:48:654 [ WARNING ] stub_fixer.py:1377 : Unable to symbolize stub at 0x7ffb18cc6514
+00:58:48:654 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc651a, with names [b'_IDSCopyIDForEmailAddress\x00']
+00:58:48:654 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6520, with names [b'_IDSCopyIDForPhoneNumber\x00']
+00:58:48:654 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6526, with names [b'_IDSCopyLocalDeviceUniqueID\x00']
+00:58:48:654 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc652c, with names [b'_NSTemporaryDirectory\x00']
+00:58:48:655 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6532, with names [b'__Block_copy\x00']
+00:58:48:655 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6538, with names [b'__Block_release\x00']
+00:58:48:655 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc653e, with names [b'___bzero\x00']
+00:58:48:655 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6544, with names [b'___stack_chk_fail\x00']
+00:58:48:655 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc654a, with names [b'__os_log_impl\x00']
+00:58:48:655 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6550, with names [b'__swift_stdlib_bridgeErrorToNSError\x00']
+00:58:48:655 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6556, with names [b'__swift_stdlib_reportUnimplementedInitializer\x00']
+00:58:48:655 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc655c, with names [b'_malloc_size\x00']
+00:58:48:655 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6562, with names [b'_memcpy\x00']
+00:58:48:656 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6568, with names [b'_memmove\x00']
+00:58:48:656 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc656e, with names [b'_objc_allocWithZone\x00']
+00:58:48:656 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6574, with names [b'_objc_msgSend\x00']
+00:58:48:656 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc657a, with names [b'_objc_msgSendSuper2\x00']
+00:58:48:656 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6580, with names [b'_objc_opt_self\x00']
+00:58:48:656 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6586, with names [b'_objc_retainAutoreleasedReturnValue\x00']
+00:58:48:656 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc658c, with names [b'_os_log_type_enabled\x00']
+00:58:48:656 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6592, with names [b'_swift_allocBox\x00']
+00:58:48:656 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6598, with names [b'_swift_allocError\x00']
+00:58:48:656 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc659e, with names [b'_swift_allocObject\x00']
+00:58:48:657 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65a4, with names [b'_swift_allocateGenericClassMetadata\x00']
+00:58:48:657 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65aa, with names [b'_swift_allocateGenericValueMetadata\x00']
+00:58:48:657 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65b0, with names [b'_swift_arrayDestroy\x00']
+00:58:48:657 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65b6, with names [b'_swift_arrayInitWithCopy\x00']
+00:58:48:657 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65bc, with names [b'_swift_arrayInitWithTakeBackToFront\x00']
+00:58:48:657 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65c2, with names [b'_swift_arrayInitWithTakeFrontToBack\x00']
+00:58:48:657 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65c8, with names [b'_swift_beginAccess\x00']
+00:58:48:657 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65ce, with names [b'_swift_bridgeObjectRelease\x00']
+00:58:48:657 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65d4, with names [b'_swift_bridgeObjectRelease_n\x00']
+00:58:48:657 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65da, with names [b'_swift_bridgeObjectRetain\x00']
+00:58:48:657 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65e0, with names [b'_swift_bridgeObjectRetain_n\x00']
+00:58:48:658 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65e6, with names [b'_swift_checkMetadataState\x00']
+00:58:48:658 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65ec, with names [b'_swift_conformsToProtocol2\x00']
+00:58:48:658 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65f2, with names [b'_swift_deallocClassInstance\x00']
+00:58:48:658 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65f8, with names [b'_swift_deallocObject\x00']
+00:58:48:658 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc65fe, with names [b'_swift_defaultActor_deallocate\x00']
+00:58:48:658 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6604, with names [b'_swift_defaultActor_destroy\x00']
+00:58:48:658 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc660a, with names [b'_swift_defaultActor_initialize\x00']
+00:58:48:658 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6610, with names [b'_swift_dynamicCast\x00']
+00:58:48:658 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6616, with names [b'_swift_dynamicCastObjCClass\x00']
+00:58:48:658 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc661c, with names [b'_swift_endAccess\x00']
+00:58:48:659 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6622, with names [b'_swift_errorRelease\x00']
+00:58:48:659 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6628, with names [b'_swift_errorRetain\x00']
+00:58:48:659 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc662e, with names [b'_swift_getAssociatedConformanceWitness\x00']
+00:58:48:659 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6634, with names [b'_swift_getAssociatedTypeWitness\x00']
+00:58:48:659 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc663a, with names [b'_swift_getEnumCaseMultiPayload\x00']
+00:58:48:659 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6640, with names [b'_swift_getEnumTagSinglePayloadGeneric\x00']
+00:58:48:659 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6646, with names [b'_swift_getForeignTypeMetadata\x00']
+00:58:48:659 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc664c, with names [b'_swift_getGenericMetadata\x00']
+00:58:48:659 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6652, with names [b'_swift_getKeyPath\x00']
+00:58:48:659 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6658, with names [b'_swift_getMetatypeMetadata\x00']
+00:58:48:660 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc665e, with names [b'_swift_getObjCClassMetadata\x00']
+00:58:48:660 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6664, with names [b'_swift_getObjectType\x00']
+00:58:48:660 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc666a, with names [b'_swift_getSingletonMetadata\x00']
+00:58:48:660 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6670, with names [b'_swift_getTupleTypeMetadata2\x00']
+00:58:48:660 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6676, with names [b'_swift_getTypeByMangledNameInContext2\x00']
+00:58:48:660 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc667c, with names [b'_swift_getTypeByMangledNameInContextInMetadataState2\x00']
+00:58:48:660 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6682, with names [b'_swift_getWitnessTable\x00']
+00:58:48:660 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6688, with names [b'_swift_initClassMetadata2\x00']
+00:58:48:660 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc668e, with names [b'_swift_initEnumMetadataMultiPayload\x00']
+00:58:48:660 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6694, with names [b'_swift_initStackObject\x00']
+00:58:48:660 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc669a, with names [b'_swift_initStructMetadata\x00']
+00:58:48:660 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66a0, with names [b'_swift_isClassType\x00']
+00:58:48:661 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66a6, with names [b'_swift_isUniquelyReferenced_nonNull_native\x00']
+00:58:48:661 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66ac, with names [b'_swift_lookUpClassMethod\x00']
+00:58:48:661 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66b2, with names [b'_swift_makeBoxUnique\x00']
+00:58:48:661 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66b8, with names [b'_swift_once\x00']
+00:58:48:661 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66be, with names [b'_swift_release\x00']
+00:58:48:661 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66c4, with names [b'_swift_release_n\x00']
+00:58:48:661 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66ca, with names [b'_swift_retain\x00']
+00:58:48:661 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66d0, with names [b'_swift_retain_n\x00']
+00:58:48:661 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66d6, with names [b'_swift_setDeallocating\x00']
+00:58:48:661 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66dc, with names [b'_swift_slowAlloc\x00']
+00:58:48:661 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66e2, with names [b'_swift_slowDealloc\x00']
+00:58:48:661 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66e8, with names [b'_swift_storeEnumTagMultiPayload\x00']
+00:58:48:662 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66ee, with names [b'_swift_storeEnumTagSinglePayloadGeneric\x00']
+00:58:48:662 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66f4, with names [b'_swift_task_alloc\x00']
+00:58:48:662 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc66fa, with names [b'_swift_task_create\x00']
+00:58:48:662 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6700, with names [b'_swift_task_dealloc\x00']
+00:58:48:662 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6706, with names [b'_swift_task_switch\x00']
+00:58:48:662 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc670c, with names [b'_swift_unexpectedError\x00']
+00:58:48:662 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6712, with names [b'_swift_unknownObjectRelease\x00']
+00:58:48:662 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6718, with names [b'_swift_unknownObjectRetain\x00']
+00:58:48:662 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc671e, with names [b'_swift_unknownObjectWeakAssign\x00']
+00:58:48:662 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6724, with names [b'_swift_unknownObjectWeakDestroy\x00']
+00:58:48:662 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc672a, with names [b'_swift_unknownObjectWeakInit\x00']
+00:58:48:663 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6730, with names [b'_swift_unknownObjectWeakLoadStrong\x00']
+00:58:48:663 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6736, with names [b'_swift_updateClassMetadata2\x00']
+00:58:48:663 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc673c, with names [b'_swift_weakDestroy\x00']
+00:58:48:663 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6742, with names [b'_swift_weakInit\x00']
+00:58:48:663 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6748, with names [b'_swift_weakLoadStrong\x00']
+00:58:48:663 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc674e, with names [b'_swift_willThrow\x00']
+00:58:48:663 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ffb18cc6754, with names [b'_swift_willThrowTypedImpl\x00']
+ObjC Fixer >> Fixing Stubs :: [|]
+ObjC Fixer >> Processing Classes :: [/]
+00:58:48:764 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ffb4263c360 points to class outside MachO file.
+00:58:48:764 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ffb4263c368 points to class outside MachO file.
+00:58:48:765 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ffb4263c370 points to class outside MachO file.
+00:58:48:765 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ffb4263c378 points to class outside MachO file.
+00:58:48:765 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ffb4263c380 points to class outside MachO file.
+00:58:48:765 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ffb4263c388 points to class outside MachO file.
+00:58:48:765 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ffb4263c390 points to class outside MachO file.
+ObjC Fixer >> Processing Protocols :: [-]
+00:58:48:765 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ffb4263c398 points to protocol outside MachO file.
+00:58:48:766 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ffb4263c3a0 points to protocol outside MachO file.
+00:58:48:766 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ffb4263c3a8 points to protocol outside MachO file.
+00:58:48:766 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ffb4263c3b0 points to protocol outside MachO file.
+00:58:48:766 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ffb4263c3b8 points to protocol outside MachO file.
+00:58:48:766 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ffb4263c3c0 points to protocol outside MachO file.
+ObjC Fixer >> Processing Selector References :: [\]
+Traceback (most recent call last):
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/bluebubbles-helper-findmy-docs/../tools/DyldExtractor/bin/dyldex", line 285, in <module>
+    main()
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/bluebubbles-helper-findmy-docs/../tools/DyldExtractor/bin/dyldex", line 280, in main
+    _extractImage(args.dyld_path, dyldCtx, imageMap[targetPaths[0]], outputPath)
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/bluebubbles-helper-findmy-docs/../tools/DyldExtractor/bin/dyldex", line 146, in _extractImage
+    objc_fixer.fixObjC(extractionCtx)
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/tools/DyldExtractor/src/DyldExtractor/converter/objc_fixer.py", line 1617, in fixObjC
+    _ObjCFixer(extractionCtx).run()
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/tools/DyldExtractor/src/DyldExtractor/converter/objc_fixer.py", line 459, in run
+    self._processSections()
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/tools/DyldExtractor/src/DyldExtractor/converter/objc_fixer.py", line 690, in _processSections
+    struct.pack("<Q", newPtr)
+struct.error: required argument is not an integer

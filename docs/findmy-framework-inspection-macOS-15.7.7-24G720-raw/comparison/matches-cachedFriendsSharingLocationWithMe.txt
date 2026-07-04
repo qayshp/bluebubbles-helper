@@ -1,0 +1,9 @@
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:4cachedFriendsSharingLocationWithMeSaySo9FMLFriendCGyF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:_objc_msgSend$cachedFriendsSharingLocationWithMe
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:cachedFriendsSharingLocationWithMe
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e.01:cachedFriendsSharingLocationWithMe()
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-arm64e-target-api-strings.txt:dyld_shared_cache_arm64e:cachedFriendsSharingLocationWithMe
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:4cachedFriendsSharingLocationWithMeSaySo9FMLFriendCGyF
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:cachedFriendsSharingLocationWithMe
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64.03:cachedFriendsSharingLocationWithMe()
+docs/findmy-framework-inspection-macOS-15.7.7-24G720-raw/strings/dyld-cache-x86_64-target-api-strings.txt:dyld_shared_cache_x86_64:cachedFriendsSharingLocationWithMe

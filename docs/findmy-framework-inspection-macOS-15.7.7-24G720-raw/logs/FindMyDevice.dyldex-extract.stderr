@@ -1,0 +1,137 @@
+-- >> -- :: [/]
+Slide Info Rebaser >> -- :: [-]
+Slide Info Rebaser >> Rebasing Pages :: [\]
+Optimize Linkedit >> Rebasing Pages :: [|]
+Optimize Linkedit >> Copy Binding Info :: [/]
+Optimize Linkedit >> Copy Weak Binding Info :: [-]
+Optimize Linkedit >> Copy Lazy Binding Info :: [\]
+Optimize Linkedit >> Copy Export Info :: [|]
+Optimize Linkedit >> Search Redacted Symbols :: [/]
+Optimize Linkedit >> Copy Local Symbols :: [-]
+00:58:43:779 [  ERROR  ] linkedit_optimizer.py:271 : Symbols Cache doesn't contain local symbols.
+Optimize Linkedit >> Copy Imported Symbols :: [\]
+Optimize Linkedit >> Copy Function Starts :: [|]
+Optimize Linkedit >> Copy Data In Code :: [/]
+Optimize Linkedit >> Copy Indirect Symbol Table :: [-]
+Optimize Linkedit >> Copy String Pool :: [\]
+Stub Fixer >> Copy String Pool :: [|]
+Stub Fixer >> Caching Symbols :: [/]
+Stub Fixer >> Caching Symbols :: [-]
+Stub Fixer >> Caching Symbols :: [\]
+Stub Fixer >> Caching Symbols :: [|]
+Stub Fixer >> Caching Symbols :: [/]
+Stub Fixer >> Caching Symbols :: [-]
+Stub Fixer >> Caching Symbols :: [\]
+Stub Fixer >> Fixing Stubs :: [|]
+00:58:44:955 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f2a, with names [b'_AuthorizationCopyRights\x00']
+00:58:44:955 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f30, with names [b'_AuthorizationCreate\x00']
+00:58:44:955 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f36, with names [b'_AuthorizationFree\x00']
+00:58:44:955 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f3c, with names [b'_AuthorizationMakeExternalForm\x00']
+00:58:44:955 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f42, with names [b'_CFNotificationCenterAddObserver\x00']
+00:58:44:956 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f48, with names [b'_CFNotificationCenterGetDarwinNotifyCenter\x00']
+00:58:44:956 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f4e, with names [b'_CFNotificationCenterRemoveObserver\x00']
+00:58:44:956 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f54, with names [b'_NSStringFromSelector\x00']
+00:58:44:956 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f5a, with names [b'__Block_object_assign\x00']
+00:58:44:956 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f60, with names [b'__Block_object_dispose\x00']
+00:58:44:956 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f66, with names [b'__Unwind_Resume\x00']
+00:58:44:956 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f6c, with names [b'___stack_chk_fail\x00']
+00:58:44:956 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f72, with names [b'__os_log_debug_impl\x00']
+00:58:44:956 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f78, with names [b'__os_log_error_impl\x00']
+00:58:44:956 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f7e, with names [b'__os_log_impl\x00']
+00:58:44:956 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f84, with names [b'_dispatch_async\x00']
+00:58:44:956 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f8a, with names [b'_dispatch_get_global_queue\x00']
+00:58:44:957 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f90, with names [b'_dispatch_once\x00']
+00:58:44:957 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f96, with names [b'_dispatch_queue_create\x00']
+00:58:44:957 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48f9c, with names [b'_dispatch_sync\x00']
+00:58:44:957 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48fa2, with names [b'_getuid\x00']
+00:58:44:957 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48fa8, with names [b'_objc_alloc\x00']
+00:58:44:957 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48fae, with names [b'_objc_alloc_init\x00']
+00:58:44:957 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48fb4, with names [b'_objc_autoreleasePoolPop\x00']
+00:58:44:957 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48fba, with names [b'_objc_autoreleasePoolPush\x00']
+00:58:44:957 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48fc0, with names [b'_objc_autoreleaseReturnValue\x00']
+00:58:44:957 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48fc6, with names [b'_objc_copyWeak\x00']
+00:58:44:957 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48fcc, with names [b'_objc_destroyWeak\x00']
+00:58:44:957 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48fd2, with names [b'_objc_getProperty\x00']
+00:58:44:958 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48fd8, with names [b'_objc_initWeak\x00']
+00:58:44:958 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48fde, with names [b'_objc_loadWeakRetained\x00']
+00:58:44:958 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48fe4, with names [b'_objc_msgSendSuper2\x00']
+00:58:44:958 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48fea, with names [b'_objc_opt_class\x00']
+00:58:44:958 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48ff0, with names [b'_objc_opt_isKindOfClass\x00']
+00:58:44:958 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48ff6, with names [b'_objc_opt_new\x00']
+00:58:44:958 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a48ffc, with names [b'_objc_opt_respondsToSelector\x00']
+00:58:44:958 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a49002, with names [b'_objc_retainAutorelease\x00']
+00:58:44:958 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a49008, with names [b'_objc_retainAutoreleaseReturnValue\x00']
+00:58:44:958 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a4900e, with names [b'_objc_retainAutoreleasedReturnValue\x00']
+00:58:44:958 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a49014, with names [b'_objc_setProperty_atomic\x00']
+00:58:44:958 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a4901a, with names [b'_objc_setProperty_atomic_copy\x00']
+00:58:44:959 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a49020, with names [b'_objc_setProperty_nonatomic_copy\x00']
+00:58:44:959 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a49026, with names [b'_objc_storeStrong\x00']
+00:58:44:959 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a4902c, with names [b'_objc_unsafeClaimAutoreleasedReturnValue\x00']
+00:58:44:959 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a49032, with names [b'_os_log_create\x00']
+00:58:44:959 [ WARNING ] stub_fixer.py:1399 : Unable to find a symbol pointer for stub at 0x7ff909a49038, with names [b'_os_log_type_enabled\x00']
+ObjC Fixer >> Fixing Stubs :: [/]
+ObjC Fixer >> Processing Classes :: [-]
+00:58:44:992 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9030 points to class outside MachO file.
+00:58:44:992 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9038 points to class outside MachO file.
+00:58:44:992 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9040 points to class outside MachO file.
+00:58:44:992 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9048 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9050 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9058 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9060 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9068 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9070 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9078 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9080 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9088 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9090 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad9098 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad90a0 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad90a8 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad90b0 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad90b8 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad90c0 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad90c8 points to class outside MachO file.
+00:58:44:993 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad90d0 points to class outside MachO file.
+00:58:44:994 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad90d8 points to class outside MachO file.
+00:58:44:994 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad90e0 points to class outside MachO file.
+00:58:44:994 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad90e8 points to class outside MachO file.
+00:58:44:994 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad90f0 points to class outside MachO file.
+00:58:44:994 [ WARNING ] objc_fixer.py:652 : Class pointer at 0x7ff940ad90f8 points to class outside MachO file.
+ObjC Fixer >> Processing Categories :: [\]
+00:58:44:994 [ WARNING ] objc_fixer.py:664 : Category pointer at 0x7ff940ad9100 points to category outside MachO file.
+ObjC Fixer >> Processing Protocols :: [|]
+00:58:44:994 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9108 points to protocol outside MachO file.
+00:58:44:994 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9110 points to protocol outside MachO file.
+00:58:44:994 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9118 points to protocol outside MachO file.
+00:58:44:994 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9120 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9128 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9130 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9138 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9140 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9148 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9150 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9158 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9160 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9168 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9170 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9178 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9180 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9188 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9190 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad9198 points to protocol outside MachO file.
+00:58:44:995 [ WARNING ] objc_fixer.py:676 : Protocol pointer at 0x7ff940ad91a0 points to protocol outside MachO file.
+ObjC Fixer >> Processing Selector References :: [/]
+Traceback (most recent call last):
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/bluebubbles-helper-findmy-docs/../tools/DyldExtractor/bin/dyldex", line 285, in <module>
+    main()
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/bluebubbles-helper-findmy-docs/../tools/DyldExtractor/bin/dyldex", line 280, in main
+    _extractImage(args.dyld_path, dyldCtx, imageMap[targetPaths[0]], outputPath)
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/bluebubbles-helper-findmy-docs/../tools/DyldExtractor/bin/dyldex", line 146, in _extractImage
+    objc_fixer.fixObjC(extractionCtx)
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/tools/DyldExtractor/src/DyldExtractor/converter/objc_fixer.py", line 1617, in fixObjC
+    _ObjCFixer(extractionCtx).run()
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/tools/DyldExtractor/src/DyldExtractor/converter/objc_fixer.py", line 459, in run
+    self._processSections()
+  File "/Users/qayspoonawala/Documents/Codex/2026-06-13/use-the-local-blue-bubbles-installation/tools/DyldExtractor/src/DyldExtractor/converter/objc_fixer.py", line 690, in _processSections
+    struct.pack("<Q", newPtr)
+struct.error: required argument is not an integer
