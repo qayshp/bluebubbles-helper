@@ -112,7 +112,7 @@
 		A68E87E028C3B04500882823 /* IMFileTransferCenter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IMFileTransferCenter.h; sourceTree = "<group>"; };
 		A68E87E128C3B18900882823 /* IMSharedUtilities.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IMSharedUtilities.framework; path = /System/Library/PrivateFrameworks/IMSharedUtilities.framework; sourceTree = "<group>"; };
 		A69960E92B1F9A6F0081FB69 /* FMF.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FMF.framework; path = ../../../../../../System/Library/PrivateFrameworks/FMF.framework; sourceTree = "<group>"; };
-		A69960ED2B2004540081FB69 /* FindMyLocateObjCWrapper.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyLocateObjCWrapper.framework; path = ../../../../Downloads/FindMyLocateObjCWrapper.framework; sourceTree = "<group>"; };
+		A69960ED2B2004540081FB69 /* FindMyLocateObjCWrapper.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyLocateObjCWrapper.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyLocateObjCWrapper.framework; sourceTree = "<group>"; };
 		A69960F12B2005100081FB69 /* FMLSession.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMLSession.h; sourceTree = "<group>"; };
 		A69960F22B20D7B40081FB69 /* CTBlockDescription.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CTBlockDescription.h; sourceTree = "<group>"; };
 		A69960F42B20D8860081FB69 /* CTBlockDescription.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CTBlockDescription.m; sourceTree = "<group>"; };
@@ -140,6 +140,22 @@
 		FBCE4ED8201C0FDE002F8A61 /* IMPerson.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IMPerson.h; sourceTree = "<group>"; };
 		FBCE4ED9201C0FDE002F8A61 /* IMHandle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IMHandle.h; sourceTree = "<group>"; };
 		FBCE4EDA201C0FDE002F8A61 /* IMAccount.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IMAccount.h; sourceTree = "<group>"; };
+		BBF000000000000000000101 /* FindMyBase.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyBase.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyBase.framework; sourceTree = "<group>"; };
+		BBF000000000000000000102 /* FindMyBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyBluetooth.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyBluetooth.framework; sourceTree = "<group>"; };
+		BBF000000000000000000103 /* FindMyCloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyCloudKit.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyCloudKit.framework; sourceTree = "<group>"; };
+		BBF000000000000000000104 /* FindMyCommon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyCommon.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyCommon.framework; sourceTree = "<group>"; };
+		BBF000000000000000000105 /* FindMyCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyCore.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyCore.framework; sourceTree = "<group>"; };
+		BBF000000000000000000106 /* FindMyCrypto.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyCrypto.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyCrypto.framework; sourceTree = "<group>"; };
+		BBF000000000000000000107 /* FindMyDaemonSupport.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyDaemonSupport.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyDaemonSupport.framework; sourceTree = "<group>"; };
+		BBF000000000000000000108 /* FindMyDevice.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyDevice.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyDevice.framework; sourceTree = "<group>"; };
+		BBF000000000000000000109 /* FindMyDeviceUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyDeviceUI.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyDeviceUI.framework; sourceTree = "<group>"; };
+		BBF000000000000000000110 /* FindMyLocate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyLocate.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyLocate.framework; sourceTree = "<group>"; };
+		BBF000000000000000000112 /* FindMyMac.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyMac.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyMac.framework; sourceTree = "<group>"; };
+		BBF000000000000000000113 /* FindMyMessaging.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyMessaging.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyMessaging.framework; sourceTree = "<group>"; };
+		BBF000000000000000000114 /* FindMyPairing.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyPairing.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyPairing.framework; sourceTree = "<group>"; };
+		BBF000000000000000000115 /* FindMyServerInteraction.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyServerInteraction.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyServerInteraction.framework; sourceTree = "<group>"; };
+		BBF000000000000000000116 /* FindMyStorage.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyStorage.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyStorage.framework; sourceTree = "<group>"; };
+		BBF000000000000000000117 /* FindMyUnsafeAsyncBridging.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyUnsafeAsyncBridging.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyUnsafeAsyncBridging.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -204,7 +220,23 @@
 				A6436F332FA6DCAE00BD241F /* ChatKit.framework */,
 				A623AA3E2F9EC7190054D931 /* libCocoaAsyncSocket.a */,
 				A623AA3C2F9EC6930054D931 /* libCocoaAsyncSocket.a */,
+				BBF000000000000000000101 /* FindMyBase.framework */,
+				BBF000000000000000000102 /* FindMyBluetooth.framework */,
+				BBF000000000000000000103 /* FindMyCloudKit.framework */,
+				BBF000000000000000000104 /* FindMyCommon.framework */,
+				BBF000000000000000000105 /* FindMyCore.framework */,
+				BBF000000000000000000106 /* FindMyCrypto.framework */,
+				BBF000000000000000000107 /* FindMyDaemonSupport.framework */,
+				BBF000000000000000000108 /* FindMyDevice.framework */,
+				BBF000000000000000000109 /* FindMyDeviceUI.framework */,
+				BBF000000000000000000110 /* FindMyLocate.framework */,
 				A69960ED2B2004540081FB69 /* FindMyLocateObjCWrapper.framework */,
+				BBF000000000000000000112 /* FindMyMac.framework */,
+				BBF000000000000000000113 /* FindMyMessaging.framework */,
+				BBF000000000000000000114 /* FindMyPairing.framework */,
+				BBF000000000000000000115 /* FindMyServerInteraction.framework */,
+				BBF000000000000000000116 /* FindMyStorage.framework */,
+				BBF000000000000000000117 /* FindMyUnsafeAsyncBridging.framework */,
 				A69960E92B1F9A6F0081FB69 /* FMF.framework */,
 				A61DC0272A59FFF200EA75A5 /* IDS.framework */,
 				A6490A18298AC986002B0E1D /* SocialAppsCore.framework */,
