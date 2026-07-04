@@ -1,0 +1,21 @@
+/System/Library/PrivateFrameworks/FindMyBase.framework/Versions/A/FindMyBase
+/System/Library/PrivateFrameworks/FindMyCommon.framework/Versions/A/FindMyCommon
+/System/Library/PrivateFrameworks/FindMyStorage.framework/Versions/A/FindMyStorage
+/System/Library/PrivateFrameworks/FindMyDaemonSupport.framework/Versions/A/FindMyDaemonSupport
+/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation
+/usr/lib/libobjc.A.dylib
+/usr/lib/libSystem.B.dylib
+/System/Library/Frameworks/CloudKit.framework/Versions/A/CloudKit
+/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation
+/System/Library/PrivateFrameworks/SwiftSQLite.framework/Versions/A/SwiftSQLite
+/usr/lib/swift/libswiftCore.dylib
+(Weak) /usr/lib/swift/libswiftCoreFoundation.dylib
+(Weak) /usr/lib/swift/libswiftCoreLocation.dylib
+(Weak) /usr/lib/swift/libswiftDispatch.dylib
+(Weak) /usr/lib/swift/libswiftIOKit.dylib
+/usr/lib/swift/libswiftObjectiveC.dylib
+(Weak) /usr/lib/swift/libswiftUniformTypeIdentifiers.dylib
+(Weak) /usr/lib/swift/libswiftXPC.dylib
+(Weak) /usr/lib/swift/libswift_Builtin_float.dylib
+/usr/lib/swift/libswift_Concurrency.dylib
+/usr/lib/swift/libswiftos.dylib

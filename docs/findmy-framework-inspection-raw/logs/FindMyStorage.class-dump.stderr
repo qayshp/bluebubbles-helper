@@ -1,0 +1,2 @@
+2026-07-04 00:27:21.567 class-dump[68128:706768] Unknown load command: 0x80000033
+2026-07-04 00:27:21.567 class-dump[68128:706768] Error: Cannot find offset for address 0x20000118c29fe0 in dataOffsetForAddress:

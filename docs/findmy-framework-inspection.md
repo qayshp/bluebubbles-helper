@@ -2,11 +2,13 @@
 
 Generated on macOS 26.5 from the 17 `FindMy*.framework` references in `FindMy/MacOS-16+/BlueBubblesHelper.xcodeproj`.
 
-Raw extraction and tool outputs are in:
+Raw class-dump/ktool outputs and logs are preserved in this repo:
 
 ```text
-/tmp/bluebubbles-findmy-tools/inspection
+docs/findmy-framework-inspection-raw
 ```
+
+The temporary tool build directory was `/tmp/bluebubbles-findmy-tools`. The dyld-cache extraction directory was not preserved because it contained 5.2 GB of Apple system binaries; only the generated raw inspection outputs were kept.
 
 ## Tooling
 

@@ -1,0 +1,14 @@
+/System/Library/PrivateFrameworks/FindMyBase.framework/Versions/A/FindMyBase
+/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation
+/usr/lib/libobjc.A.dylib
+/usr/lib/libSystem.B.dylib
+/System/Library/Frameworks/CryptoKit.framework/Versions/A/CryptoKit
+/usr/lib/swift/libswiftCore.dylib
+(Weak) /usr/lib/swift/libswiftCoreFoundation.dylib
+(Weak) /usr/lib/swift/libswiftDispatch.dylib
+(Weak) /usr/lib/swift/libswiftIOKit.dylib
+(Weak) /usr/lib/swift/libswiftObjectiveC.dylib
+(Weak) /usr/lib/swift/libswiftXPC.dylib
+(Weak) /usr/lib/swift/libswift_Builtin_float.dylib
+/usr/lib/swift/libswift_Concurrency.dylib
+/usr/lib/swift/libswiftos.dylib

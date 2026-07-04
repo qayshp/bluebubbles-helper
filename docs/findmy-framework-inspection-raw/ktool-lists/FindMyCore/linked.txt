@@ -1,0 +1,34 @@
+/System/Library/PrivateFrameworks/SPOwner.framework/Versions/A/SPOwner
+/System/Library/PrivateFrameworks/FindMyBase.framework/Versions/A/FindMyBase
+/System/Library/PrivateFrameworks/FindMyLocate.framework/Versions/A/FindMyLocate
+/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation
+/usr/lib/libobjc.A.dylib
+/usr/lib/libSystem.B.dylib
+/System/Library/Frameworks/AppIntents.framework/Versions/A/AppIntents
+/System/Library/Frameworks/Contacts.framework/Versions/A/Contacts
+/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation
+/System/Library/Frameworks/CoreLocation.framework/Versions/A/CoreLocation
+/System/Library/Frameworks/CoreTransferable.framework/Versions/A/CoreTransferable
+/System/Library/Frameworks/GeoToolbox.framework/Versions/A/GeoToolbox
+/System/Library/Frameworks/_GeoToolbox_AppIntents.framework/Versions/A/_GeoToolbox_AppIntents
+/System/Library/Frameworks/_LocationEssentials.framework/Versions/A/_LocationEssentials
+/System/Library/PrivateFrameworks/CorePhoneNumbers.framework/Versions/A/CorePhoneNumbers
+/System/Library/PrivateFrameworks/FeatureFlags.framework/Versions/A/FeatureFlags
+(Weak) /usr/lib/swift/libswiftAccelerate.dylib
+(Weak) /usr/lib/swift/libswiftCompression.dylib
+/usr/lib/swift/libswiftCore.dylib
+(Weak) /usr/lib/swift/libswiftCoreFoundation.dylib
+(Weak) /usr/lib/swift/libswiftCoreLocation.dylib
+(Weak) /usr/lib/swift/libswiftDispatch.dylib
+(Weak) /usr/lib/swift/libswiftIOKit.dylib
+(Weak) /usr/lib/swift/libswiftIntents.dylib
+(Weak) /usr/lib/swift/libswiftMetal.dylib
+(Weak) /usr/lib/swift/libswiftOSLog.dylib
+(Weak) /usr/lib/swift/libswiftObjectiveC.dylib
+(Weak) /usr/lib/swift/libswiftQuartzCore.dylib
+/usr/lib/swift/libswiftUniformTypeIdentifiers.dylib
+(Weak) /usr/lib/swift/libswiftXPC.dylib
+(Weak) /usr/lib/swift/libswift_Builtin_float.dylib
+/usr/lib/swift/libswift_Concurrency.dylib
+/usr/lib/swift/libswiftos.dylib
+(Weak) /usr/lib/swift/libswiftsimd.dylib

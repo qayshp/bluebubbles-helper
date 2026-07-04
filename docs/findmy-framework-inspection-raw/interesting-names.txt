@@ -1,0 +1,21 @@
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyCommon/linked.txt:6:/System/Library/Frameworks/Accounts.framework/Versions/A/Accounts
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyDeviceUI/linked.txt:4:(Weak) /System/Library/PrivateFrameworks/SPOwner.framework/Versions/A/SPOwner
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyDeviceUI/linked.txt:9:/System/Library/PrivateFrameworks/FindMyDevice.framework/Versions/A/FindMyDevice
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyBluetooth/linked.txt:5:/System/Library/Frameworks/CoreBluetooth.framework/Versions/A/CoreBluetooth
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyBluetooth/linked.txt:6:/System/Library/PrivateFrameworks/FindMyCrypto.framework/Versions/A/FindMyCrypto
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyBase/linked.txt:5:/System/Library/Frameworks/CryptoKit.framework/Versions/A/CryptoKit
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyCore/linked.txt:1:/System/Library/PrivateFrameworks/SPOwner.framework/Versions/A/SPOwner
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyCore/linked.txt:3:/System/Library/PrivateFrameworks/FindMyLocate.framework/Versions/A/FindMyLocate
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyCore/linked.txt:10:/System/Library/Frameworks/CoreLocation.framework/Versions/A/CoreLocation
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyCore/linked.txt:14:/System/Library/Frameworks/_LocationEssentials.framework/Versions/A/_LocationEssentials
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyCore/linked.txt:21:(Weak) /usr/lib/swift/libswiftCoreLocation.dylib
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyCrypto/linked.txt:5:/System/Library/Frameworks/CryptoKit.framework/Versions/A/CryptoKit
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyLocate/linked.txt:8:/System/Library/Frameworks/Accounts.framework/Versions/A/Accounts
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyLocate/linked.txt:10:/System/Library/Frameworks/_LocationEssentials.framework/Versions/A/_LocationEssentials
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyLocate/linked.txt:18:(Weak) /usr/lib/swift/libswiftCoreLocation.dylib
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyCloudKit/linked.txt:3:/System/Library/PrivateFrameworks/FindMyStorage.framework/Versions/A/FindMyStorage
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyCloudKit/linked.txt:8:/System/Library/Frameworks/CloudKit.framework/Versions/A/CloudKit
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyCloudKit/linked.txt:13:(Weak) /usr/lib/swift/libswiftCoreLocation.dylib
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyLocateObjCWrapper/linked.txt:2:/System/Library/PrivateFrameworks/FindMyLocate.framework/Versions/A/FindMyLocate
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyLocateObjCWrapper/linked.txt:10:(Weak) /usr/lib/swift/libswiftCoreLocation.dylib
+/tmp/bluebubbles-findmy-tools/inspection/ktool-lists/FindMyDaemonSupport/linked.txt:1:/System/Library/PrivateFrameworks/AppleKeyStore.framework/Versions/A/AppleKeyStore

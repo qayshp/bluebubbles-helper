@@ -1,0 +1,25 @@
+/private/tmp/bluebubbles-findmy-tools/ktool-venv/lib/python3.14/site-packages/ktool/util.py:26: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+Traceback (most recent call last):
+  File "/tmp/bluebubbles-findmy-tools/ktool-venv/bin/ktool", line 6, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/private/tmp/bluebubbles-findmy-tools/ktool-venv/lib/python3.14/site-packages/ktool/ktool_script.py", line 412, in main
+    args.func(args)
+    ~~~~~~~~~^^^^^^
+  File "/private/tmp/bluebubbles-findmy-tools/ktool-venv/lib/python3.14/site-packages/ktool/ktool_script.py", line 890, in _list
+    swift_image = ktool.ktool.load_swift_metadata(objc_image)
+  File "/private/tmp/bluebubbles-findmy-tools/ktool-venv/lib/python3.14/site-packages/ktool/ktool.py", line 146, in load_swift_metadata
+    return SwiftImage.from_image(objc_image)
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/private/tmp/bluebubbles-findmy-tools/ktool-venv/lib/python3.14/site-packages/ktool/swift.py", line 223, in from_image
+    types.append(SwiftType.from_image(image, objc_image, type_off))
+                 ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/bluebubbles-findmy-tools/ktool-venv/lib/python3.14/site-packages/ktool/swift.py", line 184, in from_image
+    kind = ContextDescriptorKind(image.read_uint(type_location, 1, vm=True) & 0x1f)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/enum.py", line 709, in __call__
+    return cls.__new__(cls, value)
+           ~~~~~~~~~~~^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/enum.py", line 1194, in __new__
+    raise ve_exc
+ValueError: 20 is not a valid ContextDescriptorKind

@@ -1,0 +1,8 @@
+/System/Library/PrivateFrameworks/FMCoreLite.framework/Versions/A/FMCoreLite
+/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation
+/System/Library/Frameworks/Security.framework/Versions/A/Security
+/System/Library/Frameworks/LocalAuthentication.framework/Versions/A/LocalAuthentication
+(Weak) /System/Library/PrivateFrameworks/InternationalSupport.framework/Versions/A/InternationalSupport
+/usr/lib/libobjc.A.dylib
+/usr/lib/libSystem.B.dylib
+/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation

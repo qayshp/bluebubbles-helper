@@ -1,0 +1,17 @@
+FindMyBase,0,2,0,0,0,0,0,20
+FindMyBluetooth,0,2,0,0,0,0,0,15
+FindMyCloudKit,0,2,0,0,0,0,0,21
+FindMyCommon,0,2,0,0,0,0,0,18
+FindMyCore,0,2,0,0,0,0,0,34
+FindMyCrypto,1,2,0,0,0,0,0,14
+FindMyDaemonSupport,0,2,0,0,0,0,0,16
+FindMyDevice,0,2,0,0,0,0,0,8
+FindMyDeviceUI,0,2,0,0,0,0,0,13
+FindMyLocate,0,2,0,0,0,0,0,31
+FindMyLocateObjCWrapper,0,2,0,0,0,0,0,23
+FindMyMac,1,2,0,0,0,0,0,10
+FindMyMessaging,0,2,0,0,0,0,0,17
+FindMyPairing,0,2,0,0,0,0,0,13
+FindMyServerInteraction,0,2,0,0,0,0,0,16
+FindMyStorage,0,2,0,0,0,0,0,15
+FindMyUnsafeAsyncBridging,0,2,0,0,0,0,0,15

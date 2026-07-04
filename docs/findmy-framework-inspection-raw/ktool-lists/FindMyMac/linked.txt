@@ -1,0 +1,10 @@
+/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation
+/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation
+/System/Library/PrivateFrameworks/DiskManagement.framework/Versions/A/DiskManagement
+/System/Library/Frameworks/DiskArbitration.framework/Versions/A/DiskArbitration
+/System/Library/Frameworks/IOKit.framework/Versions/A/IOKit
+/System/Library/Frameworks/SystemConfiguration.framework/Versions/A/SystemConfiguration
+/System/Library/PrivateFrameworks/RemoteServiceDiscovery.framework/Versions/A/RemoteServiceDiscovery
+/System/Library/PrivateFrameworks/MobileActivationMacOS.framework/Versions/A/MobileActivationMacOS
+/usr/lib/libobjc.A.dylib
+/usr/lib/libSystem.B.dylib
