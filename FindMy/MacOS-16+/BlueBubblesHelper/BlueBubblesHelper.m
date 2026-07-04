@@ -57,6 +57,14 @@
 #import "CKConversation.h"
 #import "CKConversationList.h"
 
+@interface BlueBubblesHelper ()
+- (FindMyLocateSession *)findMyLocateSession;
+- (void)handleFindMyFriendsRefreshWithTransaction:(NSString *)transaction;
+- (NSDictionary *)serializeFMLFriend:(id)friend handle:(id)handle location:(id)location;
+- (NSDictionary *)serializeFMLHandle:(id)handle;
+- (NSDictionary *)serializeFMLLocation:(id)location handle:(id)handle;
+@end
+
 // todo remove
 @interface IMChat (TahoeEdit)
 - (void)editMessageItem:(id)arg1 atPartIndex:(long)arg2 withNewPartText:(id)arg3 newPartTranslation:(id)arg4 backwardCompatabilityText:(id)arg5;
@@ -96,6 +104,7 @@
 static os_log_t logger;
 static NetworkController *networkController;
 static NSMutableArray* vettedAliases;
+static FindMyLocateSession *findMyLocateSession;
 
 // BlueBubblesHelper is a singleton
 + (instancetype)sharedInstance {
@@ -272,6 +281,220 @@ static NSMutableArray* vettedAliases;
             [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Failed to find handle!"}];
             os_log(logger, "Failed to find handle '%@' (%@ participant)", address, isAdding ? @"add" : @"remove");
         }
+    }
+}
+
+- (id)objectValueFromObject:(id)object selector:(SEL)selector {
+    if (object == nil || ![object respondsToSelector:selector]) {
+        return nil;
+    }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+    return [object performSelector:selector];
+#pragma clang diagnostic pop
+}
+
+- (FindMyLocateSession *)findMyLocateSession {
+    if (findMyLocateSession != nil) {
+        return findMyLocateSession;
+    }
+
+    Class sessionClass = NSClassFromString(@"FindMyLocateSession");
+    if (sessionClass == nil) {
+        NSError *loadError = nil;
+        NSBundle *wrapperBundle = [NSBundle bundleWithPath:@"/System/Library/PrivateFrameworks/FindMyLocateObjCWrapper.framework"];
+        if (![wrapperBundle loadAndReturnError:&loadError]) {
+            DLog("BLUEBUBBLESHELPER: Failed to load FindMyLocateObjCWrapper.framework: %@", loadError);
+        }
+        sessionClass = NSClassFromString(@"FindMyLocateSession");
+    }
+
+    if (sessionClass == nil) {
+        DLog("BLUEBUBBLESHELPER: FindMyLocateSession class is unavailable");
+        return nil;
+    }
+
+    findMyLocateSession = [[sessionClass alloc] init];
+    if ([findMyLocateSession respondsToSelector:@selector(startUpdatingFriendsWithInitialUpdates:completion:)]) {
+        [findMyLocateSession startUpdatingFriendsWithInitialUpdates:TRUE completion:^(void) {
+            DLog("BLUEBUBBLESHELPER: FindMyLocateSession started updating friends");
+        }];
+    }
+    if ([findMyLocateSession respondsToSelector:@selector(startMonitoringActiveLocationSharingDeviceChangeWithCompletion:)]) {
+        [findMyLocateSession startMonitoringActiveLocationSharingDeviceChangeWithCompletion:^(void) {
+            DLog("BLUEBUBBLESHELPER: FindMyLocateSession started active device monitoring");
+        }];
+    }
+
+    return findMyLocateSession;
+}
+
+- (id)handleForFMLFriend:(id)friend {
+    if (friend == nil) {
+        return nil;
+    }
+    if ([friend isKindOfClass:NSClassFromString(@"FMLHandle")]) {
+        return friend;
+    }
+    return [self objectValueFromObject:friend selector:@selector(handle)];
+}
+
+- (NSString *)identifierForFMLHandle:(id)handle {
+    id identifier = [self objectValueFromObject:handle selector:@selector(identifier)];
+    if ([identifier isKindOfClass:[NSString class]]) {
+        return identifier;
+    }
+    id comparisonIdentifier = [self objectValueFromObject:handle selector:@selector(comparisonIdentifier)];
+    if ([comparisonIdentifier isKindOfClass:[NSString class]]) {
+        return comparisonIdentifier;
+    }
+    return handle == nil ? nil : [handle description];
+}
+
+- (NSDictionary *)serializeFMLHandle:(id)handle {
+    return @{
+        @"identifier": [self identifierForFMLHandle:handle] ?: [NSNull null],
+        @"description": handle == nil ? [NSNull null] : [handle description],
+    };
+}
+
+- (NSDictionary *)serializeFMLLocation:(id)location handle:(id)handle {
+    if (location == nil) {
+        return @{
+            @"handle": [self identifierForFMLHandle:handle] ?: [NSNull null],
+            @"location": [NSNull null],
+        };
+    }
+
+    FMLLocation *fmlLocation = (FMLLocation *)location;
+    double latitude = [fmlLocation respondsToSelector:@selector(latitude)] ? [fmlLocation latitude] : 0;
+    double longitude = [fmlLocation respondsToSelector:@selector(longitude)] ? [fmlLocation longitude] : 0;
+    double timestamp = [fmlLocation respondsToSelector:@selector(timestamp)] ? [fmlLocation timestamp] : 0;
+    long long locationType = [fmlLocation respondsToSelector:@selector(locationType)] ? [fmlLocation locationType] : 0;
+    id address = [self objectValueFromObject:fmlLocation selector:@selector(address)];
+    NSString *coarseAddressLabel = [self objectValueFromObject:fmlLocation selector:@selector(coarseAddressLabel)];
+    NSArray *labels = [self objectValueFromObject:fmlLocation selector:@selector(labels)];
+
+    return @{
+        @"handle": [self identifierForFMLHandle:handle] ?: [NSNull null],
+        @"coordinates": @[@(latitude), @(longitude)],
+        @"long_address": address == nil ? [NSNull null] : [address description],
+        @"short_address": coarseAddressLabel ?: [NSNull null],
+        @"subtitle": coarseAddressLabel ?: [NSNull null],
+        @"title": labels ?: [NSNull null],
+        @"last_updated": timestamp > 0 ? @(round(timestamp) * 1000) : [NSNull null],
+        @"is_locating_in_progress": @NO,
+        @"status": (locationType == 0) ? @"legacy" : (locationType == 2) ? @"live" : @"shallow",
+        @"location_type": @(locationType),
+        @"horizontal_accuracy": [fmlLocation respondsToSelector:@selector(horizontalAccuracy)] ? @([fmlLocation horizontalAccuracy]) : [NSNull null],
+        @"vertical_accuracy": [fmlLocation respondsToSelector:@selector(verticalAccuracy)] ? @([fmlLocation verticalAccuracy]) : [NSNull null],
+        @"speed": [fmlLocation respondsToSelector:@selector(speed)] ? @([fmlLocation speed]) : [NSNull null],
+        @"altitude": [fmlLocation respondsToSelector:@selector(altitude)] ? @([fmlLocation altitude]) : [NSNull null],
+    };
+}
+
+- (NSDictionary *)serializeFMLFriend:(id)friend handle:(id)handle location:(id)location {
+    NSMutableDictionary *result = [[NSMutableDictionary alloc] initWithDictionary:[self serializeFMLLocation:location handle:handle]];
+    [result setValue:[self serializeFMLHandle:handle] forKey:@"findmy_handle"];
+    [result setValue:friend == nil ? [NSNull null] : [friend description] forKey:@"friend"];
+    return [result copy];
+}
+
+- (NSArray *)cachedFindMyFriendsForSession:(FindMyLocateSession *)session {
+    NSArray *friends = nil;
+
+    if ([session respondsToSelector:@selector(cachedFriendsSharingLocationWithMe)]) {
+        friends = [self objectValueFromObject:session selector:@selector(cachedFriendsSharingLocationWithMe)];
+    }
+    if (friends == nil && [session respondsToSelector:@selector(cachedFriendsSharingLocationsWithMe)]) {
+        friends = [self objectValueFromObject:session selector:@selector(cachedFriendsSharingLocationsWithMe)];
+    }
+    return [friends isKindOfClass:[NSArray class]] ? friends : @[];
+}
+
+- (void)sendFindMyFriends:(NSArray *)friends session:(FindMyLocateSession *)session transaction:(NSString *)transaction {
+    if (friends.count == 0) {
+        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction ?: [NSNull null], @"locations": @[]}];
+        return;
+    }
+
+    NSMutableArray *locations = [[NSMutableArray alloc] init];
+    dispatch_group_t refreshGroup = dispatch_group_create();
+
+    for (id friend in friends) {
+        id handle = [self handleForFMLFriend:friend];
+        if (handle == nil) {
+            @synchronized (locations) {
+                [locations addObject:[self serializeFMLFriend:friend handle:nil location:nil]];
+            }
+            continue;
+        }
+
+        dispatch_group_enter(refreshGroup);
+        void (^finishRefresh)(void) = ^{
+            id location = nil;
+            if ([session respondsToSelector:@selector(cachedLocationForHandle:includeAddress:)]) {
+                location = [session cachedLocationForHandle:handle includeAddress:TRUE];
+            } else if ([session respondsToSelector:@selector(cachedLocationForHandle:)]) {
+                location = [session cachedLocationForHandle:handle];
+            }
+            @synchronized (locations) {
+                [locations addObject:[self serializeFMLFriend:friend handle:handle location:location]];
+            }
+            dispatch_group_leave(refreshGroup);
+        };
+
+        if ([session respondsToSelector:@selector(startRefreshingLocationForHandles:priority:isFromGroup:reverseGeocode:completion:)]) {
+            [session startRefreshingLocationForHandles:@[handle] priority:1000 isFromGroup:FALSE reverseGeocode:TRUE completion:finishRefresh];
+        } else if ([session respondsToSelector:@selector(startRefreshingLocationForHandles:priority:isFromGroup:completion:)]) {
+            [session startRefreshingLocationForHandles:@[handle] priority:1000 isFromGroup:FALSE completion:finishRefresh];
+        } else {
+            finishRefresh();
+        }
+    }
+
+    __block BOOL didSendResponse = NO;
+    void (^sendResponse)(void) = ^{
+        @synchronized (locations) {
+            if (didSendResponse) {
+                return;
+            }
+            didSendResponse = YES;
+            [[NetworkController sharedInstance] sendMessage: @{
+                @"transactionId": transaction ?: [NSNull null],
+                @"locations": locations,
+            }];
+        }
+    };
+
+    dispatch_group_notify(refreshGroup, dispatch_get_main_queue(), ^{
+        sendResponse();
+    });
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(8 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        DLog("BLUEBUBBLESHELPER: Find My refresh timeout fired with %lu locations", (unsigned long)[locations count]);
+        sendResponse();
+    });
+}
+
+- (void)handleFindMyFriendsRefreshWithTransaction:(NSString *)transaction {
+    FindMyLocateSession *session = [self findMyLocateSession];
+    if (session == nil) {
+        [[NetworkController sharedInstance] sendMessage: @{
+            @"transactionId": transaction ?: [NSNull null],
+            @"error": @"FindMyLocateSession is unavailable",
+        }];
+        return;
+    }
+
+    if ([session respondsToSelector:@selector(getFriendsSharingLocationsWithMeWithCompletion:)]) {
+        [session getFriendsSharingLocationsWithMeWithCompletion:^(NSArray *friends) {
+            NSArray *friendList = [friends isKindOfClass:[NSArray class]] ? friends : [self cachedFindMyFriendsForSession:session];
+            [self sendFindMyFriends:friendList session:session transaction:transaction];
+        }];
+    } else {
+        [self sendFindMyFriends:[self cachedFindMyFriendsForSession:session] session:session transaction:transaction];
     }
 }
 
@@ -758,37 +981,7 @@ static NSMutableArray* vettedAliases;
     // If the server tells us to get findmy friends locations
     } else if ([event isEqualToString:@"refresh-findmy-friends"]) {
         if ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion > 13) {
-            FindMyLocateSession *session = [[IMFMFSession sharedInstance] fmlSession];
-            DLog("BLUEBUBBLESHELPER: block 1: %@", [session locationUpdateCallback]);
-            //            [self logString:[[[[CTBlockDescription alloc] initWithBlock:[session locationUpdateCallback]] blockSignature] debugDescription]];
-            //            NSObject *block = ^(FMLLocation *test, FMLHandle *test2) {
-            //                DLog("BLUEBUBBLESHELPER: test2: %@", test);
-            //                DLog("BLUEBUBBLESHELPER: test2: %@", [test className]);
-            //            };
-            //            DLog("BLUEBUBBLESHELPER: setting block: %@", block);
-            //            DLog("BLUEBUBBLESHELPER: setting block: %@", [[[[CTBlockDescription alloc] initWithBlock:block] blockSignature] debugDescription]);
-            //            [session setLocationUpdateCallback:block];
-            //            DLog("BLUEBUBBLESHELPER: block 2: %@", [session locationUpdateCallback]);
-            //            DLog("BLUEBUBBLESHELPER: block 2: %@", [[[[CTBlockDescription alloc] initWithBlock:[session locationUpdateCallback]] blockSignature] debugDescription]);
-            [session getFriendsSharingLocationsWithMeWithCompletion:^(NSArray *friends) {
-                for (NSObject* friend in friends) {
-                    NSObject* handle = [friend performSelector:(NSSelectorFromString(@"handle"))];
-                    DLog("BLUEBUBBLESHELPER: test: %@", handle);
-                    [session startRefreshingLocationForHandles:@[handle] priority:(1000) isFromGroup:FALSE reverseGeocode:TRUE completion:^() {
-                        NSObject *test = [session cachedLocationForHandle:handle includeAddress:TRUE];
-                        DLog("BLUEBUBBLESHELPER: test: %@", test);
-                        DLog("BLUEBUBBLESHELPER: test: %@", [test className]);
-                    }];
-                }
-            }];
-            
-            if (transaction != nil) {
-                NSDictionary *data = @{
-                    @"transactionId": transaction,
-                    @"locations": @[],
-                };
-                [[NetworkController sharedInstance] sendMessage: data];
-            }
+            [self handleFindMyFriendsRefreshWithTransaction:transaction];
         } else {
             FMFSession *session = [[IMFMFSession sharedInstance] session];
             NSArray* handles = [session getHandlesSharingLocationsWithMe];
