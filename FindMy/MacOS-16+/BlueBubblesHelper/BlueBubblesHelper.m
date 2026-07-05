@@ -7,7 +7,11 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <AppKit/AppKit.h>
+#import <CoreLocation/CoreLocation.h>
 #import <os/log.h>
+#import <objc/message.h>
+#import <objc/runtime.h>
 
 #import "BlueBubblesHelper.h"
 #import "FMLHandle.h"
@@ -19,9 +23,16 @@
 @interface BlueBubblesHelper ()
 - (FindMyLocateSession *)findMyLocateSession;
 - (void)handleFindMyFriendsRefreshWithTransaction:(NSString *)transaction;
+- (void)handleFindMyDevicesRefreshWithTransaction:(NSString *)transaction;
 - (NSDictionary *)serializeFMLFriend:(id)friend handle:(id)handle location:(id)location;
+- (NSDictionary *)serializeFMLDevice:(id)device;
+- (NSDictionary *)serializeOwnerBeacon:(id)beacon;
 - (NSDictionary *)serializeFMLHandle:(id)handle;
 - (NSDictionary *)serializeFMLLocation:(id)location handle:(id)handle;
+- (NSDictionary *)findMyObjectGraphDiagnostics;
+- (BOOL)selectFindMySegmentIndex:(NSInteger)index;
+- (void)installFindMySwizzles;
+- (NSDictionary *)findMySwizzleDiagnostics;
 @end
 
 @implementation BlueBubblesHelper
@@ -29,6 +40,105 @@
 static os_log_t logger;
 static NetworkController *networkController;
 static FindMyLocateSession *findMyLocateSession;
+static id findMyOwnerSession;
+static NSMutableDictionary<NSString *, NSValue *> *findMyOriginalImps;
+static NSMutableArray<NSDictionary *> *findMySwizzleEvents;
+static NSMutableArray<NSString *> *findMySwizzledSelectors;
+static BOOL findMySwizzlesInstalled;
+extern void *BlueBubblesFindMySwiftProbe(void);
+extern void *BlueBubblesFindMyStartFMIPManager(void *ownerSession);
+
+static NSString *BBFindMySwizzleKey(Class class, SEL selector) {
+    return [NSString stringWithFormat:@"%@:%@", NSStringFromClass(class), NSStringFromSelector(selector)];
+}
+
+static void BBFindMyRecordSwizzleEvent(NSDictionary *event) {
+    @synchronized ([BlueBubblesHelper class]) {
+        if (findMySwizzleEvents == nil) {
+            findMySwizzleEvents = [[NSMutableArray alloc] init];
+        }
+        NSMutableDictionary *mutableEvent = [[NSMutableDictionary alloc] initWithDictionary:event ?: @{}];
+        mutableEvent[@"timestamp"] = @([[NSDate date] timeIntervalSince1970]);
+        [findMySwizzleEvents addObject:[mutableEvent copy]];
+        if (findMySwizzleEvents.count > 80) {
+            [findMySwizzleEvents removeObjectsInRange:NSMakeRange(0, findMySwizzleEvents.count - 80)];
+        }
+    }
+}
+
+static NSInteger BBFindMyTableViewNumberOfRows(id self, SEL _cmd, id tableView, NSInteger section) {
+    NSInteger rowCount = 0;
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        NSInteger (*original)(id, SEL, id, NSInteger) = (NSInteger (*)(id, SEL, id, NSInteger))[originalValue pointerValue];
+        rowCount = original(self, _cmd, tableView, section);
+    }
+
+    BBFindMyRecordSwizzleEvent(@{
+        @"event": @"tableView:numberOfRowsInSection:",
+        @"data_source_class": NSStringFromClass([self class]) ?: @"<nil>",
+        @"table_class": tableView == nil ? @"<nil>" : NSStringFromClass([tableView class]),
+        @"section": @(section),
+        @"rows": @(rowCount),
+    });
+    return rowCount;
+}
+
+static id BBFindMyTableViewCellForRow(id self, SEL _cmd, id tableView, id indexPath) {
+    id cell = nil;
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        id (*original)(id, SEL, id, id) = (id (*)(id, SEL, id, id))[originalValue pointerValue];
+        cell = original(self, _cmd, tableView, indexPath);
+    }
+
+    NSNumber *section = nil;
+    NSNumber *row = nil;
+    if ([indexPath respondsToSelector:@selector(section)]) {
+        NSInteger (*sectionGetter)(id, SEL) = (NSInteger (*)(id, SEL))objc_msgSend;
+        section = @(sectionGetter(indexPath, @selector(section)));
+    }
+    if ([indexPath respondsToSelector:@selector(row)]) {
+        NSInteger (*rowGetter)(id, SEL) = (NSInteger (*)(id, SEL))objc_msgSend;
+        row = @(rowGetter(indexPath, @selector(row)));
+    }
+
+    BBFindMyRecordSwizzleEvent(@{
+        @"event": @"tableView:cellForRowAtIndexPath:",
+        @"data_source_class": NSStringFromClass([self class]) ?: @"<nil>",
+        @"table_class": tableView == nil ? @"<nil>" : NSStringFromClass([tableView class]),
+        @"cell_class": cell == nil ? @"<nil>" : NSStringFromClass([cell class]),
+        @"section": section ?: [NSNull null],
+        @"row": row ?: [NSNull null],
+    });
+    return cell;
+}
+
+static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        void (*original)(id, SEL, id) = (void (*)(id, SEL, id))[originalValue pointerValue];
+        original(self, _cmd, dataSource);
+    }
+
+    BBFindMyRecordSwizzleEvent(@{
+        @"event": @"setDataSource:",
+        @"table_class": NSStringFromClass([self class]) ?: @"<nil>",
+        @"data_source_class": dataSource == nil ? @"<nil>" : NSStringFromClass([dataSource class]),
+    });
+}
 
 + (instancetype)sharedInstance {
     static BlueBubblesHelper *plugin = nil;
@@ -53,8 +163,11 @@ static FindMyLocateSession *findMyLocateSession;
         return;
     }
 
+    [[BlueBubblesHelper sharedInstance] installFindMySwizzles];
+
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         os_log(logger, "Injected into Find My. Connecting to BlueBubbles Server...");
+        [[BlueBubblesHelper sharedInstance] installFindMySwizzles];
         networkController = [NetworkController sharedInstance];
         [networkController connect];
     });
@@ -63,6 +176,11 @@ static FindMyLocateSession *findMyLocateSession;
 - (void)handleServerEvent:(NSString *)event data:(NSDictionary *)data transactionId:(NSString *)transaction {
     if ([event isEqualToString:@"refresh-findmy-friends"]) {
         [self handleFindMyFriendsRefreshWithTransaction:transaction];
+        return;
+    }
+
+    if ([event isEqualToString:@"refresh-findmy-devices"]) {
+        [self handleFindMyDevicesRefreshWithTransaction:transaction];
         return;
     }
 
@@ -123,6 +241,34 @@ static FindMyLocateSession *findMyLocateSession;
     return findMyLocateSession;
 }
 
+- (id)findMyOwnerSession {
+    if (findMyOwnerSession != nil) {
+        return findMyOwnerSession;
+    }
+
+    Class ownerSessionClass = NSClassFromString(@"SPOwnerSession");
+    if (ownerSessionClass == nil) {
+        NSError *loadError = nil;
+        NSBundle *ownerBundle = [NSBundle bundleWithPath:@"/System/Library/PrivateFrameworks/SPOwner.framework"];
+        if (![ownerBundle loadAndReturnError:&loadError]) {
+            DLog("BLUEBUBBLESHELPER: Failed to load SPOwner.framework: %@", loadError);
+        }
+        ownerSessionClass = NSClassFromString(@"SPOwnerSession");
+    }
+
+    if (ownerSessionClass == nil) {
+        DLog("BLUEBUBBLESHELPER: SPOwnerSession class is unavailable");
+        return nil;
+    }
+
+    findMyOwnerSession = [[ownerSessionClass alloc] init];
+    if ([findMyOwnerSession respondsToSelector:@selector(startRefreshing)]) {
+        [self objectValueFromObject:findMyOwnerSession selector:@selector(startRefreshing)];
+    }
+
+    return findMyOwnerSession;
+}
+
 - (id)handleForFMLFriend:(id)friend {
     if (friend == nil) {
         return nil;
@@ -145,6 +291,972 @@ static FindMyLocateSession *findMyLocateSession;
     }
 
     return handle == nil ? nil : [handle description];
+}
+
+- (NSArray *)selectorNamesForClass:(Class)class includeClassMethods:(BOOL)includeClassMethods {
+    if (class == nil) {
+        return @[];
+    }
+
+    unsigned int methodCount = 0;
+    Method *methods = class_copyMethodList(includeClassMethods ? object_getClass(class) : class, &methodCount);
+    NSMutableArray *selectorNames = [[NSMutableArray alloc] init];
+    for (unsigned int i = 0; i < methodCount; i++) {
+        SEL selector = method_getName(methods[i]);
+        if (selector != nil) {
+            [selectorNames addObject:NSStringFromSelector(selector)];
+        }
+    }
+    free(methods);
+    return [selectorNames sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+}
+
+- (NSDictionary *)runtimeDiagnosticsForClassNames:(NSArray<NSString *> *)classNames {
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] init];
+    for (NSString *className in classNames) {
+        Class class = NSClassFromString(className);
+        if (class == nil) {
+            diagnostics[className] = @{@"available": @NO};
+            continue;
+        }
+
+        diagnostics[className] = @{
+            @"available": @YES,
+            @"class_methods": [self selectorNamesForClass:class includeClassMethods:YES],
+            @"instance_methods": [self selectorNamesForClass:class includeClassMethods:NO],
+        };
+    }
+    return [diagnostics copy];
+}
+
+- (BOOL)swizzleInstanceMethodForClass:(Class)class selector:(SEL)selector replacement:(IMP)replacement {
+    if (class == nil || selector == nil || replacement == nil) {
+        return NO;
+    }
+
+    Method method = class_getInstanceMethod(class, selector);
+    if (method == nil) {
+        return NO;
+    }
+
+    NSString *key = BBFindMySwizzleKey(class, selector);
+    @synchronized ([BlueBubblesHelper class]) {
+        if (findMyOriginalImps[key] != nil) {
+            return YES;
+        }
+
+        if (findMyOriginalImps == nil) {
+            findMyOriginalImps = [[NSMutableDictionary alloc] init];
+        }
+        if (findMySwizzledSelectors == nil) {
+            findMySwizzledSelectors = [[NSMutableArray alloc] init];
+        }
+
+        IMP original = method_getImplementation(method);
+        findMyOriginalImps[key] = [NSValue valueWithPointer:original];
+        method_setImplementation(method, replacement);
+        [findMySwizzledSelectors addObject:key];
+    }
+    return YES;
+}
+
+- (BOOL)installSetDataSourceOverrideForClass:(Class)class {
+    if (class == nil) {
+        return NO;
+    }
+
+    SEL selector = @selector(setDataSource:);
+    Method method = class_getInstanceMethod(class, selector);
+    if (method == nil) {
+        return NO;
+    }
+
+    NSString *key = BBFindMySwizzleKey(class, selector);
+    @synchronized ([BlueBubblesHelper class]) {
+        if (findMyOriginalImps[key] != nil) {
+            return YES;
+        }
+
+        if (findMyOriginalImps == nil) {
+            findMyOriginalImps = [[NSMutableDictionary alloc] init];
+        }
+        if (findMySwizzledSelectors == nil) {
+            findMySwizzledSelectors = [[NSMutableArray alloc] init];
+        }
+
+        IMP original = method_getImplementation(method);
+        const char *types = method_getTypeEncoding(method);
+        if (!class_addMethod(class, selector, (IMP)BBFindMyTableViewSetDataSource, types)) {
+            return NO;
+        }
+        findMyOriginalImps[key] = [NSValue valueWithPointer:original];
+        [findMySwizzledSelectors addObject:key];
+    }
+    return YES;
+}
+
+- (void)installFindMySwizzles {
+    @synchronized ([BlueBubblesHelper class]) {
+        if (findMySwizzlesInstalled) {
+            return;
+        }
+        findMySwizzlesInstalled = YES;
+        if (findMyOriginalImps == nil) {
+            findMyOriginalImps = [[NSMutableDictionary alloc] init];
+        }
+        if (findMySwizzleEvents == nil) {
+            findMySwizzleEvents = [[NSMutableArray alloc] init];
+        }
+        if (findMySwizzledSelectors == nil) {
+            findMySwizzledSelectors = [[NSMutableArray alloc] init];
+        }
+    }
+
+    NSArray *dataSourceClassNames = @[
+        @"FindMy.FMPeopleListDataSource",
+        @"FMPeopleListDataSource",
+        @"FindMy.FMDevicesListDataSource",
+        @"FMDevicesListDataSource",
+        @"_TtC6FindMy23FMDevicesListDataSource",
+        @"FindMy.FMItemsListDataSource",
+        @"FMItemsListDataSource",
+        @"_TtC6FindMy21FMItemsListDataSource",
+    ];
+
+    for (NSString *className in dataSourceClassNames) {
+        Class class = NSClassFromString(className);
+        if (class == nil) {
+            continue;
+        }
+        [self swizzleInstanceMethodForClass:class
+                                   selector:@selector(tableView:numberOfRowsInSection:)
+                                replacement:(IMP)BBFindMyTableViewNumberOfRows];
+        [self swizzleInstanceMethodForClass:class
+                                   selector:@selector(tableView:cellForRowAtIndexPath:)
+                                replacement:(IMP)BBFindMyTableViewCellForRow];
+    }
+
+    for (NSString *className in @[@"FindMy.FMTableView", @"FMTableView", @"_TtC6FindMy11FMTableView"]) {
+        [self installSetDataSourceOverrideForClass:NSClassFromString(className)];
+    }
+}
+
+- (NSDictionary *)findMySwizzleDiagnostics {
+    @synchronized ([BlueBubblesHelper class]) {
+        return @{
+            @"installed": @(findMySwizzlesInstalled),
+            @"swizzled_selectors": [findMySwizzledSelectors copy] ?: @[],
+            @"events": [findMySwizzleEvents copy] ?: @[],
+        };
+    }
+}
+
+- (NSArray *)runtimeClassNamesMatchingTerms:(NSArray<NSString *> *)terms limit:(NSUInteger)limit {
+    int classCount = objc_getClassList(NULL, 0);
+    if (classCount <= 0) {
+        return @[];
+    }
+
+    Class *classes = (__unsafe_unretained Class *)calloc((size_t)classCount, sizeof(Class));
+    objc_getClassList(classes, classCount);
+
+    NSMutableArray *matches = [[NSMutableArray alloc] init];
+    for (int i = 0; i < classCount; i++) {
+        NSString *className = NSStringFromClass(classes[i]);
+        for (NSString *term in terms) {
+            if ([className rangeOfString:term options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                [matches addObject:className];
+                break;
+            }
+        }
+        if (matches.count >= limit) {
+            break;
+        }
+    }
+
+    free(classes);
+    return [matches sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+}
+
+- (BOOL)boolValueFromObject:(id)object selector:(SEL)selector {
+    if (object == nil || ![object respondsToSelector:selector]) {
+        return NO;
+    }
+
+    NSMethodSignature *signature = [object methodSignatureForSelector:selector];
+    if (signature == nil) {
+        return NO;
+    }
+
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+    [invocation setTarget:object];
+    [invocation setSelector:selector];
+    [invocation invoke];
+
+    BOOL value = NO;
+    [invocation getReturnValue:&value];
+    return value;
+}
+
+- (NSString *)classNameForObject:(id)object {
+    return object == nil ? @"<nil>" : NSStringFromClass([object class]);
+}
+
+- (BOOL)className:(NSString *)className matchesAnyTerm:(NSArray<NSString *> *)terms {
+    for (NSString *term in terms) {
+        if ([className rangeOfString:term options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
+- (id)safeValueForKey:(NSString *)key object:(id)object {
+    if (object == nil || key == nil) {
+        return nil;
+    }
+
+    @try {
+        return [object valueForKey:key];
+    } @catch (NSException *exception) {
+        return nil;
+    }
+}
+
+- (NSDictionary *)summaryForValue:(id)value {
+    if (value == nil) {
+        return @{@"class": @"<nil>"};
+    }
+
+    NSMutableDictionary *summary = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"class": [self classNameForObject:value],
+    }];
+
+    if ([value isKindOfClass:[NSArray class]]) {
+        NSArray *array = (NSArray *)value;
+        NSMutableArray *elementClasses = [[NSMutableArray alloc] init];
+        NSUInteger limit = MIN(array.count, 10);
+        for (NSUInteger i = 0; i < limit; i++) {
+            [elementClasses addObject:[self classNameForObject:array[i]]];
+        }
+        summary[@"count"] = @(array.count);
+        summary[@"element_classes"] = elementClasses;
+    } else if ([value isKindOfClass:[NSSet class]]) {
+        NSSet *set = (NSSet *)value;
+        NSMutableArray *elementClasses = [[NSMutableArray alloc] init];
+        NSUInteger index = 0;
+        for (id element in set) {
+            if (index >= 10) {
+                break;
+            }
+            [elementClasses addObject:[self classNameForObject:element]];
+            index++;
+        }
+        summary[@"count"] = @(set.count);
+        summary[@"element_classes"] = elementClasses;
+    } else if ([value isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *dictionary = (NSDictionary *)value;
+        NSMutableArray *keys = [[NSMutableArray alloc] init];
+        for (id key in [dictionary allKeys]) {
+            if (keys.count >= 10) {
+                break;
+            }
+            [keys addObject:[key description] ?: @"<nil>"];
+        }
+        summary[@"count"] = @(dictionary.count);
+        summary[@"keys"] = keys;
+    } else if ([value isKindOfClass:[NSString class]] || [value isKindOfClass:[NSNumber class]] || [value isKindOfClass:[NSDate class]]) {
+        summary[@"value"] = [value description];
+    }
+
+    return [summary copy];
+}
+
+- (NSArray *)objectChildrenForValue:(id)value {
+    if (value == nil || value == [NSNull null]) {
+        return @[];
+    }
+
+    if ([value isKindOfClass:[NSArray class]]) {
+        return value;
+    }
+
+    if ([value isKindOfClass:[NSSet class]]) {
+        return [(NSSet *)value allObjects];
+    }
+
+    if ([value isKindOfClass:[NSDictionary class]]) {
+        return [(NSDictionary *)value allValues];
+    }
+
+    if ([value isKindOfClass:[NSString class]] || [value isKindOfClass:[NSNumber class]] || [value isKindOfClass:[NSDate class]]) {
+        return @[];
+    }
+
+    return @[value];
+}
+
+- (NSDictionary *)inspectObject:(id)object {
+    NSArray *keys = @[
+        @"devices", @"items", @"allDevices", @"allItems", @"device", @"item",
+        @"currentDevice", @"selectedDevice", @"devicesProvider", @"itemsProvider",
+        @"deviceProvider", @"itemProvider", @"locationProvider", @"fmipManager",
+        @"manager", @"provider", @"dataSource", @"delegate", @"representedObject",
+        @"contentViewController", @"children", @"viewControllers",
+        @"windowControllers", @"rootViewController",
+        @"childViewControllers", @"presentedViewController", @"selectedViewController",
+        @"navigationController", @"tabBarController", @"splitViewController",
+        @"window", @"keyWindow"
+    ];
+
+    NSMutableDictionary *result = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"class": [self classNameForObject:object],
+    }];
+
+    NSMutableDictionary *kvcValues = [[NSMutableDictionary alloc] init];
+    for (NSString *key in keys) {
+        id value = [self safeValueForKey:key object:object];
+        if (value != nil) {
+            kvcValues[key] = [self summaryForValue:value];
+        }
+    }
+    if (kvcValues.count > 0) {
+        result[@"kvc"] = kvcValues;
+    }
+
+    NSMutableDictionary *ivars = [[NSMutableDictionary alloc] init];
+    Class class = [object class];
+    NSUInteger classDepth = 0;
+    while (class != nil && classDepth < 6) {
+        unsigned int ivarCount = 0;
+        Ivar *ivarList = class_copyIvarList(class, &ivarCount);
+        for (unsigned int i = 0; i < ivarCount; i++) {
+            Ivar ivar = ivarList[i];
+            const char *type = ivar_getTypeEncoding(ivar);
+            if (type == NULL || type[0] != '@') {
+                continue;
+            }
+
+            id value = nil;
+            @try {
+                value = object_getIvar(object, ivar);
+            } @catch (NSException *exception) {
+                value = nil;
+            }
+
+            if (value != nil) {
+                NSString *name = [NSString stringWithUTF8String:ivar_getName(ivar)];
+                ivars[name] = [self summaryForValue:value];
+            }
+        }
+        free(ivarList);
+        class = class_getSuperclass(class);
+        classDepth++;
+    }
+    if (ivars.count > 0) {
+        result[@"ivars"] = ivars;
+    }
+
+    return [result copy];
+}
+
+- (NSDictionary *)findMyObjectGraphDiagnostics {
+    NSArray *terms = @[
+        @"FindMy.", @"FindMyUICore.", @"FindMyAppCore.", @"FMIPCore.",
+        @"FMDevice", @"FMItem", @"FMIP", @"FMPeople", @"FMLocation",
+        @"FMDevices", @"FMItems", @"FMListViewController",
+        @"FMPeopleListDataSource", @"FMDevicesListDataSource",
+        @"FMItemsListDataSource", @"FMSegmentedControl",
+        @"Repository", @"SessionLive", @"C6FindMy"
+    ];
+    NSMutableArray *roots = [[NSMutableArray alloc] init];
+    if (NSApp != nil) {
+        [roots addObject:NSApp];
+        if (NSApp.delegate != nil) {
+            [roots addObject:NSApp.delegate];
+        }
+        [roots addObjectsFromArray:NSApp.windows ?: @[]];
+    }
+
+    Class uiApplicationClass = NSClassFromString(@"UIApplication");
+    SEL sharedApplicationSelector = NSSelectorFromString(@"sharedApplication");
+    if (uiApplicationClass != nil && [uiApplicationClass respondsToSelector:sharedApplicationSelector]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        id uiApplication = [uiApplicationClass performSelector:sharedApplicationSelector];
+#pragma clang diagnostic pop
+        if (uiApplication != nil) {
+            [roots addObject:uiApplication];
+            id appDelegate = [self safeValueForKey:@"delegate" object:uiApplication];
+            if (appDelegate != nil) {
+                [roots addObject:appDelegate];
+            }
+            id windows = [self safeValueForKey:@"windows" object:uiApplication];
+            for (id window in [self objectChildrenForValue:windows]) {
+                [roots addObject:window];
+            }
+        }
+    }
+
+    NSMutableArray *queue = [[NSMutableArray alloc] init];
+    for (id root in roots) {
+        [queue addObject:@{@"object": root, @"path": [self classNameForObject:root], @"depth": @0}];
+    }
+
+    NSMutableSet *seen = [[NSMutableSet alloc] init];
+    NSMutableArray *matches = [[NSMutableArray alloc] init];
+    NSUInteger scanned = 0;
+
+    while (queue.count > 0 && scanned < 1200 && matches.count < 180) {
+        NSDictionary *entry = queue[0];
+        [queue removeObjectAtIndex:0];
+
+        id object = entry[@"object"];
+        if (object == nil || object == [NSNull null]) {
+            continue;
+        }
+
+        NSValue *identity = [NSValue valueWithNonretainedObject:object];
+        if ([seen containsObject:identity]) {
+            continue;
+        }
+        [seen addObject:identity];
+        scanned++;
+
+        NSString *path = entry[@"path"];
+        NSUInteger depth = [entry[@"depth"] unsignedIntegerValue];
+        NSString *className = [self classNameForObject:object];
+        BOOL interesting = [self className:className matchesAnyTerm:terms];
+        NSDictionary *inspection = [self inspectObject:object];
+
+        if (!interesting) {
+            for (NSDictionary *summary in [inspection[@"kvc"] allValues]) {
+                if ([self className:summary[@"class"] ?: @"" matchesAnyTerm:terms]) {
+                    interesting = YES;
+                    break;
+                }
+            }
+        }
+        if (!interesting) {
+            for (NSDictionary *summary in [inspection[@"ivars"] allValues]) {
+                if ([self className:summary[@"class"] ?: @"" matchesAnyTerm:terms]) {
+                    interesting = YES;
+                    break;
+                }
+            }
+        }
+
+        if (interesting) {
+            NSMutableDictionary *match = [[NSMutableDictionary alloc] initWithDictionary:inspection];
+            match[@"path"] = path ?: className;
+            [matches addObject:match];
+        }
+
+        if ([object isKindOfClass:NSClassFromString(@"UITableView")]) {
+            for (NSString *key in @[@"dataSource", @"delegate"]) {
+                id related = [self safeValueForKey:key object:object];
+                if (related != nil && [self className:[self classNameForObject:related] matchesAnyTerm:terms]) {
+                    NSMutableDictionary *relatedMatch = [[NSMutableDictionary alloc] initWithDictionary:[self inspectObject:related]];
+                    relatedMatch[@"path"] = [NSString stringWithFormat:@"%@.%@", path, key];
+                    [matches addObject:relatedMatch];
+                }
+            }
+        }
+
+        if (depth >= 8) {
+            continue;
+        }
+
+        NSMutableArray *childValues = [[NSMutableArray alloc] init];
+        NSDictionary *kvc = inspection[@"kvc"];
+        for (NSString *key in kvc) {
+            id value = [self safeValueForKey:key object:object];
+            for (id child in [self objectChildrenForValue:value]) {
+                [childValues addObject:@{@"object": child, @"path": [NSString stringWithFormat:@"%@.%@", path, key], @"depth": @(depth + 1)}];
+            }
+        }
+
+        Class ivarClass = [object class];
+        NSUInteger ivarClassDepth = 0;
+        while (ivarClass != nil && ivarClassDepth < 6) {
+            unsigned int ivarCount = 0;
+            Ivar *ivarList = class_copyIvarList(ivarClass, &ivarCount);
+            for (unsigned int i = 0; i < ivarCount; i++) {
+                Ivar ivar = ivarList[i];
+                const char *type = ivar_getTypeEncoding(ivar);
+                if (type == NULL || type[0] != '@') {
+                    continue;
+                }
+
+                id value = nil;
+                @try {
+                    value = object_getIvar(object, ivar);
+                } @catch (NSException *exception) {
+                    value = nil;
+                }
+
+                NSString *ivarName = [NSString stringWithUTF8String:ivar_getName(ivar)];
+                for (id child in [self objectChildrenForValue:value]) {
+                    [childValues addObject:@{@"object": child, @"path": [NSString stringWithFormat:@"%@->%@", path, ivarName], @"depth": @(depth + 1)}];
+                }
+            }
+            free(ivarList);
+            ivarClass = class_getSuperclass(ivarClass);
+            ivarClassDepth++;
+        }
+
+        [queue addObjectsFromArray:childValues];
+    }
+
+    NSMutableArray *rootClasses = [[NSMutableArray alloc] init];
+    for (id root in roots) {
+        [rootClasses addObject:[self classNameForObject:root]];
+    }
+
+    return @{
+        @"root_count": @(roots.count),
+        @"root_classes": rootClasses,
+        @"scanned": @(scanned),
+        @"matches": matches,
+    };
+}
+
+- (NSArray *)findMyRootObjects {
+    NSMutableArray *roots = [[NSMutableArray alloc] init];
+    if (NSApp != nil) {
+        [roots addObject:NSApp];
+        if (NSApp.delegate != nil) {
+            [roots addObject:NSApp.delegate];
+        }
+        [roots addObjectsFromArray:NSApp.windows ?: @[]];
+    }
+
+    Class uiApplicationClass = NSClassFromString(@"UIApplication");
+    SEL sharedApplicationSelector = NSSelectorFromString(@"sharedApplication");
+    if (uiApplicationClass != nil && [uiApplicationClass respondsToSelector:sharedApplicationSelector]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        id uiApplication = [uiApplicationClass performSelector:sharedApplicationSelector];
+#pragma clang diagnostic pop
+        if (uiApplication != nil) {
+            [roots addObject:uiApplication];
+            id appDelegate = [self safeValueForKey:@"delegate" object:uiApplication];
+            if (appDelegate != nil) {
+                [roots addObject:appDelegate];
+            }
+            id windows = [self safeValueForKey:@"windows" object:uiApplication];
+            for (id window in [self objectChildrenForValue:windows]) {
+                [roots addObject:window];
+            }
+        }
+    }
+    return [roots copy];
+}
+
+- (BOOL)selectFindMySegmentIndex:(NSInteger)index {
+    NSArray *sectionSelectors = @[
+        NSStringFromSelector(NSSelectorFromString(@"showPeople")),
+        NSStringFromSelector(NSSelectorFromString(@"showDevices")),
+        NSStringFromSelector(NSSelectorFromString(@"showItems")),
+    ];
+    if (index >= 0 && index < (NSInteger)sectionSelectors.count) {
+        SEL sectionSelector = NSSelectorFromString(sectionSelectors[(NSUInteger)index]);
+        Class uiApplicationClass = NSClassFromString(@"UIApplication");
+        SEL sharedApplicationSelector = NSSelectorFromString(@"sharedApplication");
+        SEL sendActionSelector = NSSelectorFromString(@"sendAction:to:from:forEvent:");
+        if (uiApplicationClass != nil && [uiApplicationClass respondsToSelector:sharedApplicationSelector]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+            id uiApplication = [uiApplicationClass performSelector:sharedApplicationSelector];
+#pragma clang diagnostic pop
+            if (uiApplication != nil && [uiApplication respondsToSelector:sendActionSelector]) {
+                BOOL (*sendAction)(id, SEL, SEL, id, id, id) = (BOOL (*)(id, SEL, SEL, id, id, id))objc_msgSend;
+                BOOL didSendAction = sendAction(uiApplication, sendActionSelector, sectionSelector, nil, nil, nil);
+                if (didSendAction) {
+                    DLog("BLUEBUBBLESHELPER: Sent Find My section action %@ through UIApplication", NSStringFromSelector(sectionSelector));
+                    return YES;
+                }
+            }
+        }
+
+        CGKeyCode keyCode = 0;
+        if (index == 0) {
+            keyCode = 18;
+        } else if (index == 1) {
+            keyCode = 19;
+        } else if (index == 2) {
+            keyCode = 20;
+        }
+        if (keyCode != 0) {
+            [[NSRunningApplication currentApplication] activateWithOptions:NSApplicationActivateIgnoringOtherApps];
+            CGEventSourceRef source = CGEventSourceCreate(kCGEventSourceStateHIDSystemState);
+            CGEventRef keyDown = CGEventCreateKeyboardEvent(source, keyCode, true);
+            CGEventRef keyUp = CGEventCreateKeyboardEvent(source, keyCode, false);
+            if (keyDown != NULL && keyUp != NULL) {
+                CGEventSetFlags(keyDown, kCGEventFlagMaskCommand);
+                CGEventSetFlags(keyUp, kCGEventFlagMaskCommand);
+                CGEventPost(kCGHIDEventTap, keyDown);
+                usleep(120000);
+                CGEventPost(kCGHIDEventTap, keyUp);
+                DLog("BLUEBUBBLESHELPER: Posted Find My command key for %@", NSStringFromSelector(sectionSelector));
+                CFRelease(keyDown);
+                CFRelease(keyUp);
+                if (source != NULL) {
+                    CFRelease(source);
+                }
+                return YES;
+            }
+            if (keyDown != NULL) {
+                CFRelease(keyDown);
+            }
+            if (keyUp != NULL) {
+                CFRelease(keyUp);
+            }
+            if (source != NULL) {
+                CFRelease(source);
+            }
+        }
+
+        NSMutableArray *selectorQueue = [[NSMutableArray alloc] init];
+        for (id root in [self findMyRootObjects]) {
+            [selectorQueue addObject:@{@"object": root, @"depth": @0}];
+        }
+
+        NSMutableSet *selectorSeen = [[NSMutableSet alloc] init];
+        NSUInteger selectorScanned = 0;
+        while (selectorQueue.count > 0 && selectorScanned < 1600) {
+            NSDictionary *entry = selectorQueue[0];
+            [selectorQueue removeObjectAtIndex:0];
+
+            id object = entry[@"object"];
+            if (object == nil || object == [NSNull null]) {
+                continue;
+            }
+
+            NSValue *identity = [NSValue valueWithNonretainedObject:object];
+            if ([selectorSeen containsObject:identity]) {
+                continue;
+            }
+            [selectorSeen addObject:identity];
+            selectorScanned++;
+
+            if ([object respondsToSelector:sectionSelector]) {
+                DLog("BLUEBUBBLESHELPER: Invoking Find My section selector %@ on %@", NSStringFromSelector(sectionSelector), [self classNameForObject:object]);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+                [object performSelector:sectionSelector];
+#pragma clang diagnostic pop
+                return YES;
+            }
+
+            NSUInteger depth = [entry[@"depth"] unsignedIntegerValue];
+            if (depth >= 8) {
+                continue;
+            }
+
+            NSDictionary *inspection = [self inspectObject:object];
+            for (NSString *key in inspection[@"kvc"]) {
+                id value = [self safeValueForKey:key object:object];
+                for (id child in [self objectChildrenForValue:value]) {
+                    [selectorQueue addObject:@{@"object": child, @"depth": @(depth + 1)}];
+                }
+            }
+
+            Class ivarClass = [object class];
+            NSUInteger ivarClassDepth = 0;
+            while (ivarClass != nil && ivarClassDepth < 6) {
+                unsigned int ivarCount = 0;
+                Ivar *ivarList = class_copyIvarList(ivarClass, &ivarCount);
+                for (unsigned int i = 0; i < ivarCount; i++) {
+                    Ivar ivar = ivarList[i];
+                    const char *type = ivar_getTypeEncoding(ivar);
+                    if (type == NULL || type[0] != '@') {
+                        continue;
+                    }
+
+                    id value = nil;
+                    @try {
+                        value = object_getIvar(object, ivar);
+                    } @catch (NSException *exception) {
+                        value = nil;
+                    }
+
+                    for (id child in [self objectChildrenForValue:value]) {
+                        [selectorQueue addObject:@{@"object": child, @"depth": @(depth + 1)}];
+                    }
+                }
+                free(ivarList);
+                ivarClass = class_getSuperclass(ivarClass);
+                ivarClassDepth++;
+            }
+        }
+    }
+
+    NSMutableArray *queue = [[NSMutableArray alloc] init];
+    for (id root in [self findMyRootObjects]) {
+        [queue addObject:@{@"object": root, @"depth": @0}];
+    }
+
+    NSMutableSet *seen = [[NSMutableSet alloc] init];
+    NSUInteger scanned = 0;
+    while (queue.count > 0 && scanned < 1200) {
+        NSDictionary *entry = queue[0];
+        [queue removeObjectAtIndex:0];
+
+        id object = entry[@"object"];
+        if (object == nil || object == [NSNull null]) {
+            continue;
+        }
+
+        NSValue *identity = [NSValue valueWithNonretainedObject:object];
+        if ([seen containsObject:identity]) {
+            continue;
+        }
+        [seen addObject:identity];
+        scanned++;
+
+        NSString *className = [self classNameForObject:object];
+        if ([className rangeOfString:@"SegmentedControl" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            SEL setSelectedSegmentIndex = NSSelectorFromString(@"setSelectedSegmentIndex:");
+            if ([object respondsToSelector:setSelectedSegmentIndex]) {
+                NSMethodSignature *signature = [object methodSignatureForSelector:setSelectedSegmentIndex];
+                NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+                [invocation setTarget:object];
+                [invocation setSelector:setSelectedSegmentIndex];
+                [invocation setArgument:&index atIndex:2];
+                [invocation invoke];
+
+                SEL sendActions = NSSelectorFromString(@"sendActionsForControlEvents:");
+                if ([object respondsToSelector:sendActions]) {
+                    NSUInteger valueChangedEvent = 1 << 12;
+                    NSMethodSignature *actionSignature = [object methodSignatureForSelector:sendActions];
+                    NSInvocation *actionInvocation = [NSInvocation invocationWithMethodSignature:actionSignature];
+                    [actionInvocation setTarget:object];
+                    [actionInvocation setSelector:sendActions];
+                    [actionInvocation setArgument:&valueChangedEvent atIndex:2];
+                    [actionInvocation invoke];
+                }
+                return YES;
+            }
+        }
+
+        NSUInteger depth = [entry[@"depth"] unsignedIntegerValue];
+        if (depth >= 8) {
+            continue;
+        }
+
+        NSDictionary *inspection = [self inspectObject:object];
+        for (NSString *key in inspection[@"kvc"]) {
+            id value = [self safeValueForKey:key object:object];
+            for (id child in [self objectChildrenForValue:value]) {
+                [queue addObject:@{@"object": child, @"depth": @(depth + 1)}];
+            }
+        }
+
+        Class ivarClass = [object class];
+        NSUInteger ivarClassDepth = 0;
+        while (ivarClass != nil && ivarClassDepth < 6) {
+            unsigned int ivarCount = 0;
+            Ivar *ivarList = class_copyIvarList(ivarClass, &ivarCount);
+            for (unsigned int i = 0; i < ivarCount; i++) {
+                Ivar ivar = ivarList[i];
+                const char *type = ivar_getTypeEncoding(ivar);
+                if (type == NULL || type[0] != '@') {
+                    continue;
+                }
+
+                id value = nil;
+                @try {
+                    value = object_getIvar(object, ivar);
+                } @catch (NSException *exception) {
+                    value = nil;
+                }
+
+                for (id child in [self objectChildrenForValue:value]) {
+                    [queue addObject:@{@"object": child, @"depth": @(depth + 1)}];
+                }
+            }
+            free(ivarList);
+            ivarClass = class_getSuperclass(ivarClass);
+            ivarClassDepth++;
+        }
+    }
+    return NO;
+}
+
+- (NSDictionary *)serializeFMLDevice:(id)device {
+    if (device == nil) {
+        return @{};
+    }
+
+    NSString *identifier = [self objectValueFromObject:device selector:@selector(identifier)];
+    NSString *deviceName = [self objectValueFromObject:device selector:@selector(deviceName)];
+    NSString *idsDeviceId = [self objectValueFromObject:device selector:@selector(idsDeviceId)];
+
+    return @{
+        @"id": identifier ?: idsDeviceId ?: [device description],
+        @"name": deviceName ?: [device description],
+        @"deviceDisplayName": deviceName ?: [NSNull null],
+        @"deviceModel": @"FMLDevice",
+        @"rawDeviceModel": @"FMLDevice",
+        @"modelDisplayName": @"Find My Device",
+        @"batteryStatus": @"Unknown",
+        @"audioChannels": @[],
+        @"locationEnabled": @YES,
+        @"isConsideredAccessory": @NO,
+        @"locationCapable": @YES,
+        @"fmlyShare": @NO,
+        @"thisDevice": @([self boolValueFromObject:device selector:@selector(isThisDevice)]),
+        @"isMac": @NO,
+        @"lostModeEnabled": @NO,
+        @"deviceClass": @"FMLDevice",
+        @"prsId": @"owner",
+        @"findmy_device": @{
+            @"identifier": identifier ?: [NSNull null],
+            @"idsDeviceId": idsDeviceId ?: [NSNull null],
+            @"deviceName": deviceName ?: [NSNull null],
+            @"description": [device description] ?: [NSNull null],
+            @"isActive": [device respondsToSelector:@selector(isActive)] ? @([self boolValueFromObject:device selector:@selector(isActive)]) : [NSNull null],
+            @"isThisDevice": [device respondsToSelector:@selector(isThisDevice)] ? @([self boolValueFromObject:device selector:@selector(isThisDevice)]) : [NSNull null],
+            @"isCompanion": [device respondsToSelector:@selector(isCompanion)] ? @([self boolValueFromObject:device selector:@selector(isCompanion)]) : [NSNull null],
+            @"isAutoMeCapable": [device respondsToSelector:@selector(isAutoMeCapable)] ? @([self boolValueFromObject:device selector:@selector(isAutoMeCapable)]) : [NSNull null],
+        },
+    };
+}
+
+- (id)firstObjectValueFromObject:(id)object keys:(NSArray<NSString *> *)keys selectors:(NSArray<NSString *> *)selectors {
+    for (NSString *key in keys) {
+        id value = [self safeValueForKey:key object:object];
+        if (value != nil && value != [NSNull null]) {
+            return value;
+        }
+    }
+
+    for (NSString *selectorName in selectors) {
+        SEL selector = NSSelectorFromString(selectorName);
+        if ([object respondsToSelector:selector]) {
+            id value = [self objectValueFromObject:object selector:selector];
+            if (value != nil && value != [NSNull null]) {
+                return value;
+            }
+        }
+    }
+
+    return nil;
+}
+
+- (NSDictionary *)serializeLocationObject:(id)location {
+    if (location == nil || location == [NSNull null]) {
+        return (NSDictionary *)[NSNull null];
+    }
+
+    id nestedLocation = [self firstObjectValueFromObject:location keys:@[@"location", @"clLocation"] selectors:@[@"location", @"clLocation"]];
+    if (nestedLocation != nil && nestedLocation != location) {
+        location = nestedLocation;
+    }
+
+    CLLocationDegrees latitude = 0;
+    CLLocationDegrees longitude = 0;
+    BOOL hasCoordinate = NO;
+    if ([location respondsToSelector:@selector(coordinate)]) {
+        CLLocationCoordinate2D (*coordinateGetter)(id, SEL) = (CLLocationCoordinate2D (*)(id, SEL))objc_msgSend;
+        CLLocationCoordinate2D coordinate = coordinateGetter(location, @selector(coordinate));
+        latitude = coordinate.latitude;
+        longitude = coordinate.longitude;
+        hasCoordinate = CLLocationCoordinate2DIsValid(coordinate);
+    } else {
+        id latitudeValue = [self firstObjectValueFromObject:location keys:@[@"latitude"] selectors:@[@"latitude"]];
+        id longitudeValue = [self firstObjectValueFromObject:location keys:@[@"longitude"] selectors:@[@"longitude"]];
+        if ([latitudeValue respondsToSelector:@selector(doubleValue)] && [longitudeValue respondsToSelector:@selector(doubleValue)]) {
+            latitude = [latitudeValue doubleValue];
+            longitude = [longitudeValue doubleValue];
+            hasCoordinate = YES;
+        }
+    }
+
+    if (!hasCoordinate) {
+        return (NSDictionary *)[NSNull null];
+    }
+
+    NSMutableDictionary *result = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"latitude": @(latitude),
+        @"longitude": @(longitude),
+    }];
+
+    id horizontalAccuracy = [self firstObjectValueFromObject:location keys:@[@"horizontalAccuracy"] selectors:@[@"horizontalAccuracy"]];
+    if ([horizontalAccuracy respondsToSelector:@selector(doubleValue)]) {
+        result[@"horizontalAccuracy"] = @([horizontalAccuracy doubleValue]);
+    }
+
+    id timestamp = [self firstObjectValueFromObject:location keys:@[@"timestamp", @"timeStamp", @"date"] selectors:@[@"timestamp", @"timeStamp", @"date"]];
+    if ([timestamp isKindOfClass:[NSDate class]]) {
+        result[@"timeStamp"] = @([(NSDate *)timestamp timeIntervalSince1970] * 1000);
+    } else if ([timestamp respondsToSelector:@selector(doubleValue)]) {
+        result[@"timeStamp"] = @([timestamp doubleValue] * 1000);
+    }
+
+    return [result copy];
+}
+
+- (NSDictionary *)serializeOwnerBeacon:(id)beacon {
+    NSString *identifier = [[self firstObjectValueFromObject:beacon
+                                                       keys:@[@"identifier", @"uuid", @"beaconUUID", @"accessoryIdentifier"]
+                                                  selectors:@[@"identifier", @"uuid", @"beaconUUID", @"accessoryIdentifier"]] description];
+    NSString *name = [[self firstObjectValueFromObject:beacon
+                                                  keys:@[@"name", @"displayName", @"accessoryName"]
+                                             selectors:@[@"name", @"displayName", @"accessoryName"]] description];
+    id serialNumber = [self firstObjectValueFromObject:beacon keys:@[@"serialNumber"] selectors:@[@"serialNumber"]];
+    id productIdentifier = [self firstObjectValueFromObject:beacon keys:@[@"productIdentifier"] selectors:@[@"productIdentifier"]];
+    id batteryStatus = [self firstObjectValueFromObject:beacon keys:@[@"batteryStatus"] selectors:@[@"batteryStatus"]];
+    id role = [self firstObjectValueFromObject:beacon keys:@[@"role"] selectors:@[@"role"]];
+    id location = [self firstObjectValueFromObject:beacon
+                                              keys:@[@"location", @"lastLocation", @"latestLocation"]
+                                         selectors:@[@"location", @"lastLocation", @"latestLocation"]];
+
+    NSDictionary *serializedLocation = [self serializeLocationObject:location];
+    NSString *deviceName = name.length > 0 ? name : (identifier ?: [beacon description]);
+
+    NSMutableDictionary *device = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"id": identifier ?: [beacon description],
+        @"identifier": identifier ?: [NSNull null],
+        @"name": deviceName ?: [NSNull null],
+        @"deviceDisplayName": [NSNull null],
+        @"deviceModel": @"beacon",
+        @"rawDeviceModel": @"beacon",
+        @"modelDisplayName": @"Find My Item",
+        @"batteryStatus": batteryStatus == nil ? @"Unknown" : [batteryStatus description],
+        @"audioChannels": @[],
+        @"locationEnabled": @YES,
+        @"isConsideredAccessory": @YES,
+        @"locationCapable": @YES,
+        @"fmlyShare": @NO,
+        @"thisDevice": @NO,
+        @"isMac": @NO,
+        @"lostModeEnabled": @NO,
+        @"deviceClass": @"beacon",
+        @"prsId": @"owner",
+        @"findmy_beacon": @{
+            @"class": [self classNameForObject:beacon],
+            @"description": [beacon description] ?: [NSNull null],
+            @"serialNumber": serialNumber ?: [NSNull null],
+            @"productIdentifier": productIdentifier ?: [NSNull null],
+            @"role": role == nil ? [NSNull null] : [role description],
+        },
+    }];
+
+    if (serializedLocation != (NSDictionary *)[NSNull null]) {
+        device[@"location"] = serializedLocation;
+        device[@"crowdSourcedLocation"] = serializedLocation;
+    }
+
+    if (serialNumber != nil) {
+        device[@"serialNumber"] = [serialNumber description];
+    }
+    if (productIdentifier != nil) {
+        device[@"productIdentifier"] = [productIdentifier description];
+    }
+
+    return [device copy];
 }
 
 - (NSDictionary *)serializeFMLHandle:(id)handle {
@@ -272,6 +1384,128 @@ static FindMyLocateSession *findMyLocateSession;
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(8 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         DLog("BLUEBUBBLESHELPER: Find My refresh timeout fired with %lu locations", (unsigned long)[locations count]);
         sendResponse();
+    });
+}
+
+- (void)handleFindMyDevicesRefreshWithTransaction:(NSString *)transaction {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleFindMyDevicesRefreshWithTransaction:transaction];
+        });
+        return;
+    }
+
+    FindMyLocateSession *session = [self findMyLocateSession];
+    NSMutableArray *devices = [[NSMutableArray alloc] init];
+    [self installFindMySwizzles];
+    BOOL didSelectDevicesSegment = [self selectFindMySegmentIndex:1];
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        BOOL didSelectItemsSegment = [self selectFindMySegmentIndex:2];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        NSDictionary *diagnostics = [self runtimeDiagnosticsForClassNames:@[
+            @"FMDevicesProvider",
+            @"FindMy.FMDevicesProvider",
+            @"_TtC6FindMy17FMDevicesProvider",
+            @"FMDevicesListDataSource",
+            @"FindMy.FMDevicesListDataSource",
+            @"_TtC6FindMy23FMDevicesListDataSource",
+            @"FMItemsListDataSource",
+            @"FindMy.FMItemsListDataSource",
+            @"_TtC6FindMy21FMItemsListDataSource",
+            @"FMLocationProvider",
+            @"FindMy.FMLocationProvider",
+            @"FMDeviceDetailDataSource",
+            @"FindMy.FMDeviceDetailDataSource",
+            @"FMItemDetailDataSource",
+            @"FindMy.FMItemDetailDataSource",
+            @"FMPeopleProvider",
+            @"FindMy.FMPeopleProvider",
+            @"FMPeopleListDataSource",
+            @"FindMy.FMPeopleListDataSource",
+            @"FMSegmentedControl",
+            @"FindMy.FMSegmentedControl",
+            @"SPOwnerSession",
+            @"SPOwner.SwiftBootstrapManager",
+        ]];
+        NSMutableDictionary *mutableDiagnostics = [[NSMutableDictionary alloc] initWithDictionary:diagnostics];
+        mutableDiagnostics[@"selected_devices_segment"] = @(didSelectDevicesSegment);
+        mutableDiagnostics[@"selected_items_segment"] = @(didSelectItemsSegment);
+        void *swiftProbePointer = BlueBubblesFindMySwiftProbe();
+        if (swiftProbePointer != NULL) {
+            NSDictionary *swiftProbe = CFBridgingRelease(swiftProbePointer);
+            if ([swiftProbe isKindOfClass:[NSDictionary class]]) {
+                mutableDiagnostics[@"swift_probe"] = swiftProbe;
+            }
+        }
+        mutableDiagnostics[@"runtime_class_matches"] = [self runtimeClassNamesMatchingTerms:@[
+            @"FMDevice",
+            @"FMItem",
+            @"FMLocationProvider",
+            @"FMDevicesProvider",
+            @"FMItemsList",
+            @"FindMy",
+            @"SPOwner",
+            @"Beacon",
+        ] limit:200];
+        mutableDiagnostics[@"swizzle"] = [self findMySwizzleDiagnostics];
+        mutableDiagnostics[@"object_graph"] = [self findMyObjectGraphDiagnostics];
+
+        __block BOOL didSendResponse = NO;
+        void (^sendResponse)(void) = ^{
+            @synchronized (devices) {
+                if (didSendResponse) {
+                    return;
+                }
+                didSendResponse = YES;
+                [[NetworkController sharedInstance] sendMessage:@{
+                    @"transactionId": transaction ?: [NSNull null],
+                    @"devices": devices,
+                    @"diagnostics": [mutableDiagnostics copy],
+                }];
+            }
+        };
+
+        id ownerSession = [self findMyOwnerSession];
+        if (ownerSession != nil && [ownerSession respondsToSelector:@selector(allBeaconsWithCompletion:)]) {
+            void (^completion)(NSArray *) = ^(NSArray *beacons) {
+                NSArray *beaconList = [beacons isKindOfClass:[NSArray class]] ? beacons : @[];
+                @synchronized (devices) {
+                    mutableDiagnostics[@"owner_beacon_count"] = @(beaconList.count);
+                    NSMutableArray *beaconClasses = [[NSMutableArray alloc] init];
+                    for (id beacon in beaconList) {
+                        [beaconClasses addObject:[self classNameForObject:beacon]];
+                        [devices addObject:[self serializeOwnerBeacon:beacon]];
+                    }
+                    mutableDiagnostics[@"owner_beacon_classes"] = beaconClasses;
+                }
+                sendResponse();
+            };
+            NSMethodSignature *signature = [ownerSession methodSignatureForSelector:@selector(allBeaconsWithCompletion:)];
+            NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+            [invocation setTarget:ownerSession];
+            [invocation setSelector:@selector(allBeaconsWithCompletion:)];
+            [invocation setArgument:&completion atIndex:2];
+            [invocation invoke];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(8 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                mutableDiagnostics[@"owner_beacon_timeout"] = @YES;
+                sendResponse();
+            });
+            return;
+        }
+
+        if (session != nil && [session respondsToSelector:@selector(getActiveLocationSharingDeviceWithCompletion:)]) {
+            [session getActiveLocationSharingDeviceWithCompletion:^(id device) {
+                if (device != nil) {
+                    [devices addObject:[self serializeFMLDevice:device]];
+                }
+                sendResponse();
+            }];
+            return;
+        }
+
+        sendResponse();
+        });
     });
 }
 

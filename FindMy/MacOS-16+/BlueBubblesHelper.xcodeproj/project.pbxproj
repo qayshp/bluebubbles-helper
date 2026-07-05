@@ -13,6 +13,7 @@
 		A62991D7297210A500B7E663 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A62991D6297210A500B7E663 /* Foundation.framework */; };
 		A6490A0E2984697C002B0E1D /* PrefixHeader.pch in Resources */ = {isa = PBXBuildFile; fileRef = FBCE4ECD201C0F4D002F8A61 /* PrefixHeader.pch */; };
 		A65C21A72A9AAB1500D6FB7F /* BlueBubblesHelper.dylib in Copy Files */ = {isa = PBXBuildFile; fileRef = A62991CB29720FAC00B7E663 /* BlueBubblesHelper.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		BBF000000000000000000201 /* FindMySwiftBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBF000000000000000000200 /* FindMySwiftBridge.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -46,6 +47,7 @@
 		A69960F12B2005100081FB69 /* FMLSession.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMLSession.h; sourceTree = "<group>"; };
 		A69960F62B20E46B0081FB69 /* FMLLocation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMLLocation.h; sourceTree = "<group>"; };
 		A69960F72B20E4AD0081FB69 /* FMLHandle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMLHandle.h; sourceTree = "<group>"; };
+		BBF000000000000000000200 /* FindMySwiftBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindMySwiftBridge.swift; sourceTree = "<group>"; };
 		AE20B1F38F795C02536396EA /* Pods-BlueBubblesHelper DyLib.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper DyLib.debug.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper DyLib/Pods-BlueBubblesHelper DyLib.debug.xcconfig"; sourceTree = "<group>"; };
 		B6E17DF925EE5FA4CB129B31 /* Pods-BlueBubblesHelper.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper.debug.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper/Pods-BlueBubblesHelper.debug.xcconfig"; sourceTree = "<group>"; };
 		BFA22E41EA07AA1C37D1B255 /* Pods-BlueBubblesHelper.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper.release.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper/Pods-BlueBubblesHelper.release.xcconfig"; sourceTree = "<group>"; };
@@ -158,6 +160,7 @@
 				FBCE4EDB201C264F002F8A61 /* Find My */,
 				FBCE4EC3201C0F4D002F8A61 /* Supporting Files */,
 				93AC09CB2565E45F0000C60C /* BlueBubblesHelper.m */,
+				BBF000000000000000000200 /* FindMySwiftBridge.swift */,
 				A67F85DA2FA7EB4300F04596 /* BlueBubblesHelper.h */,
 			);
 			path = BlueBubblesHelper;
@@ -313,6 +316,7 @@
 			files = (
 				A62991D22972106500B7E663 /* NetworkController.m in Sources */,
 				A62991D12972106200B7E663 /* BlueBubblesHelper.m in Sources */,
+				BBF000000000000000000201 /* FindMySwiftBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
