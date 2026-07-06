@@ -33,7 +33,9 @@
 - (NSDictionary *)findMyObjectGraphDiagnostics;
 - (NSDictionary *)findMySessionObjectDiagnostics;
 - (void)captureFindMyDataSource:(id)dataSource tableView:(id)tableView;
+- (void)captureFindMyInterestingObject:(id)object source:(NSString *)source selector:(SEL)selector;
 - (NSDictionary *)capturedFindMyDataSourceDiagnostics;
+- (NSDictionary *)capturedFindMyPassiveDiagnostics;
 - (NSArray *)findMyListRowsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (NSDictionary *)activeFindMyListDiagnosticsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (BOOL)selectFindMySegmentIndex:(NSInteger)index;
@@ -51,6 +53,8 @@ static NSMutableDictionary<NSString *, NSValue *> *findMyOriginalImps;
 static NSMutableArray<NSDictionary *> *findMySwizzleEvents;
 static NSMutableArray<NSString *> *findMySwizzledSelectors;
 static NSMutableDictionary<NSString *, NSDictionary *> *findMyCapturedDataSourceSnapshots;
+static NSMutableArray<NSDictionary *> *findMyCapturedObjectSnapshots;
+static NSMutableDictionary<NSString *, id> *findMyCapturedObjectsByIdentifier;
 static id findMyCapturedDevicesDataSource;
 static id findMyCapturedItemsDataSource;
 static BOOL findMySwizzlesInstalled;
@@ -151,6 +155,38 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
     if (dataSource != nil) {
         [[BlueBubblesHelper sharedInstance] captureFindMyDataSource:dataSource tableView:self];
     }
+}
+
+static id BBFindMyInterestingInit(id self, SEL _cmd) {
+    id initialized = self;
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        id (*original)(id, SEL) = (id (*)(id, SEL))[originalValue pointerValue];
+        initialized = original(self, _cmd);
+    }
+
+    if (initialized != nil) {
+        [[BlueBubblesHelper sharedInstance] captureFindMyInterestingObject:initialized source:@"init" selector:_cmd];
+    }
+    return initialized;
+}
+
+static void BBFindMyInterestingObjectSetter(id self, SEL _cmd, id value) {
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        void (*original)(id, SEL, id) = (void (*)(id, SEL, id))[originalValue pointerValue];
+        original(self, _cmd, value);
+    }
+
+    [[BlueBubblesHelper sharedInstance] captureFindMyInterestingObject:self source:@"setter" selector:_cmd];
 }
 
 + (instancetype)sharedInstance {
@@ -415,9 +451,6 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
 
 - (void)installFindMySwizzles {
     @synchronized ([BlueBubblesHelper class]) {
-        if (findMySwizzlesInstalled) {
-            return;
-        }
         findMySwizzlesInstalled = YES;
         if (findMyOriginalImps == nil) {
             findMyOriginalImps = [[NSMutableDictionary alloc] init];
@@ -456,6 +489,37 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
 
     for (NSString *className in @[@"FindMy.FMTableView", @"FMTableView", @"_TtC6FindMy11FMTableView"]) {
         [self installSetDataSourceOverrideForClass:NSClassFromString(className)];
+    }
+
+    NSArray *interestingClassNames = @[
+        @"SPOwnerSession",
+        @"FindMy.FMDevicesProvider",
+        @"_TtC6FindMy17FMDevicesProvider",
+        @"FindMy.FMDevicesActionController",
+        @"FindMy.FMItemsListDataSource",
+        @"_TtC6FindMy21FMItemsListDataSource",
+        @"FindMyUICore.ItemsProvider",
+        @"FindMyUICore.ItemsLocationsProvider",
+        @"FindMyUICore.Repository",
+        @"FindMyUICore.SessionLive",
+    ];
+    for (NSString *className in interestingClassNames) {
+        [self swizzleInstanceMethodForClass:NSClassFromString(className)
+                                   selector:@selector(init)
+                                replacement:(IMP)BBFindMyInterestingInit];
+    }
+
+    Class ownerSessionClass = NSClassFromString(@"SPOwnerSession");
+    for (NSString *selectorName in @[
+        @"setBeaconsChangedBlock:",
+        @"setLatestLocationsUpdatedBlock:",
+        @"setLocationUpdateBlock:",
+        @"setMaintainedBeaconsChangedBlock:",
+        @"setMaintainedUnknownBeaconsChangedBlock:",
+    ]) {
+        [self swizzleInstanceMethodForClass:ownerSessionClass
+                                   selector:NSSelectorFromString(selectorName)
+                                replacement:(IMP)BBFindMyInterestingObjectSetter];
     }
 }
 
@@ -674,6 +738,63 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
 - (NSDictionary *)capturedFindMyDataSourceDiagnostics {
     @synchronized ([BlueBubblesHelper class]) {
         return [findMyCapturedDataSourceSnapshots copy] ?: @{};
+    }
+}
+
+- (NSDictionary *)findMyPassiveSnapshotForObject:(id)object source:(NSString *)source selector:(SEL)selector {
+    if (object == nil) {
+        return @{};
+    }
+
+    NSString *objectIdentifier = [NSString stringWithFormat:@"%p", object];
+    return @{
+        @"source": source ?: @"<nil>",
+        @"selector": selector == nil ? @"<nil>" : NSStringFromSelector(selector),
+        @"class": [self classNameForObject:object],
+        @"object_id": objectIdentifier,
+        @"timestamp": @([[NSDate date] timeIntervalSince1970]),
+    };
+}
+
+- (void)captureFindMyInterestingObject:(id)object source:(NSString *)source selector:(SEL)selector {
+    NSDictionary *snapshot = [self findMyPassiveSnapshotForObject:object source:source selector:selector];
+    if (snapshot.count == 0) {
+        return;
+    }
+
+    DLog("BLUEBUBBLESHELPER: Passive Find My capture source=%{public}@ selector=%{public}@ class=%{public}@ object=%{public}@",
+         snapshot[@"source"], snapshot[@"selector"], snapshot[@"class"], snapshot[@"object_id"]);
+
+    @synchronized ([BlueBubblesHelper class]) {
+        if (findMyCapturedObjectSnapshots == nil) {
+            findMyCapturedObjectSnapshots = [[NSMutableArray alloc] init];
+        }
+        if (findMyCapturedObjectsByIdentifier == nil) {
+            findMyCapturedObjectsByIdentifier = [[NSMutableDictionary alloc] init];
+        }
+        NSString *objectIdentifier = snapshot[@"object_id"];
+        if ([objectIdentifier isKindOfClass:[NSString class]]) {
+            findMyCapturedObjectsByIdentifier[objectIdentifier] = object;
+            if (findMyCapturedObjectsByIdentifier.count > 80) {
+                [findMyCapturedObjectsByIdentifier removeObjectForKey:findMyCapturedObjectsByIdentifier.allKeys.firstObject];
+            }
+        }
+        [findMyCapturedObjectSnapshots addObject:snapshot];
+        if (findMyCapturedObjectSnapshots.count > 60) {
+            [findMyCapturedObjectSnapshots removeObjectsInRange:NSMakeRange(0, findMyCapturedObjectSnapshots.count - 60)];
+        }
+    }
+}
+
+- (NSDictionary *)capturedFindMyPassiveDiagnostics {
+    @synchronized ([BlueBubblesHelper class]) {
+        NSArray *snapshots = [findMyCapturedObjectSnapshots copy] ?: @[];
+        NSUInteger start = snapshots.count > 20 ? snapshots.count - 20 : 0;
+        NSArray *recent = snapshots.count > 0 ? [snapshots subarrayWithRange:NSMakeRange(start, snapshots.count - start)] : @[];
+        return @{
+            @"snapshot_count": @(snapshots.count),
+            @"snapshots": recent,
+        };
     }
 }
 
@@ -2304,6 +2425,7 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
         ] limit:200];
         mutableDiagnostics[@"swizzle"] = [self findMySwizzleDiagnostics];
         mutableDiagnostics[@"captured_data_sources"] = [self capturedFindMyDataSourceDiagnostics];
+        mutableDiagnostics[@"passive_captures"] = [self capturedFindMyPassiveDiagnostics];
         mutableDiagnostics[@"active_devices_list"] = [self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"];
         mutableDiagnostics[@"active_items_list"] = [self activeFindMyListDiagnosticsForDataSourceTerm:@"FMItemsListDataSource" type:@"item"];
         NSArray *uiDevices = [self findMyListRowsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"];
@@ -2404,6 +2526,7 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
         ] limit:200];
         mutableDiagnostics[@"swizzle"] = [self findMySwizzleDiagnostics];
         mutableDiagnostics[@"captured_data_sources"] = [self capturedFindMyDataSourceDiagnostics];
+        mutableDiagnostics[@"passive_captures"] = [self capturedFindMyPassiveDiagnostics];
         mutableDiagnostics[@"active_items_list"] = [self activeFindMyListDiagnosticsForDataSourceTerm:@"FMItemsListDataSource" type:@"item"];
         NSArray *uiItems = [self findMyListRowsForDataSourceTerm:@"FMItemsListDataSource" type:@"item"];
         mutableDiagnostics[@"ui_item_count"] = @(uiItems.count);

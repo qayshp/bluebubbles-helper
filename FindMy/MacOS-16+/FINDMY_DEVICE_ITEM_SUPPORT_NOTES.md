@@ -131,6 +131,48 @@ There are three simpler paths to pursue next.
 
 Active SearchParty calls should go behind a separate debug-only route if needed. They should not run inside the Android-facing refresh path until we know they cannot block.
 
+### 2026-07-06 Passive Capture Follow-Up
+
+I added event-only passive capture hooks for the provider/session construction path:
+
+```text
+SPOwnerSession init
+FindMy.FMDevicesProvider init
+FindMy.FMDevicesActionController init
+FindMy.FMItemsListDataSource init
+FindMyUICore.ItemsProvider init
+FindMyUICore.ItemsLocationsProvider init
+FindMyUICore.Repository init
+FindMyUICore.SessionLive init
+```
+
+I also added hooks for SearchParty callback setters:
+
+```objc
+setBeaconsChangedBlock:
+setLatestLocationsUpdatedBlock:
+setLocationUpdateBlock:
+setMaintainedBeaconsChangedBlock:
+setMaintainedUnknownBeaconsChangedBlock:
+```
+
+The first version tried to inspect nearby KVC fields and ivars as each object was captured. That was still too invasive and caused the Devices refresh to time out. I reduced the capture to event-only metadata: source, selector, class, object pointer, and timestamp. With that reduced version, the Android-facing routes stayed healthy:
+
+```text
+friends 8 200
+devices 13 200
+items 12 200
+```
+
+No passive provider/SearchParty capture events were observed in the latest run. That suggests one of these is true:
+
+- The target objects were already created before the hooks were installed.
+- The Swift classes are not entering Objective-C `init` in a way this hook catches.
+- The live Devices/Items path is driven by different provider classes or factory methods.
+- The relevant SearchParty callbacks were set before helper injection or are not set in this UI path.
+
+Next refinement: hook narrower methods that are definitely observed in the active UI path, such as `FMDevicesListDataSource tableView:cellForRowAtIndexPath:` and `FMItemsListDataSource tableView:cellForRowAtIndexPath:`, and capture object identities from the returned cell/model path. That starts from a method we know fires instead of guessing constructor timing.
+
 ## Why the Old Cache Path Is Not Enough
 
 The older BlueBubbles device path expected locally readable Find My cache data. On this macOS build, the modern device and item cache files are not directly usable JSON/plist device records. They contain encrypted payloads such as `encryptedData` and `signature`, so reading those files from the server process is not enough to return device/item locations.
