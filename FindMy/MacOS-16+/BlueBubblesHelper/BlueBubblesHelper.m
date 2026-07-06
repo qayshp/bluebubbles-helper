@@ -25,6 +25,7 @@
 - (void)handleFindMyFriendsRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMyItemsRefreshWithTransaction:(NSString *)transaction;
+- (void)handleFindMySearchPartyDebugWithTransaction:(NSString *)transaction;
 - (NSDictionary *)serializeFMLFriend:(id)friend handle:(id)handle location:(id)location;
 - (NSDictionary *)serializeFMLDevice:(id)device;
 - (NSDictionary *)serializeOwnerBeacon:(id)beacon;
@@ -39,6 +40,7 @@
 - (NSDictionary *)capturedFindMyDataSourceDiagnostics;
 - (NSDictionary *)capturedFindMyPassiveDiagnostics;
 - (NSDictionary *)compactFindMyRefreshDiagnostics:(NSDictionary *)diagnostics;
+- (NSDictionary *)findMySearchPartyDebugSnapshot;
 - (NSArray *)findMyListRowsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (NSDictionary *)activeFindMyListDiagnosticsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (BOOL)selectFindMySegmentIndex:(NSInteger)index;
@@ -316,6 +318,11 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         return;
     }
 
+    if ([event isEqualToString:@"debug-findmy-searchparty"]) {
+        [self handleFindMySearchPartyDebugWithTransaction:transaction];
+        return;
+    }
+
     DLog("BLUEBUBBLESHELPER: Find My action not implemented: %{public}@", event);
     if (transaction != nil) {
         [[NetworkController sharedInstance] sendMessage:@{
@@ -334,6 +341,36 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
     return [object performSelector:selector];
 #pragma clang diagnostic pop
+}
+
+- (id)safeObjectValueFromObject:(id)object selectorName:(NSString *)selectorName {
+    if (object == nil || selectorName.length == 0) {
+        return nil;
+    }
+
+    SEL selector = NSSelectorFromString(selectorName);
+    if (![object respondsToSelector:selector]) {
+        return nil;
+    }
+
+    NSMethodSignature *signature = [object methodSignatureForSelector:selector];
+    if (signature == nil || signature.numberOfArguments != 2) {
+        return nil;
+    }
+
+    const char *returnType = signature.methodReturnType;
+    if (returnType == NULL || returnType[0] != '@') {
+        return nil;
+    }
+
+    @try {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+        return [object performSelector:selector];
+#pragma clang diagnostic pop
+    } @catch (NSException *exception) {
+        return nil;
+    }
 }
 
 - (FindMyLocateSession *)findMyLocateSession {
@@ -1070,6 +1107,114 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
     }
 
     return [compact copy];
+}
+
+- (NSArray *)capturedSearchPartyOwnerSessions {
+    NSMutableArray *sessions = [[NSMutableArray alloc] init];
+    @synchronized ([BlueBubblesHelper class]) {
+        for (NSString *identifier in findMyCapturedObjectsByIdentifier) {
+            id object = findMyCapturedObjectsByIdentifier[identifier];
+            if ([[self classNameForObject:object] isEqualToString:@"SPOwnerSession"]) {
+                [sessions addObject:@{
+                    @"object_id": identifier ?: @"<nil>",
+                    @"object": object,
+                }];
+                if (sessions.count >= 6) {
+                    break;
+                }
+            }
+        }
+    }
+    return [sessions copy];
+}
+
+- (NSDictionary *)searchPartySummaryForSession:(id)session objectIdentifier:(NSString *)objectIdentifier {
+    NSArray *accessors = @[
+        @"allBeacons",
+        @"allBeaconsCache",
+        @"locationCache",
+        @"locationSources",
+        @"clientObservedBeacons",
+        @"batteryStatusCache",
+        @"ownerSessionState",
+        @"beaconsChangedBlock",
+        @"locationUpdateBlock",
+        @"deviceEventUpdateBlock",
+        @"latestLocationsUpdatedBlock",
+        @"maintainedBeaconsChangedBlock",
+        @"maintainedUnknownBeaconsChangedBlock",
+        @"tagSeparationBeaconsChangedBlock",
+    ];
+
+    NSMutableDictionary *values = [[NSMutableDictionary alloc] init];
+    NSMutableArray *availableAccessors = [[NSMutableArray alloc] init];
+    for (NSString *accessor in accessors) {
+        SEL selector = NSSelectorFromString(accessor);
+        if (![session respondsToSelector:selector]) {
+            continue;
+        }
+
+        [availableAccessors addObject:accessor];
+        id value = [self safeObjectValueFromObject:session selectorName:accessor];
+        if (value != nil) {
+            NSMutableDictionary *summary = [[self summaryForValue:value] mutableCopy];
+            if ([value isKindOfClass:[NSDictionary class]]) {
+                summary[@"entries"] = [self compactEntriesForSearchPartyAccessorResult:value];
+            }
+            values[accessor] = [summary copy];
+        } else {
+            values[accessor] = @{@"class": @"<nil>"};
+        }
+    }
+
+    return @{
+        @"class": [self classNameForObject:session],
+        @"object_id": objectIdentifier ?: @"<nil>",
+        @"available_accessors": availableAccessors,
+        @"values": values,
+    };
+}
+
+- (NSDictionary *)findMySearchPartyDebugSnapshot {
+    [self installFindMySwizzles];
+
+    NSArray *capturedSessions = [self capturedSearchPartyOwnerSessions];
+    NSMutableArray *sessionSnapshots = [[NSMutableArray alloc] init];
+    for (NSDictionary *entry in capturedSessions) {
+        id session = entry[@"object"];
+        if (session == nil || session == [NSNull null]) {
+            continue;
+        }
+        [sessionSnapshots addObject:[self searchPartySummaryForSession:session objectIdentifier:entry[@"object_id"]]];
+    }
+
+    NSUInteger capturedObjectCount = 0;
+    @synchronized ([BlueBubblesHelper class]) {
+        capturedObjectCount = findMyCapturedObjectsByIdentifier.count;
+    }
+
+    return @{
+        @"timestamp": @([[NSDate date] timeIntervalSince1970]),
+        @"swizzle": [self compactFindMySwizzleDiagnostics:[self findMySwizzleDiagnostics]],
+        @"passive_captures": [self capturedFindMyPassiveDiagnostics],
+        @"captured_object_count": @(capturedObjectCount),
+        @"captured_owner_session_count": @(capturedSessions.count),
+        @"captured_owner_sessions": sessionSnapshots,
+    };
+}
+
+- (void)handleFindMySearchPartyDebugWithTransaction:(NSString *)transaction {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleFindMySearchPartyDebugWithTransaction:transaction];
+        });
+        return;
+    }
+
+    [[NetworkController sharedInstance] sendMessage:@{
+        @"transactionId": transaction ?: [NSNull null],
+        @"searchparty": [self findMySearchPartyDebugSnapshot],
+    }];
 }
 
 - (NSArray *)runtimeClassNamesMatchingTerms:(NSArray<NSString *> *)terms limit:(NSUInteger)limit {
