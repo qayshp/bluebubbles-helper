@@ -32,6 +32,8 @@
 - (NSDictionary *)serializeFMLLocation:(id)location handle:(id)handle;
 - (NSDictionary *)findMyObjectGraphDiagnostics;
 - (NSDictionary *)findMySessionObjectDiagnostics;
+- (void)captureFindMyDataSource:(id)dataSource tableView:(id)tableView;
+- (NSDictionary *)capturedFindMyDataSourceDiagnostics;
 - (NSArray *)findMyListRowsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (NSDictionary *)activeFindMyListDiagnosticsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (BOOL)selectFindMySegmentIndex:(NSInteger)index;
@@ -48,6 +50,9 @@ static id findMyOwnerSession;
 static NSMutableDictionary<NSString *, NSValue *> *findMyOriginalImps;
 static NSMutableArray<NSDictionary *> *findMySwizzleEvents;
 static NSMutableArray<NSString *> *findMySwizzledSelectors;
+static NSMutableDictionary<NSString *, NSDictionary *> *findMyCapturedDataSourceSnapshots;
+static id findMyCapturedDevicesDataSource;
+static id findMyCapturedItemsDataSource;
 static BOOL findMySwizzlesInstalled;
 extern void *BlueBubblesFindMySwiftProbe(void);
 extern void *BlueBubblesFindMyStartFMIPManager(void *ownerSession);
@@ -142,6 +147,10 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
         @"table_class": NSStringFromClass([self class]) ?: @"<nil>",
         @"data_source_class": dataSource == nil ? @"<nil>" : NSStringFromClass([dataSource class]),
     });
+
+    if (dataSource != nil) {
+        [[BlueBubblesHelper sharedInstance] captureFindMyDataSource:dataSource tableView:self];
+    }
 }
 
 + (instancetype)sharedInstance {
@@ -461,6 +470,210 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
             @"event_count": @(events.count),
             @"events": recentEvents,
         };
+    }
+}
+
+- (NSArray *)findMyProviderSelectorMatchesForObject:(id)object {
+    if (object == nil) {
+        return @[];
+    }
+
+    NSArray *terms = @[@"device", @"item", @"beacon", @"location", @"session", @"provider", @"manager", @"repository", @"refresh"];
+    NSMutableArray *methodNames = [[NSMutableArray alloc] init];
+    Class methodClass = [object class];
+    NSUInteger methodDepth = 0;
+    while (methodClass != nil && methodDepth < 4 && methodNames.count < 80) {
+        unsigned int methodCount = 0;
+        Method *methodList = class_copyMethodList(methodClass, &methodCount);
+        for (unsigned int i = 0; i < methodCount && methodNames.count < 80; i++) {
+            NSString *methodName = NSStringFromSelector(method_getName(methodList[i]));
+            for (NSString *term in terms) {
+                if ([methodName rangeOfString:term options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                    [methodNames addObject:methodName];
+                    break;
+                }
+            }
+        }
+        free(methodList);
+        methodClass = class_getSuperclass(methodClass);
+        methodDepth++;
+    }
+    return methodNames;
+}
+
+- (NSArray *)findMyDirectIvarClassSnapshotForObject:(id)object {
+    if (object == nil) {
+        return @[];
+    }
+
+    NSMutableArray *ivars = [[NSMutableArray alloc] init];
+    Class ivarClass = [object class];
+    NSUInteger ivarClassDepth = 0;
+    while (ivarClass != nil && ivarClassDepth < 4 && ivars.count < 80) {
+        unsigned int ivarCount = 0;
+        Ivar *ivarList = class_copyIvarList(ivarClass, &ivarCount);
+        for (unsigned int i = 0; i < ivarCount && ivars.count < 80; i++) {
+            Ivar ivar = ivarList[i];
+            const char *type = ivar_getTypeEncoding(ivar);
+            if (type == NULL || type[0] != '@') {
+                continue;
+            }
+
+            id value = nil;
+            @try {
+                value = object_getIvar(object, ivar);
+            } @catch (NSException *exception) {
+                value = nil;
+            }
+
+            [ivars addObject:@{
+                @"name": [NSString stringWithUTF8String:ivar_getName(ivar)] ?: @"<nil>",
+                @"type": [NSString stringWithUTF8String:type] ?: @"<nil>",
+                @"class": [self classNameForObject:value],
+            }];
+        }
+        free(ivarList);
+        ivarClass = class_getSuperclass(ivarClass);
+        ivarClassDepth++;
+    }
+    return [ivars copy];
+}
+
+- (NSDictionary *)findMyProviderIvarSnapshotForObject:(id)object maxDepth:(NSUInteger)maxDepth {
+    NSArray *terms = @[
+        @"Session", @"Provider", @"Manager", @"Repository", @"SPOwner",
+        @"FMIP", @"Beacon", @"Device", @"Item", @"Location", @"DataSource"
+    ];
+
+    NSMutableArray *queue = [[NSMutableArray alloc] initWithObjects:@{@"object": object ?: [NSNull null], @"path": @"root", @"depth": @0}, nil];
+    NSMutableSet *seen = [[NSMutableSet alloc] init];
+    NSMutableArray *matches = [[NSMutableArray alloc] init];
+    NSUInteger scanned = 0;
+
+    while (queue.count > 0 && scanned < 120 && matches.count < 60) {
+        NSDictionary *entry = queue[0];
+        [queue removeObjectAtIndex:0];
+
+        id current = entry[@"object"];
+        if (current == nil || current == [NSNull null]) {
+            continue;
+        }
+
+        NSValue *identity = [NSValue valueWithNonretainedObject:current];
+        if ([seen containsObject:identity]) {
+            continue;
+        }
+        [seen addObject:identity];
+        scanned++;
+
+        NSString *path = entry[@"path"] ?: @"root";
+        NSUInteger depth = [entry[@"depth"] unsignedIntegerValue];
+        NSString *className = [self classNameForObject:current];
+        BOOL interesting = [self className:className matchesAnyTerm:terms];
+        NSMutableDictionary *ivars = [[NSMutableDictionary alloc] init];
+        NSMutableArray *nextObjects = [[NSMutableArray alloc] init];
+
+        Class ivarClass = [current class];
+        NSUInteger ivarClassDepth = 0;
+        while (ivarClass != nil && ivarClassDepth < 5 && ivars.count < 80) {
+            unsigned int ivarCount = 0;
+            Ivar *ivarList = class_copyIvarList(ivarClass, &ivarCount);
+            for (unsigned int i = 0; i < ivarCount && ivars.count < 80; i++) {
+                Ivar ivar = ivarList[i];
+                const char *type = ivar_getTypeEncoding(ivar);
+                if (type == NULL || type[0] != '@') {
+                    continue;
+                }
+
+                id value = nil;
+                @try {
+                    value = object_getIvar(current, ivar);
+                } @catch (NSException *exception) {
+                    value = nil;
+                }
+                if (value == nil) {
+                    continue;
+                }
+
+                NSString *ivarName = [NSString stringWithUTF8String:ivar_getName(ivar)];
+                NSString *valueClass = [self classNameForObject:value];
+                if ([self className:ivarName matchesAnyTerm:terms] || [self className:valueClass matchesAnyTerm:terms]) {
+                    ivars[ivarName] = [self summaryForValue:value];
+                    interesting = YES;
+                    if (depth < maxDepth) {
+                        [nextObjects addObject:@{
+                            @"object": value,
+                            @"path": [NSString stringWithFormat:@"%@->%@", path, ivarName],
+                            @"depth": @(depth + 1),
+                        }];
+                    }
+                }
+            }
+            free(ivarList);
+            ivarClass = class_getSuperclass(ivarClass);
+            ivarClassDepth++;
+        }
+
+        if (interesting || ivars.count > 0) {
+            NSMutableDictionary *match = [[NSMutableDictionary alloc] initWithDictionary:@{
+                @"path": path,
+                @"class": className ?: @"<nil>",
+                @"methods": [self findMyProviderSelectorMatchesForObject:current],
+            }];
+            if (ivars.count > 0) {
+                match[@"ivars"] = ivars;
+            }
+            [matches addObject:[match copy]];
+        }
+
+        [queue addObjectsFromArray:nextObjects];
+    }
+
+    return @{
+        @"scanned": @(scanned),
+        @"matches": matches,
+    };
+}
+
+- (void)captureFindMyDataSource:(id)dataSource tableView:(id)tableView {
+    NSString *className = [self classNameForObject:dataSource];
+    NSString *type = nil;
+    if ([className rangeOfString:@"FMDevicesListDataSource" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+        type = @"devices";
+        findMyCapturedDevicesDataSource = dataSource;
+    } else if ([className rangeOfString:@"FMItemsListDataSource" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+        type = @"items";
+        findMyCapturedItemsDataSource = dataSource;
+    } else {
+        return;
+    }
+
+    id retainedDataSource = dataSource;
+    id retainedTableView = tableView;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(300 * NSEC_PER_MSEC)), dispatch_get_main_queue(), ^{
+        id retainedDelegate = [self safeValueForKey:@"delegate" object:retainedTableView];
+        NSDictionary *snapshot = @{
+            @"type": type,
+            @"timestamp": @([[NSDate date] timeIntervalSince1970]),
+            @"data_source_class": [self classNameForObject:retainedDataSource],
+            @"table_view_class": [self classNameForObject:retainedTableView],
+            @"delegate_class": [self classNameForObject:retainedDelegate],
+            @"data_source_methods": [self findMyProviderSelectorMatchesForObject:retainedDataSource],
+            @"table_view_methods": [self findMyProviderSelectorMatchesForObject:retainedTableView],
+            @"data_source_ivars": [self findMyDirectIvarClassSnapshotForObject:retainedDataSource],
+        };
+        @synchronized ([BlueBubblesHelper class]) {
+            if (findMyCapturedDataSourceSnapshots == nil) {
+                findMyCapturedDataSourceSnapshots = [[NSMutableDictionary alloc] init];
+            }
+            findMyCapturedDataSourceSnapshots[type] = snapshot;
+        }
+    });
+}
+
+- (NSDictionary *)capturedFindMyDataSourceDiagnostics {
+    @synchronized ([BlueBubblesHelper class]) {
+        return [findMyCapturedDataSourceSnapshots copy] ?: @{};
     }
 }
 
@@ -2090,6 +2303,7 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
             @"Beacon",
         ] limit:200];
         mutableDiagnostics[@"swizzle"] = [self findMySwizzleDiagnostics];
+        mutableDiagnostics[@"captured_data_sources"] = [self capturedFindMyDataSourceDiagnostics];
         mutableDiagnostics[@"active_devices_list"] = [self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"];
         mutableDiagnostics[@"active_items_list"] = [self activeFindMyListDiagnosticsForDataSourceTerm:@"FMItemsListDataSource" type:@"item"];
         NSArray *uiDevices = [self findMyListRowsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"];
@@ -2189,6 +2403,7 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
             @"Beacon",
         ] limit:200];
         mutableDiagnostics[@"swizzle"] = [self findMySwizzleDiagnostics];
+        mutableDiagnostics[@"captured_data_sources"] = [self capturedFindMyDataSourceDiagnostics];
         mutableDiagnostics[@"active_items_list"] = [self activeFindMyListDiagnosticsForDataSourceTerm:@"FMItemsListDataSource" type:@"item"];
         NSArray *uiItems = [self findMyListRowsForDataSourceTerm:@"FMItemsListDataSource" type:@"item"];
         mutableDiagnostics[@"ui_item_count"] = @(uiItems.count);
