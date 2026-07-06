@@ -296,6 +296,33 @@ devices count=13 status=200 elapsed=10.6
 items count=12 status=200 elapsed=7.4
 ```
 
+### 2026-07-06 Accessor Swizzle Attempt
+
+I implemented the safer passive accessor approach:
+
+```objc
+SPLocationFetchResult locationsByBeaconIdentifier
+SPDeviceEventFetchResult beaconEventByBeaconIdentifier
+```
+
+The swizzles call Apple's original accessor first, return the original object unchanged, and store only a bounded summary of the returned dictionary. This avoided the block replacement risk and stayed within the compact diagnostics path.
+
+Verified through the Android-facing routes:
+
+```text
+friends count=8 status=200 elapsed=0.0
+devices count=13 status=200 elapsed=10.7
+items count=12 status=200 elapsed=7.2
+```
+
+Observed passive accessor snapshots:
+
+```text
+locationsByBeaconIdentifier -> NSDictionary count 0
+```
+
+No `beaconEventByBeaconIdentifier` snapshots appeared in the recent Devices/Items refresh diagnostics. That means the accessor hook itself is safe, but the current refresh path is not producing non-empty SearchParty location or device-event result dictionaries. The next useful refinement is to find what triggers non-empty `SPLocationFetchResult` or `SPDeviceEventFetchResult` payloads, or to inspect other accessors on the event/location objects when those dictionaries eventually contain entries.
+
 ## Why the Old Cache Path Is Not Enough
 
 The older BlueBubbles device path expected locally readable Find My cache data. On this macOS build, the modern device and item cache files are not directly usable JSON/plist device records. They contain encrypted payloads such as `encryptedData` and `signature`, so reading those files from the server process is not enough to return device/item locations.

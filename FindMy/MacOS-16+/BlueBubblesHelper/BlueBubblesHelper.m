@@ -35,6 +35,7 @@
 - (void)captureFindMyDataSource:(id)dataSource tableView:(id)tableView;
 - (void)captureFindMyInterestingObject:(id)object source:(NSString *)source selector:(SEL)selector;
 - (void)captureFindMyInterestingSetterObject:(id)object value:(id)value selector:(SEL)selector;
+- (void)captureFindMySearchPartyAccessorResult:(id)result source:(id)source selector:(SEL)selector;
 - (NSDictionary *)capturedFindMyDataSourceDiagnostics;
 - (NSDictionary *)capturedFindMyPassiveDiagnostics;
 - (NSDictionary *)compactFindMyRefreshDiagnostics:(NSDictionary *)diagnostics;
@@ -56,6 +57,7 @@ static NSMutableArray<NSDictionary *> *findMySwizzleEvents;
 static NSMutableArray<NSString *> *findMySwizzledSelectors;
 static NSMutableDictionary<NSString *, NSDictionary *> *findMyCapturedDataSourceSnapshots;
 static NSMutableArray<NSDictionary *> *findMyCapturedObjectSnapshots;
+static NSMutableArray<NSDictionary *> *findMySearchPartyAccessorSnapshots;
 static NSMutableDictionary<NSString *, id> *findMyCapturedObjectsByIdentifier;
 static id findMyCapturedDevicesDataSource;
 static id findMyCapturedItemsDataSource;
@@ -247,6 +249,22 @@ static void BBFindMyInterestingObjectSetter(id self, SEL _cmd, id value) {
     }
 
     [[BlueBubblesHelper sharedInstance] captureFindMyInterestingSetterObject:self value:value selector:_cmd];
+}
+
+static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
+    id result = nil;
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        id (*original)(id, SEL) = (id (*)(id, SEL))[originalValue pointerValue];
+        result = original(self, _cmd);
+    }
+
+    [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:result source:self selector:_cmd];
+    return result;
 }
 
 + (instancetype)sharedInstance {
@@ -590,6 +608,16 @@ static void BBFindMyInterestingObjectSetter(id self, SEL _cmd, id value) {
                                    selector:NSSelectorFromString(selectorName)
                                 replacement:(IMP)BBFindMyInterestingObjectSetter];
     }
+
+    NSDictionary<NSString *, NSString *> *searchPartyResultAccessors = @{
+        @"SPLocationFetchResult": @"locationsByBeaconIdentifier",
+        @"SPDeviceEventFetchResult": @"beaconEventByBeaconIdentifier",
+    };
+    for (NSString *className in searchPartyResultAccessors) {
+        [self swizzleInstanceMethodForClass:NSClassFromString(className)
+                                   selector:NSSelectorFromString(searchPartyResultAccessors[className])
+                                replacement:(IMP)BBFindMySearchPartyResultAccessor];
+    }
 }
 
 - (NSDictionary *)findMySwizzleDiagnostics {
@@ -890,14 +918,82 @@ static void BBFindMyInterestingObjectSetter(id self, SEL _cmd, id value) {
     }
 }
 
+- (NSArray *)compactEntriesForSearchPartyAccessorResult:(id)result {
+    if (![result isKindOfClass:[NSDictionary class]]) {
+        return @[];
+    }
+
+    NSDictionary *dictionary = (NSDictionary *)result;
+    NSMutableArray *entries = [[NSMutableArray alloc] init];
+    for (id key in dictionary.allKeys) {
+        if (entries.count >= 8) {
+            break;
+        }
+
+        id value = dictionary[key];
+        NSMutableDictionary *entry = [[NSMutableDictionary alloc] initWithDictionary:@{
+            @"key": [key description] ?: @"<nil>",
+            @"key_class": [self classNameForObject:key],
+            @"value_class": [self classNameForObject:value],
+        }];
+
+        NSString *valueDescription = [value description];
+        if (valueDescription.length > 0) {
+            entry[@"value_description"] = valueDescription.length > 220 ? [valueDescription substringToIndex:220] : valueDescription;
+        }
+
+        [entries addObject:[entry copy]];
+    }
+    return entries;
+}
+
+- (void)captureFindMySearchPartyAccessorResult:(id)result source:(id)source selector:(SEL)selector {
+    NSMutableDictionary *snapshot = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"selector": selector == nil ? @"<nil>" : NSStringFromSelector(selector),
+        @"source_class": [self classNameForObject:source],
+        @"source_id": source == nil ? @"<nil>" : [NSString stringWithFormat:@"%p", source],
+        @"result_class": [self classNameForObject:result],
+        @"timestamp": @([[NSDate date] timeIntervalSince1970]),
+    }];
+
+    if ([result isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *dictionary = (NSDictionary *)result;
+        snapshot[@"result_count"] = @(dictionary.count);
+        snapshot[@"entries"] = [self compactEntriesForSearchPartyAccessorResult:dictionary];
+    } else if (result != nil) {
+        NSString *description = [result description];
+        if (description.length > 0) {
+            snapshot[@"result_description"] = description.length > 220 ? [description substringToIndex:220] : description;
+        }
+    }
+
+    DLog("BLUEBUBBLESHELPER: SearchParty accessor selector=%{public}@ source=%{public}@ result=%{public}@ count=%{public}@",
+         snapshot[@"selector"], snapshot[@"source_class"], snapshot[@"result_class"], snapshot[@"result_count"] ?: @"<nil>");
+
+    @synchronized ([BlueBubblesHelper class]) {
+        if (findMySearchPartyAccessorSnapshots == nil) {
+            findMySearchPartyAccessorSnapshots = [[NSMutableArray alloc] init];
+        }
+        [findMySearchPartyAccessorSnapshots addObject:[snapshot copy]];
+        if (findMySearchPartyAccessorSnapshots.count > 40) {
+            [findMySearchPartyAccessorSnapshots removeObjectsInRange:NSMakeRange(0, findMySearchPartyAccessorSnapshots.count - 40)];
+        }
+    }
+}
+
 - (NSDictionary *)capturedFindMyPassiveDiagnostics {
     @synchronized ([BlueBubblesHelper class]) {
         NSArray *snapshots = [findMyCapturedObjectSnapshots copy] ?: @[];
         NSUInteger start = snapshots.count > 20 ? snapshots.count - 20 : 0;
         NSArray *recent = snapshots.count > 0 ? [snapshots subarrayWithRange:NSMakeRange(start, snapshots.count - start)] : @[];
+        NSArray *accessorSnapshots = [findMySearchPartyAccessorSnapshots copy] ?: @[];
+        NSUInteger accessorStart = accessorSnapshots.count > 12 ? accessorSnapshots.count - 12 : 0;
+        NSArray *recentAccessors = accessorSnapshots.count > 0 ? [accessorSnapshots subarrayWithRange:NSMakeRange(accessorStart, accessorSnapshots.count - accessorStart)] : @[];
         return @{
             @"snapshot_count": @(snapshots.count),
             @"snapshots": recent,
+            @"searchparty_accessor_count": @(accessorSnapshots.count),
+            @"searchparty_accessors": recentAccessors,
         };
     }
 }
