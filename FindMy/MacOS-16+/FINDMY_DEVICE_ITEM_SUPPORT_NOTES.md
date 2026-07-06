@@ -277,6 +277,25 @@ SPDeviceEventFetchResult
 
 However, the Devices refresh timed out once while those focused class diagnostics were in the route path, so I removed that extra route inspection. The finding still points to a better next implementation: wrap `setLocationUpdateBlock:` and `setDeviceEventUpdateBlock:` with matching signatures and serialize bounded summaries from `locationsByBeaconIdentifier` and `beaconEventByBeaconIdentifier` only when Find My naturally invokes those callbacks.
 
+### 2026-07-06 Block Wrapper Attempt
+
+I tried the callback-wrapper approach in two forms:
+
+1. A generic `id` one-argument block wrapper.
+2. A typed wrapper using forward-declared `SPLocationFetchResult` and `SPDeviceEventFetchResult`, with our capture deferred using `dispatch_async` after Apple's original block returned.
+
+Both builds caused the Devices refresh request to time out at 120 seconds. The conclusion is that replacing the SearchParty blocks is not safe enough yet, even when the replacement block has the matching visible result class in its signature. The next callback-level attempt should avoid replacing Apple's block and instead look for a lower-risk observation point, such as method swizzles on `SPLocationFetchResult` / `SPDeviceEventFetchResult` accessors or a debug-only route that inspects already-captured result objects outside the Devices refresh path.
+
+During recovery I also found a separate stability issue: when 13 visible device rows are returned, the diagnostics payload can exceed the helper/server message decoder's practical limit and arrive truncated. The server log showed `Failed to decode BlueBubblesHelper data!` followed by a Devices transaction timeout even though the helper had generated the 13 device rows. I fixed this by compacting the diagnostics included in Devices/Items refresh responses while leaving the actual device/item arrays unchanged.
+
+Verified after compacting diagnostics:
+
+```text
+friends count=8 status=200 elapsed=0.0
+devices count=13 status=200 elapsed=10.6
+items count=12 status=200 elapsed=7.4
+```
+
 ## Why the Old Cache Path Is Not Enough
 
 The older BlueBubbles device path expected locally readable Find My cache data. On this macOS build, the modern device and item cache files are not directly usable JSON/plist device records. They contain encrypted payloads such as `encryptedData` and `signature`, so reading those files from the server process is not enough to return device/item locations.

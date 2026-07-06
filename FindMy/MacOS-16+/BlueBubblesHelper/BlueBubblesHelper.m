@@ -37,6 +37,7 @@
 - (void)captureFindMyInterestingSetterObject:(id)object value:(id)value selector:(SEL)selector;
 - (NSDictionary *)capturedFindMyDataSourceDiagnostics;
 - (NSDictionary *)capturedFindMyPassiveDiagnostics;
+- (NSDictionary *)compactFindMyRefreshDiagnostics:(NSDictionary *)diagnostics;
 - (NSArray *)findMyListRowsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (NSDictionary *)activeFindMyListDiagnosticsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (BOOL)selectFindMySegmentIndex:(NSInteger)index;
@@ -899,6 +900,80 @@ static void BBFindMyInterestingObjectSetter(id self, SEL _cmd, id value) {
             @"snapshots": recent,
         };
     }
+}
+
+- (NSDictionary *)compactFindMyActiveListDiagnostics:(NSDictionary *)diagnostics {
+    if (![diagnostics isKindOfClass:[NSDictionary class]]) {
+        return @{};
+    }
+
+    NSMutableDictionary *compact = [[NSMutableDictionary alloc] init];
+    for (NSString *key in @[@"found", @"type", @"requested_data_source_term", @"data_source_class", @"table_view_class", @"delegate_class", @"visible_cell_count", @"active_scan_count"]) {
+        id value = diagnostics[key];
+        if (value != nil) {
+            compact[key] = value;
+        }
+    }
+    return [compact copy];
+}
+
+- (NSDictionary *)compactFindMySwizzleDiagnostics:(NSDictionary *)diagnostics {
+    if (![diagnostics isKindOfClass:[NSDictionary class]]) {
+        return @{};
+    }
+
+    NSArray *events = [diagnostics[@"events"] isKindOfClass:[NSArray class]] ? diagnostics[@"events"] : @[];
+    NSUInteger start = events.count > 8 ? events.count - 8 : 0;
+    NSArray *recentEvents = events.count > 0 ? [events subarrayWithRange:NSMakeRange(start, events.count - start)] : @[];
+    NSArray *selectors = [diagnostics[@"swizzled_selectors"] isKindOfClass:[NSArray class]] ? diagnostics[@"swizzled_selectors"] : @[];
+
+    return @{
+        @"installed": diagnostics[@"installed"] ?: @NO,
+        @"event_count": diagnostics[@"event_count"] ?: @(events.count),
+        @"events": recentEvents,
+        @"swizzled_selector_count": @(selectors.count),
+    };
+}
+
+- (NSDictionary *)compactFindMyRefreshDiagnostics:(NSDictionary *)diagnostics {
+    if (![diagnostics isKindOfClass:[NSDictionary class]]) {
+        return @{};
+    }
+
+    NSMutableDictionary *compact = [[NSMutableDictionary alloc] init];
+    for (NSString *key in @[@"selected_devices_segment", @"selected_items_segment", @"ui_device_count", @"ui_item_count", @"owner_beacon_count", @"owner_beacon_timeout"]) {
+        id value = diagnostics[key];
+        if (value != nil) {
+            compact[key] = value;
+        }
+    }
+
+    NSDictionary *passiveCaptures = diagnostics[@"passive_captures"];
+    if ([passiveCaptures isKindOfClass:[NSDictionary class]]) {
+        compact[@"passive_captures"] = passiveCaptures;
+    }
+
+    NSDictionary *swizzle = diagnostics[@"swizzle"];
+    if ([swizzle isKindOfClass:[NSDictionary class]]) {
+        compact[@"swizzle"] = [self compactFindMySwizzleDiagnostics:swizzle];
+    }
+
+    NSDictionary *activeDevicesList = diagnostics[@"active_devices_list"];
+    if ([activeDevicesList isKindOfClass:[NSDictionary class]]) {
+        compact[@"active_devices_list"] = [self compactFindMyActiveListDiagnostics:activeDevicesList];
+    }
+
+    NSDictionary *activeItemsList = diagnostics[@"active_items_list"];
+    if ([activeItemsList isKindOfClass:[NSDictionary class]]) {
+        compact[@"active_items_list"] = [self compactFindMyActiveListDiagnostics:activeItemsList];
+    }
+
+    NSDictionary *swiftProbe = diagnostics[@"swift_probe"];
+    if ([swiftProbe isKindOfClass:[NSDictionary class]]) {
+        compact[@"swift_probe"] = swiftProbe;
+    }
+
+    return [compact copy];
 }
 
 - (NSArray *)runtimeClassNamesMatchingTerms:(NSArray<NSString *> *)terms limit:(NSUInteger)limit {
@@ -2545,7 +2620,7 @@ static void BBFindMyInterestingObjectSetter(id self, SEL _cmd, id value) {
                 [[NetworkController sharedInstance] sendMessage:@{
                     @"transactionId": transaction ?: [NSNull null],
                     @"devices": devices,
-                    @"diagnostics": [mutableDiagnostics copy],
+                    @"diagnostics": [self compactFindMyRefreshDiagnostics:mutableDiagnostics],
                 }];
             }
         };
@@ -2645,7 +2720,7 @@ static void BBFindMyInterestingObjectSetter(id self, SEL _cmd, id value) {
                 [[NetworkController sharedInstance] sendMessage:@{
                     @"transactionId": transaction ?: [NSNull null],
                     @"items": items,
-                    @"diagnostics": [mutableDiagnostics copy],
+                    @"diagnostics": [self compactFindMyRefreshDiagnostics:mutableDiagnostics],
                 }];
             }
         };
