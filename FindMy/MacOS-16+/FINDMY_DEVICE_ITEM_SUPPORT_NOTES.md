@@ -231,6 +231,34 @@ SPOwnerSession setDeviceEventUpdateBlock:
 
 That makes `setDeviceEventUpdateBlock:` the next best passive SearchParty hook to inspect. It likely receives device-related update events without forcing a synchronous `allBeaconsWithCompletion:` fetch or touching the table-cell creation path.
 
+### 2026-07-06 Passive Setter Block Signatures
+
+I added metadata-only capture for setter values. The helper still passes Apple's original block through unchanged, but it now records the Objective-C block class, pointer, and signature when the setter value is a block.
+
+The rebuilt dylib stayed healthy through the Android-facing routes:
+
+```text
+friends count=8 status=200 elapsed=0.1
+devices count=13 status=200 elapsed=10.2
+items count=12 status=200 elapsed=7.1
+```
+
+The useful block signatures are:
+
+```text
+setLocationUpdateBlock:     v16@?0@"SPLocationFetchResult"8
+setDeviceEventUpdateBlock:  v16@?0@"SPDeviceEventFetchResult"8
+```
+
+That gives us the next concrete private classes to inspect:
+
+```text
+SPLocationFetchResult
+SPDeviceEventFetchResult
+```
+
+The next safe step is to inspect those result classes and their ObjC-visible selectors/ivars. If they expose device or beacon arrays, we can wrap the blocks later with matching signatures and copy a bounded summary when Find My naturally delivers an update.
+
 ## Why the Old Cache Path Is Not Enough
 
 The older BlueBubbles device path expected locally readable Find My cache data. On this macOS build, the modern device and item cache files are not directly usable JSON/plist device records. They contain encrypted payloads such as `encryptedData` and `signature`, so reading those files from the server process is not enough to return device/item locations.

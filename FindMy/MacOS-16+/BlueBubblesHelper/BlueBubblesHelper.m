@@ -34,6 +34,7 @@
 - (NSDictionary *)findMySessionObjectDiagnostics;
 - (void)captureFindMyDataSource:(id)dataSource tableView:(id)tableView;
 - (void)captureFindMyInterestingObject:(id)object source:(NSString *)source selector:(SEL)selector;
+- (void)captureFindMyInterestingSetterObject:(id)object value:(id)value selector:(SEL)selector;
 - (NSDictionary *)capturedFindMyDataSourceDiagnostics;
 - (NSDictionary *)capturedFindMyPassiveDiagnostics;
 - (NSArray *)findMyListRowsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
@@ -77,6 +78,64 @@ static void BBFindMyRecordSwizzleEvent(NSDictionary *event) {
             [findMySwizzleEvents removeObjectsInRange:NSMakeRange(0, findMySwizzleEvents.count - 24)];
         }
     }
+}
+
+struct BBFindMyBlockDescriptor {
+    unsigned long int reserved;
+    unsigned long int size;
+};
+
+struct BBFindMyBlockLiteral {
+    void *isa;
+    int flags;
+    int reserved;
+    void *invoke;
+    struct BBFindMyBlockDescriptor *descriptor;
+};
+
+static NSString *BBFindMyBlockSignature(id block) {
+    if (block == nil) {
+        return nil;
+    }
+
+    const int blockHasCopyDispose = (1 << 25);
+    const int blockHasSignature = (1 << 30);
+    struct BBFindMyBlockLiteral *literal = (__bridge struct BBFindMyBlockLiteral *)block;
+    if ((literal->flags & blockHasSignature) == 0 || literal->descriptor == NULL) {
+        return nil;
+    }
+
+    void *descriptorCursor = literal->descriptor;
+    descriptorCursor = (void *)((uintptr_t)descriptorCursor + (sizeof(unsigned long int) * 2));
+    if ((literal->flags & blockHasCopyDispose) != 0) {
+        descriptorCursor = (void *)((uintptr_t)descriptorCursor + (sizeof(void *) * 2));
+    }
+
+    const char *signature = (*(const char **)descriptorCursor);
+    if (signature == NULL) {
+        return nil;
+    }
+    return [NSString stringWithUTF8String:signature];
+}
+
+static NSDictionary *BBFindMySetterValueMetadata(id value) {
+    if (value == nil) {
+        return @{};
+    }
+
+    NSString *className = NSStringFromClass([value class]) ?: @"<nil>";
+    NSMutableDictionary *metadata = [@{
+        @"value_class": className,
+        @"value_id": [NSString stringWithFormat:@"%p", value],
+    } mutableCopy];
+
+    if ([className containsString:@"Block"]) {
+        metadata[@"value_is_block"] = @YES;
+        NSString *signature = BBFindMyBlockSignature(value);
+        metadata[@"block_signature"] = signature ?: @"<unavailable>";
+    }
+
+    return [metadata copy];
 }
 
 static NSInteger BBFindMyTableViewNumberOfRows(id self, SEL _cmd, id tableView, NSInteger section) {
@@ -186,7 +245,7 @@ static void BBFindMyInterestingObjectSetter(id self, SEL _cmd, id value) {
         original(self, _cmd, value);
     }
 
-    [[BlueBubblesHelper sharedInstance] captureFindMyInterestingObject:self source:@"setter" selector:_cmd];
+    [[BlueBubblesHelper sharedInstance] captureFindMyInterestingSetterObject:self value:value selector:_cmd];
 }
 
 + (instancetype)sharedInstance {
@@ -789,6 +848,41 @@ static void BBFindMyInterestingObjectSetter(id self, SEL _cmd, id value) {
             }
         }
         [findMyCapturedObjectSnapshots addObject:snapshot];
+        if (findMyCapturedObjectSnapshots.count > 60) {
+            [findMyCapturedObjectSnapshots removeObjectsInRange:NSMakeRange(0, findMyCapturedObjectSnapshots.count - 60)];
+        }
+    }
+}
+
+- (void)captureFindMyInterestingSetterObject:(id)object value:(id)value selector:(SEL)selector {
+    NSMutableDictionary *snapshot = [[self findMyPassiveSnapshotForObject:object source:@"setter" selector:selector] mutableCopy];
+    if (snapshot.count == 0) {
+        return;
+    }
+
+    NSDictionary *valueMetadata = BBFindMySetterValueMetadata(value);
+    if (valueMetadata.count > 0) {
+        snapshot[@"value"] = valueMetadata;
+    }
+
+    DLog("BLUEBUBBLESHELPER: Passive Find My setter capture selector=%{public}@ class=%{public}@ object=%{public}@ value=%{public}@",
+         snapshot[@"selector"], snapshot[@"class"], snapshot[@"object_id"], valueMetadata.description ?: @"<nil>");
+
+    @synchronized ([BlueBubblesHelper class]) {
+        if (findMyCapturedObjectSnapshots == nil) {
+            findMyCapturedObjectSnapshots = [[NSMutableArray alloc] init];
+        }
+        if (findMyCapturedObjectsByIdentifier == nil) {
+            findMyCapturedObjectsByIdentifier = [[NSMutableDictionary alloc] init];
+        }
+        NSString *objectIdentifier = snapshot[@"object_id"];
+        if ([objectIdentifier isKindOfClass:[NSString class]]) {
+            findMyCapturedObjectsByIdentifier[objectIdentifier] = object;
+            if (findMyCapturedObjectsByIdentifier.count > 80) {
+                [findMyCapturedObjectsByIdentifier removeObjectForKey:findMyCapturedObjectsByIdentifier.allKeys.firstObject];
+            }
+        }
+        [findMyCapturedObjectSnapshots addObject:[snapshot copy]];
         if (findMyCapturedObjectSnapshots.count > 60) {
             [findMyCapturedObjectSnapshots removeObjectsInRange:NSMakeRange(0, findMyCapturedObjectSnapshots.count - 60)];
         }
