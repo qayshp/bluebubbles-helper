@@ -259,6 +259,24 @@ SPDeviceEventFetchResult
 
 The next safe step is to inspect those result classes and their ObjC-visible selectors/ivars. If they expose device or beacon arrays, we can wrap the blocks later with matching signatures and copy a bounded summary when Find My naturally delivers an update.
 
+I briefly added focused route diagnostics for those result classes. That did reveal useful ObjC-visible selectors:
+
+```text
+SPLocationFetchResult
+  supportsSecureCoding
+  initWithResults:
+  locationsByBeaconIdentifier
+  setLocationsByBeaconIdentifier:
+
+SPDeviceEventFetchResult
+  supportsSecureCoding
+  initWithResults:
+  beaconEventByBeaconIdentifier
+  setBeaconEventByBeaconIdentifier:
+```
+
+However, the Devices refresh timed out once while those focused class diagnostics were in the route path, so I removed that extra route inspection. The finding still points to a better next implementation: wrap `setLocationUpdateBlock:` and `setDeviceEventUpdateBlock:` with matching signatures and serialize bounded summaries from `locationsByBeaconIdentifier` and `beaconEventByBeaconIdentifier` only when Find My naturally invokes those callbacks.
+
 ## Why the Old Cache Path Is Not Enough
 
 The older BlueBubbles device path expected locally readable Find My cache data. On this macOS build, the modern device and item cache files are not directly usable JSON/plist device records. They contain encrypted payloads such as `encryptedData` and `signature`, so reading those files from the server process is not enough to return device/item locations.
