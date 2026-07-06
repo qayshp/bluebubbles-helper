@@ -511,11 +511,20 @@ static void BBFindMyInterestingObjectSetter(id self, SEL _cmd, id value) {
 
     Class ownerSessionClass = NSClassFromString(@"SPOwnerSession");
     for (NSString *selectorName in @[
+        @"setBeaconAddedBlock:",
+        @"setBeaconRemovedBlock:",
         @"setBeaconsChangedBlock:",
+        @"setClientObservedBeacons:",
+        @"setDelegatedLocationUpdateBlock:",
+        @"setDeviceEventUpdateBlock:",
         @"setLatestLocationsUpdatedBlock:",
+        @"setLocationCache:",
+        @"setLocationSources:",
         @"setLocationUpdateBlock:",
         @"setMaintainedBeaconsChangedBlock:",
         @"setMaintainedUnknownBeaconsChangedBlock:",
+        @"setOwnerSessionStateUpdatedBlock:",
+        @"setTagSeparationBeaconsChangedBlock:",
     ]) {
         [self swizzleInstanceMethodForClass:ownerSessionClass
                                    selector:NSSelectorFromString(selectorName)

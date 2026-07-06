@@ -164,14 +164,72 @@ devices 13 200
 items 12 200
 ```
 
-No passive provider/SearchParty capture events were observed in the latest run. That suggests one of these is true:
+The later restored run did observe passive SearchParty activity from the Apple-created session:
+
+```text
+SPOwnerSession init
+SPOwnerSession setLocationUpdateBlock:
+```
+
+The Android-facing routes stayed healthy after restoring the event-only build:
+
+```text
+friends 8 200
+devices 13 200
+items 12 200
+```
+
+No passive provider captures were observed in that run. That suggests one of these is true:
 
 - The target objects were already created before the hooks were installed.
 - The Swift classes are not entering Objective-C `init` in a way this hook catches.
 - The live Devices/Items path is driven by different provider classes or factory methods.
-- The relevant SearchParty callbacks were set before helper injection or are not set in this UI path.
+- Some relevant SearchParty callbacks were set before helper injection or are not set in this UI path.
 
-Next refinement: hook narrower methods that are definitely observed in the active UI path, such as `FMDevicesListDataSource tableView:cellForRowAtIndexPath:` and `FMItemsListDataSource tableView:cellForRowAtIndexPath:`, and capture object identities from the returned cell/model path. That starts from a method we know fires instead of guessing constructor timing.
+I also tried the next proposed refinement: doing direct capture work inside the swizzled `FMDevicesListDataSource tableView:cellForRowAtIndexPath:` / `FMItemsListDataSource tableView:cellForRowAtIndexPath:` path. Two versions were tested:
+
+- A field-rich version that captured the returned cell plus direct model/ivar candidates.
+- An identity-only version that captured only class names and object pointers for the cell and immediate candidates.
+
+Both versions caused the Devices refresh request to time out at 120 seconds after Friends had already returned successfully. That means direct capture inside `cellForRowAtIndexPath:` is still too invasive for the user-facing route, even without recursive field serialization.
+
+The safe conclusion is to keep `cellForRowAtIndexPath:` swizzles for lightweight route diagnostics only. New capture should happen outside the hot table-cell creation path, or via passive SearchParty/provider setter hooks that only record metadata.
+
+Next refinement: broaden event-only SearchParty setter coverage for methods that are already visible on `SPOwnerSession`, such as `setDeviceEventUpdateBlock:`, `setBeaconAddedBlock:`, `setBeaconRemovedBlock:`, `setOwnerSessionStateUpdatedBlock:`, and `setTagSeparationBeaconsChangedBlock:`. These hooks should continue to record only source, selector, class, object pointer, and timestamp.
+
+### 2026-07-06 Passive SearchParty Setter Expansion
+
+I expanded the event-only `SPOwnerSession` setter hooks to include:
+
+```objc
+setBeaconAddedBlock:
+setBeaconRemovedBlock:
+setClientObservedBeacons:
+setDelegatedLocationUpdateBlock:
+setDeviceEventUpdateBlock:
+setLocationCache:
+setLocationSources:
+setOwnerSessionStateUpdatedBlock:
+setTagSeparationBeaconsChangedBlock:
+```
+
+The rebuilt dylib was copied into the repo-built BlueBubbles app and tested through the Android-facing API routes. The routes stayed healthy:
+
+```text
+friends count=8 status=200 elapsed=0.0
+devices count=13 status=200 elapsed=10.0
+items count=12 status=200 elapsed=25.2
+```
+
+The new useful signal was `setDeviceEventUpdateBlock:` on the same Apple-created `SPOwnerSession` object that also receives `setLocationUpdateBlock:`:
+
+```text
+SPOwnerSession init
+SPOwnerSession setLocationUpdateBlock:
+SPOwnerSession setDeviceEventUpdateBlock:
+```
+
+That makes `setDeviceEventUpdateBlock:` the next best passive SearchParty hook to inspect. It likely receives device-related update events without forcing a synchronous `allBeaconsWithCompletion:` fetch or touching the table-cell creation path.
 
 ## Why the Old Cache Path Is Not Enough
 
