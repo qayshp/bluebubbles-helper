@@ -41,6 +41,87 @@ open 'findmy://people'
 
 After those URLs are opened, the helper swizzles see live Devices and Items table data sources. The API still returns `data: []` because serialization of the backing view models has not been implemented yet.
 
+## 2026-07-06 Update: Devices, Items, and SearchParty
+
+The Android-facing routes now return visible Find My UI rows for all three categories on this machine:
+
+```text
+friends 8 200
+devices 13 200
+items 12 200
+```
+
+Devices and Items are currently sourced from the active Find My list UI. The helper switches to the Devices or Items view, finds the active `FindMy.FMTableView`, reads visible cells, and serializes text plus bounded model diagnostics from:
+
+```text
+_TtGC6FindMy19FMListTableViewCellVS_21FMDeviceCellViewModel_
+_TtGC6FindMy19FMListTableViewCellVS_19FMItemCellViewModel_
+```
+
+That is enough to populate the Android API surface, but it is still UI-backed and therefore limited by visible/loaded cells. The next goal is to find a non-UI source for Devices, Items, or Beacons.
+
+For that work, we are using `SearchParty` as the internal name for the `SPOwnerSession` path. `SP` is treated as SearchParty in code comments and docs for this investigation.
+
+### SearchParty Attempt: Active `allBeaconsWithCompletion:`
+
+I tried collecting SearchParty diagnostics by calling `SPOwnerSession allBeaconsWithCompletion:` during the Devices and Items refresh route, even when UI rows were already available. The code built and injected successfully, but the Devices refresh hung until the HTTP client timed out at 120 seconds.
+
+Important details:
+
+- Friends still returned immediately.
+- Devices timed out before the helper could send a response.
+- The in-helper timeout did not fire, which means the `allBeaconsWithCompletion:` invocation itself appears to block the Find My main thread before control returns.
+- I restored the stable route and redeployed the stable dylib after the test.
+- Final stable verification returned:
+
+```text
+friends 8 200
+devices 13 200
+items 12 200
+```
+
+Current conclusion: direct SearchParty calls should not run in the Android-facing refresh path. SearchParty is still promising, but it needs passive instrumentation or a separate debug path that cannot block the user-facing API.
+
+### What To Inspect Next
+
+Highest priority:
+
+1. Existing SearchParty session references inside Find My's live object graph.
+   - Look for an app-owned `SPOwnerSession`, not a newly allocated one.
+   - Start from captured `FMListViewController` delegates for Devices and Items.
+   - Inspect only direct ivars/KVC summaries for names like `ownerSession`, `session`, `repository`, `provider`, `itemsProvider`, `devicesProvider`, `beacon`, and `location`.
+   - Avoid broad recursion and Swift `Mirror`; both have already hung route execution.
+
+2. SearchParty callback setters and caches.
+   - `setBeaconsChangedBlock:`
+   - `setLatestLocationsUpdatedBlock:`
+   - `setLocationUpdateBlock:`
+   - `allBeaconsCache`
+   - `locationCache`
+   - `locationSources`
+   - `clientObservedBeacons`
+   - These should be inspected passively first. Replacing or wrapping callbacks may be safer than calling `allBeaconsWithCompletion:` directly.
+
+3. Existing UI provider objects.
+   - `FindMy.FMDevicesProvider`
+   - `FindMy.FMDevicesActionController`
+   - `FindMy.FMItemsListDataSource`
+   - `FindMyUICore.ItemsProvider`
+   - `FindMyUICore.ItemsLocationsProvider`
+   - `FindMyUICore.Repository`
+   - `FindMyUICore.SessionLive`
+   - The runtime proves these classes are loaded. The missing piece is locating the live instances and reading bounded fields without invoking heavy Swift reflection.
+
+4. Swizzle construction points instead of request-time getters.
+   - Watch initializers or setter methods for `FMDevicesListDataSource`, `FMItemsListDataSource`, `FMListViewController`, `ItemsProvider`, and `Repository`.
+   - Capture object identities and direct ivar/KVC summaries when Find My constructs the view, not later during route response assembly.
+   - This may reveal a stable provider/session reference without walking the full graph on demand.
+
+5. A separate debug-only SearchParty command.
+   - If active calls are still needed, put them behind a route that is not used by Android and make it safe to fail or hang without breaking Devices/Items refresh.
+   - Try off-main invocation only after confirming the framework does not require main-thread access for that selector.
+   - Record whether `allBeacons`, `allBeaconsCache`, or `locationsForBeacons:completion:` behave differently on an existing app-owned session.
+
 ## Why the Old Cache Path Is Not Enough
 
 The older BlueBubbles device path expected locally readable Find My cache data. On this macOS build, the modern device and item cache files are not directly usable JSON/plist device records. They contain encrypted payloads such as `encryptedData` and `signature`, so reading those files from the server process is not enough to return device/item locations.
