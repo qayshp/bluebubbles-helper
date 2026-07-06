@@ -84,43 +84,52 @@ Current conclusion: direct SearchParty calls should not run in the Android-facin
 
 ### What To Inspect Next
 
-Highest priority:
+There are three simpler paths to pursue next.
 
-1. Existing SearchParty session references inside Find My's live object graph.
-   - Look for an app-owned `SPOwnerSession`, not a newly allocated one.
-   - Start from captured `FMListViewController` delegates for Devices and Items.
-   - Inspect only direct ivars/KVC summaries for names like `ownerSession`, `session`, `repository`, `provider`, `itemsProvider`, `devicesProvider`, `beacon`, and `location`.
-   - Avoid broad recursion and Swift `Mirror`; both have already hung route execution.
+1. Find the SearchParty session that Find My is already using.
 
-2. SearchParty callback setters and caches.
-   - `setBeaconsChangedBlock:`
-   - `setLatestLocationsUpdatedBlock:`
-   - `setLocationUpdateBlock:`
-   - `allBeaconsCache`
-   - `locationCache`
-   - `locationSources`
-   - `clientObservedBeacons`
-   - These should be inspected passively first. Replacing or wrapping callbacks may be safer than calling `allBeaconsWithCompletion:` directly.
+   Creating a new `SPOwnerSession` is not enough, and calling `allBeaconsWithCompletion:` on it can hang the route. Instead, look for the `SPOwnerSession` object that the Find My app already created for itself. The best starting points are the captured Devices and Items list controllers:
 
-3. Existing UI provider objects.
-   - `FindMy.FMDevicesProvider`
-   - `FindMy.FMDevicesActionController`
-   - `FindMy.FMItemsListDataSource`
-   - `FindMyUICore.ItemsProvider`
-   - `FindMyUICore.ItemsLocationsProvider`
-   - `FindMyUICore.Repository`
-   - `FindMyUICore.SessionLive`
-   - The runtime proves these classes are loaded. The missing piece is locating the live instances and reading bounded fields without invoking heavy Swift reflection.
+   ```text
+   _TtGC6FindMy20FMListViewControllerCS_23FMDevicesListDataSourceCS_14FMNoDeviceViewCS_21FMDevicesTerminalView_
+   _TtGC6FindMy20FMListViewControllerCS_21FMItemsListDataSourceCS_12FMNoItemViewCS_18FMItemTerminalView_
+   ```
 
-4. Swizzle construction points instead of request-time getters.
-   - Watch initializers or setter methods for `FMDevicesListDataSource`, `FMItemsListDataSource`, `FMListViewController`, `ItemsProvider`, and `Repository`.
-   - Capture object identities and direct ivar/KVC summaries when Find My constructs the view, not later during route response assembly.
-   - This may reveal a stable provider/session reference without walking the full graph on demand.
+   Inspect only nearby fields with names like `ownerSession`, `session`, `repository`, `provider`, `itemsProvider`, `devicesProvider`, `beacon`, or `location`. Do not recursively walk the whole app graph or use Swift `Mirror`; both have already caused hangs.
 
-5. A separate debug-only SearchParty command.
-   - If active calls are still needed, put them behind a route that is not used by Android and make it safe to fail or hang without breaking Devices/Items refresh.
-   - Try off-main invocation only after confirming the framework does not require main-thread access for that selector.
-   - Record whether `allBeacons`, `allBeaconsCache`, or `locationsForBeacons:completion:` behave differently on an existing app-owned session.
+2. Listen for SearchParty updates instead of asking for all beacons.
+
+   Calling `allBeaconsWithCompletion:` directly is risky because it can block Find My before our timeout runs. A safer approach is to observe the update hooks and caches that Find My already uses:
+
+   ```objc
+   setBeaconsChangedBlock:
+   setLatestLocationsUpdatedBlock:
+   setLocationUpdateBlock:
+   allBeaconsCache
+   locationCache
+   locationSources
+   clientObservedBeacons
+   ```
+
+   The idea is to let Find My populate its own beacon/location data, then copy a small summary after it changes. This should be less disruptive than forcing a synchronous fetch during an Android API request.
+
+3. Capture providers when Find My creates them.
+
+   We know these classes are loaded:
+
+   ```text
+   FindMy.FMDevicesProvider
+   FindMy.FMDevicesActionController
+   FindMy.FMItemsListDataSource
+   FindMyUICore.ItemsProvider
+   FindMyUICore.ItemsLocationsProvider
+   FindMyUICore.Repository
+   FindMyUICore.SessionLive
+   ```
+
+   The missing piece is finding the live instances. Instead of searching for them during an API request, swizzle narrow constructors or setter methods and record object identities when Find My builds the Devices or Items views. That gives us stable object references to inspect later, without doing a broad graph scan on the request path.
+
+Active SearchParty calls should go behind a separate debug-only route if needed. They should not run inside the Android-facing refresh path until we know they cannot block.
 
 ## Why the Old Cache Path Is Not Enough
 
