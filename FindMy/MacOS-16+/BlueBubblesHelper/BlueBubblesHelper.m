@@ -32,6 +32,7 @@
 - (NSDictionary *)serializeFMLLocation:(id)location handle:(id)handle;
 - (NSDictionary *)findMyObjectGraphDiagnostics;
 - (NSArray *)findMyListRowsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
+- (NSDictionary *)activeFindMyListDiagnosticsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (BOOL)selectFindMySegmentIndex:(NSInteger)index;
 - (void)installFindMySwizzles;
 - (NSDictionary *)findMySwizzleDiagnostics;
@@ -987,39 +988,6 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
             [queue addObject:@{@"object": child, @"depth": @(depth + 1)}];
         }
 
-        Class ivarClass = [current class];
-        NSUInteger ivarClassDepth = 0;
-        while (ivarClass != nil && ivarClassDepth < 3) {
-            unsigned int ivarCount = 0;
-            Ivar *ivarList = class_copyIvarList(ivarClass, &ivarCount);
-            for (unsigned int i = 0; i < ivarCount; i++) {
-                Ivar ivar = ivarList[i];
-                const char *type = ivar_getTypeEncoding(ivar);
-                if (type == NULL || type[0] != '@') {
-                    continue;
-                }
-
-                id value = nil;
-                @try {
-                    value = object_getIvar(current, ivar);
-                } @catch (NSException *exception) {
-                    value = nil;
-                }
-
-                NSString *valueClass = [self classNameForObject:value];
-                if ([value isKindOfClass:[NSString class]] && [(NSString *)value length] > 0 && ![texts containsObject:value]) {
-                    [texts addObject:value];
-                } else if ([valueClass rangeOfString:@"Label" options:NSCaseInsensitiveSearch].location != NSNotFound ||
-                           [valueClass rangeOfString:@"Text" options:NSCaseInsensitiveSearch].location != NSNotFound ||
-                           [valueClass rangeOfString:@"ViewModel" options:NSCaseInsensitiveSearch].location != NSNotFound ||
-                           [valueClass rangeOfString:@"Location" options:NSCaseInsensitiveSearch].location != NSNotFound) {
-                    [queue addObject:@{@"object": value, @"depth": @(depth + 1)}];
-                }
-            }
-            free(ivarList);
-            ivarClass = class_getSuperclass(ivarClass);
-            ivarClassDepth++;
-        }
     }
 
     return [texts copy];
@@ -1028,9 +996,9 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
 - (NSDictionary *)serializeFindMyListCell:(id)cell
                                dataSource:(id)dataSource
                                   section:(NSInteger)section
-                                      row:(NSInteger)row
+                                     row:(NSInteger)row
                                      type:(NSString *)type {
-    NSArray *texts = [self textValuesInObject:cell maxDepth:6];
+    NSArray *texts = @[];
     NSString *name = texts.count > 0 ? texts[0] : [NSString stringWithFormat:@"%@ %ld-%ld", type, (long)section, (long)row];
     NSString *identifier = [NSString stringWithFormat:@"%@:%ld:%ld:%@", type, (long)section, (long)row, [[cell description] ?: @"" description]];
 
@@ -1108,6 +1076,55 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
     }
 
     return [rows copy];
+}
+
+- (NSDictionary *)activeFindMyListDiagnosticsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type {
+    NSDictionary *active = [self activeFindMyTableViewForDataSourceTerm:dataSourceTerm];
+    id tableView = active[@"tableView"];
+    id dataSource = active[@"dataSource"];
+    id delegate = [self safeValueForKey:@"delegate" object:tableView];
+
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"requested_data_source_term": dataSourceTerm ?: @"<nil>",
+        @"type": type ?: @"<nil>",
+        @"found": @(tableView != nil && dataSource != nil),
+        @"active_scan_count": active[@"scanned"] ?: @0,
+        @"table_view_class": [self classNameForObject:tableView],
+        @"data_source_class": [self classNameForObject:dataSource],
+        @"delegate_class": [self classNameForObject:delegate],
+    }];
+
+    SEL visibleCellsSelector = @selector(visibleCells);
+    if (tableView != nil && [tableView respondsToSelector:visibleCellsSelector]) {
+        id (*visibleCells)(id, SEL) = (id (*)(id, SEL))objc_msgSend;
+        NSArray *cells = nil;
+        @try {
+            id visible = visibleCells(tableView, visibleCellsSelector);
+            if ([visible isKindOfClass:[NSArray class]]) {
+                cells = visible;
+            }
+        } @catch (NSException *exception) {
+            cells = nil;
+        }
+
+        NSMutableArray *cellDiagnostics = [[NSMutableArray alloc] init];
+        NSUInteger row = 0;
+        for (id cell in cells ?: @[]) {
+            if (cellDiagnostics.count >= 20) {
+                break;
+            }
+            [cellDiagnostics addObject:@{
+                @"row": @(row),
+                @"class": [self classNameForObject:cell],
+                @"summary": [self summaryForValue:cell],
+            }];
+            row++;
+        }
+        diagnostics[@"visible_cell_count"] = @(cells.count);
+        diagnostics[@"visible_cells"] = cellDiagnostics;
+    }
+
+    return [diagnostics copy];
 }
 
 - (BOOL)selectFindMySegmentIndex:(NSInteger)index {
@@ -1658,8 +1675,6 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
     BOOL didSelectDevicesSegment = [self selectFindMySegmentIndex:1];
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        BOOL didSelectItemsSegment = [self selectFindMySegmentIndex:2];
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         NSDictionary *diagnostics = [self runtimeDiagnosticsForClassNames:@[
             @"FMDevicesProvider",
             @"FindMy.FMDevicesProvider",
@@ -1687,7 +1702,6 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
         ]];
         NSMutableDictionary *mutableDiagnostics = [[NSMutableDictionary alloc] initWithDictionary:diagnostics];
         mutableDiagnostics[@"selected_devices_segment"] = @(didSelectDevicesSegment);
-        mutableDiagnostics[@"selected_items_segment"] = @(didSelectItemsSegment);
         void *swiftProbePointer = BlueBubblesFindMySwiftProbe();
         if (swiftProbePointer != NULL) {
             NSDictionary *swiftProbe = CFBridgingRelease(swiftProbePointer);
@@ -1706,7 +1720,11 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
             @"Beacon",
         ] limit:200];
         mutableDiagnostics[@"swizzle"] = [self findMySwizzleDiagnostics];
-        mutableDiagnostics[@"object_graph"] = [self findMyObjectGraphDiagnostics];
+        mutableDiagnostics[@"active_devices_list"] = [self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"];
+        mutableDiagnostics[@"active_items_list"] = [self activeFindMyListDiagnosticsForDataSourceTerm:@"FMItemsListDataSource" type:@"item"];
+        NSArray *uiDevices = [self findMyListRowsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"];
+        mutableDiagnostics[@"ui_device_count"] = @(uiDevices.count);
+        [devices addObjectsFromArray:uiDevices];
 
         __block BOOL didSendResponse = NO;
         void (^sendResponse)(void) = ^{
@@ -1722,6 +1740,11 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
                 }];
             }
         };
+
+        if (devices.count > 0) {
+            sendResponse();
+            return;
+        }
 
         id ownerSession = [self findMyOwnerSession];
         if (ownerSession != nil && [ownerSession respondsToSelector:@selector(allBeaconsWithCompletion:)]) {
@@ -1762,7 +1785,6 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
         }
 
         sendResponse();
-        });
     });
 }
 
@@ -1797,7 +1819,10 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
             @"Beacon",
         ] limit:200];
         mutableDiagnostics[@"swizzle"] = [self findMySwizzleDiagnostics];
-        mutableDiagnostics[@"object_graph"] = [self findMyObjectGraphDiagnostics];
+        mutableDiagnostics[@"active_items_list"] = [self activeFindMyListDiagnosticsForDataSourceTerm:@"FMItemsListDataSource" type:@"item"];
+        NSArray *uiItems = [self findMyListRowsForDataSourceTerm:@"FMItemsListDataSource" type:@"item"];
+        mutableDiagnostics[@"ui_item_count"] = @(uiItems.count);
+        [items addObjectsFromArray:uiItems];
 
         __block BOOL didSendResponse = NO;
         void (^sendResponse)(void) = ^{
@@ -1813,6 +1838,11 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
                 }];
             }
         };
+
+        if (items.count > 0) {
+            sendResponse();
+            return;
+        }
 
         id ownerSession = [self findMyOwnerSession];
         if (ownerSession != nil && [ownerSession respondsToSelector:@selector(allBeaconsWithCompletion:)]) {
