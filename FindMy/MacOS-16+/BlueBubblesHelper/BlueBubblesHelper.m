@@ -31,6 +31,7 @@
 - (NSDictionary *)serializeFMLHandle:(id)handle;
 - (NSDictionary *)serializeFMLLocation:(id)location handle:(id)handle;
 - (NSDictionary *)findMyObjectGraphDiagnostics;
+- (NSDictionary *)findMySessionObjectDiagnostics;
 - (NSArray *)findMyListRowsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (NSDictionary *)activeFindMyListDiagnosticsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (BOOL)selectFindMySegmentIndex:(NSInteger)index;
@@ -63,8 +64,8 @@ static void BBFindMyRecordSwizzleEvent(NSDictionary *event) {
         NSMutableDictionary *mutableEvent = [[NSMutableDictionary alloc] initWithDictionary:event ?: @{}];
         mutableEvent[@"timestamp"] = @([[NSDate date] timeIntervalSince1970]);
         [findMySwizzleEvents addObject:[mutableEvent copy]];
-        if (findMySwizzleEvents.count > 80) {
-            [findMySwizzleEvents removeObjectsInRange:NSMakeRange(0, findMySwizzleEvents.count - 80)];
+        if (findMySwizzleEvents.count > 24) {
+            [findMySwizzleEvents removeObjectsInRange:NSMakeRange(0, findMySwizzleEvents.count - 24)];
         }
     }
 }
@@ -451,10 +452,14 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
 
 - (NSDictionary *)findMySwizzleDiagnostics {
     @synchronized ([BlueBubblesHelper class]) {
+        NSArray *events = [findMySwizzleEvents copy] ?: @[];
+        NSUInteger start = events.count > 12 ? events.count - 12 : 0;
+        NSArray *recentEvents = events.count > 0 ? [events subarrayWithRange:NSMakeRange(start, events.count - start)] : @[];
         return @{
             @"installed": @(findMySwizzlesInstalled),
             @"swizzled_selectors": [findMySwizzledSelectors copy] ?: @[],
-            @"events": [findMySwizzleEvents copy] ?: @[],
+            @"event_count": @(events.count),
+            @"events": recentEvents,
         };
     }
 }
@@ -824,6 +829,152 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
     return @{
         @"root_count": @(roots.count),
         @"root_classes": rootClasses,
+        @"scanned": @(scanned),
+        @"matches": matches,
+    };
+}
+
+- (NSDictionary *)findMySessionObjectDiagnostics {
+    NSArray *terms = @[
+        @"Session", @"Provider", @"Manager", @"Repository", @"SPOwner",
+        @"FMIP", @"Beacon", @"Device", @"Item"
+    ];
+    NSArray *interestingSelectors = @[
+        @"devices", @"items", @"itemGroups", @"allBeacons", @"allBeaconsCache",
+        @"allBeaconsWithCompletion:", @"startRefreshing", @"refresh",
+        @"locationProvider", @"devicesProvider", @"itemsProvider",
+        @"fmipManager", @"ownerSession", @"session", @"repository"
+    ];
+
+    NSMutableArray *queue = [[NSMutableArray alloc] init];
+    for (NSString *term in @[@"FMDevicesListDataSource", @"FMItemsListDataSource"]) {
+        NSDictionary *active = [self activeFindMyTableViewForDataSourceTerm:term];
+        id tableView = active[@"tableView"];
+        id dataSource = active[@"dataSource"];
+        id delegate = [self safeValueForKey:@"delegate" object:tableView];
+        for (NSDictionary *root in @[
+            @{@"object": tableView ?: [NSNull null], @"path": [NSString stringWithFormat:@"%@.tableView", term], @"depth": @0},
+            @{@"object": dataSource ?: [NSNull null], @"path": [NSString stringWithFormat:@"%@.dataSource", term], @"depth": @0},
+            @{@"object": delegate ?: [NSNull null], @"path": [NSString stringWithFormat:@"%@.delegate", term], @"depth": @0},
+        ]) {
+            if (root[@"object"] != [NSNull null]) {
+                [queue addObject:root];
+            }
+        }
+    }
+
+    NSMutableSet *seen = [[NSMutableSet alloc] init];
+    NSMutableArray *matches = [[NSMutableArray alloc] init];
+    NSUInteger scanned = 0;
+
+    while (queue.count > 0 && scanned < 160 && matches.count < 80) {
+        NSDictionary *entry = queue[0];
+        [queue removeObjectAtIndex:0];
+
+        id object = entry[@"object"];
+        if (object == nil || object == [NSNull null]) {
+            continue;
+        }
+
+        NSValue *identity = [NSValue valueWithNonretainedObject:object];
+        if ([seen containsObject:identity]) {
+            continue;
+        }
+        [seen addObject:identity];
+        scanned++;
+
+        NSString *path = entry[@"path"];
+        NSUInteger depth = [entry[@"depth"] unsignedIntegerValue];
+        NSString *className = [self classNameForObject:object];
+        BOOL interesting = [self className:className matchesAnyTerm:terms];
+
+        NSMutableArray *respondsTo = [[NSMutableArray alloc] init];
+        for (NSString *selectorName in interestingSelectors) {
+            if ([object respondsToSelector:NSSelectorFromString(selectorName)]) {
+                [respondsTo addObject:selectorName];
+                interesting = YES;
+            }
+        }
+
+        NSMutableDictionary *matchingIvars = [[NSMutableDictionary alloc] init];
+        NSMutableArray *nextObjects = [[NSMutableArray alloc] init];
+        Class ivarScanClass = [object class];
+        NSUInteger ivarScanDepth = 0;
+        while (ivarScanClass != nil && ivarScanDepth < 5) {
+            unsigned int ivarCount = 0;
+            Ivar *ivarList = class_copyIvarList(ivarScanClass, &ivarCount);
+            for (unsigned int i = 0; i < ivarCount; i++) {
+                Ivar ivar = ivarList[i];
+                const char *type = ivar_getTypeEncoding(ivar);
+                if (type == NULL || type[0] != '@') {
+                    continue;
+                }
+
+                id value = nil;
+                @try {
+                    value = object_getIvar(object, ivar);
+                } @catch (NSException *exception) {
+                    value = nil;
+                }
+
+                if (value == nil) {
+                    continue;
+                }
+                NSString *ivarName = [NSString stringWithUTF8String:ivar_getName(ivar)];
+                NSString *valueClass = [self classNameForObject:value];
+                if ([self className:ivarName matchesAnyTerm:terms] || [self className:valueClass matchesAnyTerm:terms]) {
+                    matchingIvars[ivarName] = [self summaryForValue:value];
+                    [nextObjects addObject:@{@"object": value, @"path": [NSString stringWithFormat:@"%@->%@", path, ivarName], @"depth": @(depth + 1)}];
+                    interesting = YES;
+                }
+            }
+            free(ivarList);
+            ivarScanClass = class_getSuperclass(ivarScanClass);
+            ivarScanDepth++;
+        }
+
+        if (interesting) {
+            NSMutableDictionary *match = [[NSMutableDictionary alloc] initWithDictionary:@{
+                @"class": className ?: @"<nil>",
+                @"path": path ?: className ?: @"<nil>",
+                @"responds_to": respondsTo,
+            }];
+            if (matchingIvars.count > 0) {
+                match[@"ivars"] = matchingIvars;
+            }
+
+            NSMutableArray *methodNames = [[NSMutableArray alloc] init];
+            Class methodClass = [object class];
+            NSUInteger methodDepth = 0;
+            while (methodClass != nil && methodDepth < 4 && methodNames.count < 60) {
+                unsigned int methodCount = 0;
+                Method *methodList = class_copyMethodList(methodClass, &methodCount);
+                for (unsigned int i = 0; i < methodCount && methodNames.count < 60; i++) {
+                    NSString *methodName = NSStringFromSelector(method_getName(methodList[i]));
+                    if ([self className:methodName matchesAnyTerm:terms] ||
+                        [methodName rangeOfString:@"refresh" options:NSCaseInsensitiveSearch].location != NSNotFound ||
+                        [methodName rangeOfString:@"location" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                        [methodNames addObject:methodName];
+                    }
+                }
+                free(methodList);
+                methodClass = class_getSuperclass(methodClass);
+                methodDepth++;
+            }
+            if (methodNames.count > 0) {
+                match[@"methods"] = methodNames;
+            }
+            [matches addObject:[match copy]];
+        }
+
+        if (depth >= 2) {
+            continue;
+        }
+
+        [queue addObjectsFromArray:nextObjects];
+    }
+
+    return @{
         @"scanned": @(scanned),
         @"matches": matches,
     };
