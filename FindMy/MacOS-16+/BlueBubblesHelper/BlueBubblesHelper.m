@@ -26,6 +26,8 @@
 - (void)handleFindMyDevicesRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMyItemsRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyDebugWithTransaction:(NSString *)transaction;
+- (void)handleFindMySearchPartyBeaconProbeStartWithTransaction:(NSString *)transaction;
+- (void)handleFindMySearchPartyBeaconProbeStatusWithTransaction:(NSString *)transaction;
 - (NSDictionary *)serializeFMLFriend:(id)friend handle:(id)handle location:(id)location;
 - (NSDictionary *)serializeFMLDevice:(id)device;
 - (NSDictionary *)serializeOwnerBeacon:(id)beacon;
@@ -41,6 +43,8 @@
 - (NSDictionary *)capturedFindMyPassiveDiagnostics;
 - (NSDictionary *)compactFindMyRefreshDiagnostics:(NSDictionary *)diagnostics;
 - (NSDictionary *)findMySearchPartyDebugSnapshot;
+- (NSDictionary *)findMySearchPartyBeaconProbeStatus;
+- (NSDictionary *)directFindMyFieldsForObject:(id)object;
 - (NSArray *)findMyListRowsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (NSDictionary *)activeFindMyListDiagnosticsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (BOOL)selectFindMySegmentIndex:(NSInteger)index;
@@ -61,6 +65,7 @@ static NSMutableDictionary<NSString *, NSDictionary *> *findMyCapturedDataSource
 static NSMutableArray<NSDictionary *> *findMyCapturedObjectSnapshots;
 static NSMutableArray<NSDictionary *> *findMySearchPartyAccessorSnapshots;
 static NSMutableDictionary<NSString *, id> *findMyCapturedObjectsByIdentifier;
+static NSMutableDictionary *findMySearchPartyBeaconProbe;
 static id findMyCapturedDevicesDataSource;
 static id findMyCapturedItemsDataSource;
 static BOOL findMySwizzlesInstalled;
@@ -320,6 +325,16 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
 
     if ([event isEqualToString:@"debug-findmy-searchparty"]) {
         [self handleFindMySearchPartyDebugWithTransaction:transaction];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-searchparty-beacons-start"]) {
+        [self handleFindMySearchPartyBeaconProbeStartWithTransaction:transaction];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-searchparty-beacons"]) {
+        [self handleFindMySearchPartyBeaconProbeStatusWithTransaction:transaction];
         return;
     }
 
@@ -1214,6 +1229,161 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
     [[NetworkController sharedInstance] sendMessage:@{
         @"transactionId": transaction ?: [NSNull null],
         @"searchparty": [self findMySearchPartyDebugSnapshot],
+    }];
+}
+
+- (NSArray *)compactBeaconSummariesForBeacons:(NSArray *)beacons {
+    NSMutableArray *summaries = [[NSMutableArray alloc] init];
+    for (id beacon in beacons ?: @[]) {
+        if (summaries.count >= 80) {
+            break;
+        }
+
+        NSMutableDictionary *summary = [[NSMutableDictionary alloc] initWithDictionary:[self summaryForValue:beacon]];
+        NSString *description = [beacon description];
+        if (description.length > 0) {
+            summary[@"description"] = description.length > 240 ? [description substringToIndex:240] : description;
+        }
+        NSDictionary *fields = [self directFindMyFieldsForObject:beacon];
+        if (fields.count > 0) {
+            summary[@"fields"] = fields;
+        }
+        [summaries addObject:[summary copy]];
+    }
+    return [summaries copy];
+}
+
+- (NSDictionary *)findMySearchPartyBeaconProbeStatus {
+    @synchronized ([BlueBubblesHelper class]) {
+        return [findMySearchPartyBeaconProbe copy] ?: @{
+            @"status": @"not_started",
+        };
+    }
+}
+
+- (void)storeFindMySearchPartyBeaconProbe:(NSDictionary *)probe {
+    @synchronized ([BlueBubblesHelper class]) {
+        findMySearchPartyBeaconProbe = [[NSMutableDictionary alloc] initWithDictionary:probe ?: @{}];
+    }
+}
+
+- (void)handleFindMySearchPartyBeaconProbeStartWithTransaction:(NSString *)transaction {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleFindMySearchPartyBeaconProbeStartWithTransaction:transaction];
+        });
+        return;
+    }
+
+    [self installFindMySwizzles];
+    NSArray *capturedSessions = [self capturedSearchPartyOwnerSessions];
+    id targetSession = nil;
+    NSString *targetSessionIdentifier = nil;
+    for (NSDictionary *entry in capturedSessions) {
+        id session = entry[@"object"];
+        if (session != nil && session != [NSNull null] && [session respondsToSelector:NSSelectorFromString(@"allBeaconsWithCompletion:")]) {
+            targetSession = session;
+            targetSessionIdentifier = entry[@"object_id"];
+            break;
+        }
+    }
+
+    NSString *probeId = [[NSUUID UUID] UUIDString];
+    NSMutableDictionary *startedProbe = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"probe_id": probeId,
+        @"status": targetSession == nil ? @"unavailable" : @"started",
+        @"started_at": @([[NSDate date] timeIntervalSince1970]),
+        @"captured_owner_session_count": @(capturedSessions.count),
+        @"session_id": targetSessionIdentifier ?: [NSNull null],
+    }];
+
+    if (targetSession == nil) {
+        startedProbe[@"error"] = @"No captured SPOwnerSession responds to allBeaconsWithCompletion:";
+        [self storeFindMySearchPartyBeaconProbe:startedProbe];
+        [[NetworkController sharedInstance] sendMessage:@{
+            @"transactionId": transaction ?: [NSNull null],
+            @"beacon_probe": [self findMySearchPartyBeaconProbeStatus],
+        }];
+        return;
+    }
+
+    [self storeFindMySearchPartyBeaconProbe:startedProbe];
+
+    void (^completion)(id) = ^(id beaconsResult) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSArray *beacons = @[];
+            if ([beaconsResult isKindOfClass:[NSArray class]]) {
+                beacons = beaconsResult;
+            } else if ([beaconsResult isKindOfClass:[NSSet class]]) {
+                beacons = [(NSSet *)beaconsResult allObjects];
+            }
+            NSMutableArray *serialized = [[NSMutableArray alloc] init];
+            for (id beacon in beacons) {
+                if (serialized.count >= 80) {
+                    break;
+                }
+                [serialized addObject:[self serializeOwnerBeacon:beacon]];
+            }
+
+            NSMutableDictionary *completedProbe = [[NSMutableDictionary alloc] initWithDictionary:@{
+                @"probe_id": probeId,
+                @"status": @"completed",
+                @"started_at": startedProbe[@"started_at"] ?: @0,
+                @"completed_at": @([[NSDate date] timeIntervalSince1970]),
+                @"session_id": targetSessionIdentifier ?: [NSNull null],
+                @"result_class": [self classNameForObject:beaconsResult],
+                @"result_summary": [self summaryForValue:beaconsResult],
+                @"beacon_count": @(beacons.count),
+                @"serialized_count": @(serialized.count),
+                @"beacon_summaries": [self compactBeaconSummariesForBeacons:beacons],
+                @"beacons": serialized,
+            }];
+            [self storeFindMySearchPartyBeaconProbe:completedProbe];
+        });
+    };
+
+    SEL selector = NSSelectorFromString(@"allBeaconsWithCompletion:");
+    @try {
+        NSMethodSignature *signature = [targetSession methodSignatureForSelector:selector];
+        if (signature == nil || signature.numberOfArguments != 3) {
+            startedProbe[@"status"] = @"failed";
+            startedProbe[@"error"] = @"Unexpected allBeaconsWithCompletion: method signature";
+            [self storeFindMySearchPartyBeaconProbe:startedProbe];
+        } else {
+            NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+            [invocation setTarget:targetSession];
+            [invocation setSelector:selector];
+            [invocation setArgument:&completion atIndex:2];
+            [invocation retainArguments];
+            [invocation invoke];
+        }
+    } @catch (NSException *exception) {
+        startedProbe[@"status"] = @"failed";
+        startedProbe[@"error"] = exception.reason ?: exception.description ?: @"Exception invoking allBeaconsWithCompletion:";
+        [self storeFindMySearchPartyBeaconProbe:startedProbe];
+    }
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(12 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        @synchronized ([BlueBubblesHelper class]) {
+            NSString *currentProbeId = findMySearchPartyBeaconProbe[@"probe_id"];
+            NSString *currentStatus = findMySearchPartyBeaconProbe[@"status"];
+            if ([currentProbeId isEqualToString:probeId] && [currentStatus isEqualToString:@"started"]) {
+                findMySearchPartyBeaconProbe[@"status"] = @"timed_out";
+                findMySearchPartyBeaconProbe[@"timed_out_at"] = @([[NSDate date] timeIntervalSince1970]);
+            }
+        }
+    });
+
+    [[NetworkController sharedInstance] sendMessage:@{
+        @"transactionId": transaction ?: [NSNull null],
+        @"beacon_probe": [self findMySearchPartyBeaconProbeStatus],
+    }];
+}
+
+- (void)handleFindMySearchPartyBeaconProbeStatusWithTransaction:(NSString *)transaction {
+    [[NetworkController sharedInstance] sendMessage:@{
+        @"transactionId": transaction ?: [NSNull null],
+        @"beacon_probe": [self findMySearchPartyBeaconProbeStatus],
     }];
 }
 
