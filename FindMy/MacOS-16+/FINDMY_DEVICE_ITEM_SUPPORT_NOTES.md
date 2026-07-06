@@ -395,6 +395,91 @@ FMIPItemType.selfBeaconing
 
 The hard part is not symbol presence. The hard part is safely calling methods whose return values are Swift generic arrays of private Swift structs without importable type metadata in our source.
 
+## Attempt 8: Visible Cell View-Model Extraction
+
+I continued the `FMDeviceCellViewModel` / `FMItemCellViewModel` path by serializing the visible `FMListTableViewCell` rows instead of returning placeholder row names.
+
+Changes tried:
+
+- Stable UI fallback IDs now use section and row, for example `device:0:0` and `item:0:0`, instead of embedding cell pointer descriptions.
+- Text extraction now walks common UIKit/accessibility surfaces only:
+  - `subviews`
+  - `contentView`
+  - `accessibilityElements`
+  - `arrangedSubviews`
+- The helper probes only bounded direct candidate fields from the visible cell:
+  - `viewModel`
+  - `cellViewModel`
+  - `model`
+  - `device`
+  - `item`
+  - `beacon`
+  - `representedObject`
+  - `contentConfiguration`
+  - `configuration`
+- It also inspects only immediate object ivars on the cell for names/classes containing terms like `FMDevice`, `FMItem`, `CellViewModel`, `FMIP`, `SPBeacon`, `Device`, `Item`, `Beacon`, and `Location`.
+
+Verified Android-facing refresh results on this machine:
+
+```text
+POST /api/v1/icloud/findmy/devices/refresh -> 9 rows
+POST /api/v1/icloud/findmy/items/refresh   -> 9 rows
+```
+
+Representative device rows now include visible text:
+
+```text
+device:0:0 -> This Mac / With You
+device:0:1 -> Home - Now / Home, Now / 0 mi
+device:0:2 -> Home - Now or Home - 2 min. ago / Home, Now / 0 mi
+device:0:3..8 -> No location found
+```
+
+Representative item rows currently show:
+
+```text
+item:0:0..8 -> No location found
+```
+
+The visible cell classes are still:
+
+```text
+_TtGC6FindMy19FMListTableViewCellVS_21FMDeviceCellViewModel_
+_TtGC6FindMy19FMListTableViewCellVS_19FMItemCellViewModel_
+```
+
+The specialized cell classes only exposed standard cell selectors in the ObjC runtime:
+
+```text
+.cxx_destruct
+initWithCoder:
+initWithStyle:reuseIdentifier:
+prepareForReuse
+setSelected:animated:
+traitCollectionDidChange:
+```
+
+No useful backing `FMIPDevice`, `FMIPItem`, `SPBeacon`, location, or stable identifier fields were exposed through direct KVC, direct selectors, or immediate relevant ivars in this pass.
+
+I also tried manually enumerating all sections/rows by calling the active data source methods:
+
+```objc
+tableView:numberOfRowsInSection:
+tableView:cellForRowAtIndexPath:
+```
+
+That path is not safe. It re-entered the swizzled Swift data-source method and crashed Find My with `EXC_BAD_INSTRUCTION`. The triggered stack included:
+
+```text
+BBFindMyTableViewNumberOfRows
+-[BlueBubblesHelper findMyNumberOfRowsForTableView:dataSource:section:]
+-[BlueBubblesHelper findMyListRowsForDataSourceTerm:type:]
+```
+
+I removed the manual data-source enumeration and kept the safer visible-cell extraction. After that rollback, device and item refresh completed again with no new crash report from the final safe build.
+
+Current conclusion: visible UI extraction is useful as a fallback and proves the Devices/Items tabs are populated, but it still does not provide true device/item identity or coordinates. The next meaningful path is to capture Apple-created provider/manager objects or bridge Swift private structs inside Swift.
+
 ## Current Blockers
 
 1. `FMIPCore` and related frameworks cannot be imported normally from Swift.
@@ -404,6 +489,8 @@ The hard part is not symbol presence. The hard part is safely calling methods wh
 5. Devices/Items data sources are not activated by the private API request alone, but can be activated reliably with `findmy://devices` and `findmy://items`.
 6. The custom Find My segmented control does not expose a standard selected-index setter.
 7. Apple Events through `System Events` are too fragile for this workflow because TCC can deny or re-deny Codex automation access.
+8. Visible cell view-model classes do not expose useful backing model fields through ObjC selectors/KVC on this macOS build.
+9. Manually invoking Devices/Items data-source row methods is unsafe and can crash Find My.
 
 ## Next Options
 
@@ -413,5 +500,5 @@ The strongest next paths are:
 2. Build a deeper Swift ABI bridge that calls `FMIPManager.devices/items` and serializes inside Swift, with declarations for enough private structs to read fields safely.
 3. Use `findmy://devices` and `findmy://items` to force Apple-initialized Devices/Items UI state before the helper refresh runs.
 4. Hook provider update callbacks or data-source initialization earlier, then capture the actual Devices/Items provider instance once Find My creates it.
-5. Inspect and serialize `FMDeviceCellViewModel` and `FMItemCellViewModel` backing fields.
+5. Keep visible-cell label extraction as a UI fallback, but do not rely on it for real identity/location data.
 6. Continue inspecting `SPOwnerSession` contexts and blocks to discover why `allBeaconsWithCompletion:` returns zero in a fresh session.

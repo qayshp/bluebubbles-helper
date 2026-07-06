@@ -983,9 +983,11 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
             continue;
         }
 
-        id subviews = [self safeValueForKey:@"subviews" object:current];
-        for (id child in [self objectChildrenForValue:subviews]) {
-            [queue addObject:@{@"object": child, @"depth": @(depth + 1)}];
+        for (NSString *childKey in @[@"subviews", @"contentView", @"accessibilityElements", @"arrangedSubviews"]) {
+            id children = [self safeValueForKey:childKey object:current];
+            for (id child in [self objectChildrenForValue:children]) {
+                [queue addObject:@{@"object": child, @"depth": @(depth + 1)}];
+            }
         }
 
     }
@@ -993,14 +995,213 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
     return [texts copy];
 }
 
+- (NSString *)stringValueForFindMyValue:(id)value {
+    if (value == nil || value == [NSNull null]) {
+        return nil;
+    }
+    if ([value isKindOfClass:[NSString class]]) {
+        return [(NSString *)value length] > 0 ? value : nil;
+    }
+    if ([value isKindOfClass:[NSNumber class]] || [value isKindOfClass:[NSDate class]]) {
+        return [value description];
+    }
+    return nil;
+}
+
+- (NSDictionary *)directFindMyFieldsForObject:(id)object {
+    if (object == nil || object == [NSNull null]) {
+        return @{};
+    }
+
+    NSArray *keys = @[
+        @"identifier", @"id", @"stableIdentifier", @"accessoryIdentifier", @"beaconIdentifier",
+        @"uuid", @"beaconUUID", @"serialNumber", @"productIdentifier", @"name", @"displayName",
+        @"title", @"subtitle", @"deviceName", @"accessoryName", @"modelName", @"modelDisplayName",
+        @"deviceModel", @"rawDeviceModel", @"batteryStatus", @"batteryLevel", @"role", @"location",
+        @"lastLocation", @"latestLocation", @"crowdSourcedLocation"
+    ];
+
+    NSMutableDictionary *fields = [[NSMutableDictionary alloc] init];
+    for (NSString *key in keys) {
+        id value = [self safeValueForKey:key object:object];
+        if (value == nil || value == [NSNull null]) {
+            continue;
+        }
+
+        if ([key rangeOfString:@"location" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            NSDictionary *serializedLocation = [self serializeLocationObject:value];
+            if (serializedLocation != (NSDictionary *)[NSNull null]) {
+                fields[key] = serializedLocation;
+            } else {
+                fields[key] = [self summaryForValue:value];
+            }
+            continue;
+        }
+
+        NSString *stringValue = [self stringValueForFindMyValue:value];
+        fields[key] = stringValue ?: [self summaryForValue:value];
+    }
+
+    return [fields copy];
+}
+
+- (id)directFindMyCandidateValueFromObject:(id)object key:(NSString *)key {
+    id value = [self safeValueForKey:key object:object];
+    if (value != nil && value != [NSNull null]) {
+        return value;
+    }
+
+    SEL selector = NSSelectorFromString(key);
+    if (selector != nil && [object respondsToSelector:selector]) {
+        return [self objectValueFromObject:object selector:selector];
+    }
+
+    return nil;
+}
+
+- (NSArray *)directFindMyIvarCandidatesForObject:(id)object {
+    if (object == nil || object == [NSNull null]) {
+        return @[];
+    }
+
+    NSArray *terms = @[
+        @"FMDevice", @"FMItem", @"CellViewModel", @"FMIP", @"SPBeacon",
+        @"Device", @"Item", @"Beacon", @"Location"
+    ];
+    NSMutableArray *candidates = [[NSMutableArray alloc] init];
+    Class class = [object class];
+    NSUInteger classDepth = 0;
+    while (class != nil && classDepth < 4 && candidates.count < 16) {
+        unsigned int ivarCount = 0;
+        Ivar *ivarList = class_copyIvarList(class, &ivarCount);
+        for (unsigned int i = 0; i < ivarCount && candidates.count < 16; i++) {
+            Ivar ivar = ivarList[i];
+            const char *type = ivar_getTypeEncoding(ivar);
+            if (type == NULL || type[0] != '@') {
+                continue;
+            }
+
+            id value = nil;
+            @try {
+                value = object_getIvar(object, ivar);
+            } @catch (NSException *exception) {
+                value = nil;
+            }
+            if (value == nil || value == [NSNull null]) {
+                continue;
+            }
+
+            NSString *name = [NSString stringWithUTF8String:ivar_getName(ivar)] ?: @"<ivar>";
+            NSString *valueClass = [self classNameForObject:value];
+            BOOL interesting = [self className:name matchesAnyTerm:terms] || [self className:valueClass matchesAnyTerm:terms];
+            if (!interesting) {
+                continue;
+            }
+
+            [candidates addObject:@{
+                @"source": [NSString stringWithFormat:@"ivar:%@", name],
+                @"object": value,
+            }];
+        }
+        free(ivarList);
+        class = class_getSuperclass(class);
+        classDepth++;
+    }
+
+    return [candidates copy];
+}
+
+- (NSDictionary *)findMyModelDetailsForCell:(id)cell dataSource:(id)dataSource {
+    NSMutableArray *candidates = [[NSMutableArray alloc] init];
+    [candidates addObject:@{@"source": @"cell", @"object": cell}];
+    if (dataSource != nil) {
+        [candidates addObject:@{@"source": @"dataSource", @"object": dataSource}];
+    }
+
+    for (NSString *key in @[
+        @"viewModel", @"cellViewModel", @"model", @"device", @"item", @"beacon",
+        @"representedObject", @"contentConfiguration", @"configuration"
+    ]) {
+        id value = [self directFindMyCandidateValueFromObject:cell key:key];
+        if (value != nil && value != [NSNull null]) {
+            [candidates addObject:@{@"source": key, @"object": value}];
+        }
+    }
+
+    [candidates addObjectsFromArray:[self directFindMyIvarCandidatesForObject:cell]];
+
+    NSMutableArray *details = [[NSMutableArray alloc] init];
+    NSMutableSet *seen = [[NSMutableSet alloc] init];
+    for (NSDictionary *candidate in candidates) {
+        id object = candidate[@"object"];
+        if (object == nil || object == [NSNull null]) {
+            continue;
+        }
+        NSValue *identity = [NSValue valueWithNonretainedObject:object];
+        if ([seen containsObject:identity]) {
+            continue;
+        }
+        [seen addObject:identity];
+
+        NSMutableDictionary *detail = [[NSMutableDictionary alloc] initWithDictionary:@{
+            @"source": candidate[@"source"] ?: @"<unknown>",
+            @"class": [self classNameForObject:object],
+            @"summary": [self summaryForValue:object],
+        }];
+
+        NSDictionary *fields = [self directFindMyFieldsForObject:object];
+        if (fields.count > 0) {
+            detail[@"fields"] = fields;
+        }
+
+        NSArray *texts = [self textValuesInObject:object maxDepth:2];
+        if (texts.count > 0) {
+            detail[@"texts"] = texts;
+        }
+
+        if ([[self classNameForObject:object] rangeOfString:@"CellViewModel" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            detail[@"selectors"] = [[self selectorNamesForClass:[object class] includeClassMethods:NO] subarrayWithRange:NSMakeRange(0, MIN((NSUInteger)40, [[self selectorNamesForClass:[object class] includeClassMethods:NO] count]))];
+        }
+
+        [details addObject:[detail copy]];
+        if (details.count >= 12) {
+            break;
+        }
+    }
+
+    return @{@"candidates": [details copy]};
+}
+
 - (NSDictionary *)serializeFindMyListCell:(id)cell
                                dataSource:(id)dataSource
                                   section:(NSInteger)section
                                      row:(NSInteger)row
                                      type:(NSString *)type {
-    NSArray *texts = @[];
+    NSArray *texts = [self textValuesInObject:cell maxDepth:4];
+    NSDictionary *modelDetails = [self findMyModelDetailsForCell:cell dataSource:dataSource];
     NSString *name = texts.count > 0 ? texts[0] : [NSString stringWithFormat:@"%@ %ld-%ld", type, (long)section, (long)row];
-    NSString *identifier = [NSString stringWithFormat:@"%@:%ld:%ld:%@", type, (long)section, (long)row, [[cell description] ?: @"" description]];
+    NSString *identifier = [NSString stringWithFormat:@"%@:%ld:%ld", type, (long)section, (long)row];
+
+    for (NSDictionary *candidate in modelDetails[@"candidates"] ?: @[]) {
+        NSDictionary *fields = candidate[@"fields"];
+        if (![fields isKindOfClass:[NSDictionary class]]) {
+            continue;
+        }
+        for (NSString *nameKey in @[@"name", @"displayName", @"title", @"deviceName", @"accessoryName", @"modelDisplayName"]) {
+            NSString *candidateName = [self stringValueForFindMyValue:fields[nameKey]];
+            if (candidateName.length > 0) {
+                name = candidateName;
+                break;
+            }
+        }
+        for (NSString *identifierKey in @[@"identifier", @"id", @"stableIdentifier", @"accessoryIdentifier", @"beaconIdentifier", @"uuid", @"beaconUUID", @"serialNumber"]) {
+            NSString *candidateIdentifier = [self stringValueForFindMyValue:fields[identifierKey]];
+            if (candidateIdentifier.length > 0) {
+                identifier = candidateIdentifier;
+                break;
+            }
+        }
+    }
 
     NSMutableDictionary *result = [[NSMutableDictionary alloc] initWithDictionary:@{
         @"id": identifier,
@@ -1027,8 +1228,26 @@ static void BBFindMyTableViewSetDataSource(id self, SEL _cmd, id dataSource) {
             @"cellClass": [self classNameForObject:cell],
             @"dataSourceClass": [self classNameForObject:dataSource],
             @"texts": texts ?: @[],
+            @"modelDetails": modelDetails,
         },
     }];
+
+    for (NSDictionary *candidate in modelDetails[@"candidates"] ?: @[]) {
+        NSDictionary *fields = candidate[@"fields"];
+        if (![fields isKindOfClass:[NSDictionary class]]) {
+            continue;
+        }
+        for (NSString *locationKey in @[@"location", @"lastLocation", @"latestLocation", @"crowdSourcedLocation"]) {
+            id location = fields[locationKey];
+            if ([location isKindOfClass:[NSDictionary class]] && location[@"latitude"] != nil && location[@"longitude"] != nil) {
+                result[@"location"] = location;
+                break;
+            }
+        }
+        if (result[@"location"] != nil) {
+            break;
+        }
+    }
 
     if ([type isEqualToString:@"item"]) {
         result[@"findmy_item"] = result[@"findmy_ui"];
