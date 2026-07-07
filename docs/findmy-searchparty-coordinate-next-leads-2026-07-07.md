@@ -512,6 +512,124 @@ alone. The likely missing requirement is either:
 - a device-event / live-location request path that must be triggered before
   location results are materialized.
 
+## Live try: `requestLiveLocationForUUID:completion:`
+
+Tested locally on 2026-07-07 with helper dylib md5
+`ed38884efd0daf3a04467d68517cb14a`.
+
+Implementation changes:
+
+- Added a focused SearchParty location probe step for
+  `SPOwnerSessionXPCProtocol requestLiveLocationForUUID:completion:`.
+- Added server route:
+  `POST /api/v1/icloud/findmy/searchparty/locations/live-request`.
+- Added `searchPartyIdentifierCandidateMapForBeacon:` so the probe records
+  which identifier namespace each request used.
+- Capped the live request matrix to four candidates to keep the helper response
+  below the socket decode limit.
+- Rebuilt `packages/server/dist/main.js` directly with webpack because
+  `npm run build` failed on this machine with:
+
+```text
+npm error Invalid property "devEngines.node"
+```
+
+Route sequence:
+
+```text
+POST /api/v1/icloud/findmy/searchparty/locations/live-request
+POST /api/v1/icloud/findmy/searchparty/locations
+POST /api/v1/icloud/findmy/searchparty/debug
+```
+
+The route registered and started successfully:
+
+```text
+focused_probe_step: 5
+pending_completion_count: 6
+invoked_location_selectors:
+  SPOwnerSession.locationsForBeacons:completion:
+  SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:
+  SPOwnerSessionXPCProtocol.requestLiveLocationForUUID.identifierVariants
+```
+
+The live request matrix used these identifier shapes. Values and names are
+anonymized, but formats are preserved:
+
+```text
+candidate 0:
+  variant: identifier
+  request_value_class: __NSConcreteUUID
+  identifier format: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+  name format: item display name
+
+candidate 1:
+  variant: stableIdentifier
+  request_value_class: __NSCFString
+  identifier format: A:/XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX~#XXXXXXXXXXXXXXX
+  name format: same item display name as candidate 0
+
+candidate 2:
+  variant: productUUID
+  request_value_class: __NSConcreteUUID
+  identifier format: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+  name format: same item display name as candidate 0
+
+candidate 3:
+  variant: identifier
+  request_value_class: __NSConcreteUUID
+  identifier format: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+  name format: different item display name
+```
+
+Observed completions after the normal wait and a late follow-up read:
+
+```text
+probe_status: timed_out
+pending_completion_count: 4
+completion_count: 2
+
+SPOwnerSessionXPCProtocol.requestLiveLocationForUUID.variant.0:
+  result_class: <nil>
+
+SPOwnerSession.locationsForBeacons:completion:
+  result_class: __NSDictionary0
+  count: 0
+```
+
+The remaining live-request variants did not call their completion blocks during
+the observed window. A late status read was unchanged.
+
+Passive debug snapshot after the live request:
+
+```text
+POST /api/v1/icloud/findmy/searchparty/debug
+response size: 42126 bytes
+searchparty_accessors count: 24
+
+recent relevant events:
+  receivedUpdatedLocation: SPLocationFetchResult
+  locationsByBeaconIdentifier: __NSDictionary0 count 0
+  setLocationUpdateBlock: SPLocationFetchResult locations count 0
+```
+
+Interpretation:
+
+`requestLiveLocationForUUID:completion:` is callable, and at least one UUID
+candidate reaches its completion block, but it completed with `nil`. The live
+request did not cause a later non-empty `SPLocationFetchResult`; passive
+captures still show empty `locationsByBeaconIdentifier` dictionaries.
+
+The `stableIdentifier` string is probably not a valid argument for the UUID
+selector even though its format is useful evidence. The next identifier-focused
+probe should split method calls by expected argument type:
+
+- send only `NSUUID` candidates to `requestLiveLocationForUUID:completion:`,
+- try string/stable identifiers through methods whose names say
+  `Identifier`, especially `beaconForIdentifier:completion:`, and
+- inspect whether those methods return a service-owned beacon object or
+  identifier that differs from the local `allBeaconsWithCompletion:` UUIDs.
+
 ## Static inspection: fetch context detail
 
 The next instrumentation pass focuses on the context object passed into

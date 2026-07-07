@@ -54,6 +54,7 @@
 - (NSDictionary *)searchPartyFetchContextDiagnosticsForContext:(id)context;
 - (NSDictionary *)searchPartyLocationInfoAccessorValuesForObject:(id)object;
 - (NSDictionary *)searchPartyLocationInfoIvarValuesForObject:(id)object;
+- (NSDictionary *)searchPartyIdentifierCandidateMapForBeacon:(id)beacon;
 - (NSDictionary *)searchPartyResultDeepDiagnosticsForObject:(id)object;
 - (NSDictionary *)directFindMyFieldsForObject:(id)object;
 - (NSArray *)findMyListRowsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
@@ -513,6 +514,11 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
 
     if ([event isEqualToString:@"debug-findmy-searchparty-locations-proxy-context"]) {
         [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:3];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-searchparty-locations-live-request"]) {
+        [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:5];
         return;
     }
 
@@ -2354,17 +2360,29 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
 
 - (NSArray *)searchPartyIdentifierCandidatesForBeacon:(id)beacon {
     NSMutableArray *candidates = [[NSMutableArray alloc] init];
+    NSDictionary *candidateMap = [self searchPartyIdentifierCandidateMapForBeacon:beacon];
+    for (NSString *key in @[@"identifier", @"ownerBeaconIdentifier", @"stableIdentifier", @"uuid", @"beaconUUID", @"accessoryIdentifier", @"productUUID", @"correlationIdentifier"]) {
+        NSString *normalized = candidateMap[key];
+        if (normalized.length > 0 && ![candidates containsObject:normalized]) {
+            [candidates addObject:normalized];
+        }
+    }
+    return [candidates copy];
+}
+
+- (NSDictionary *)searchPartyIdentifierCandidateMapForBeacon:(id)beacon {
+    NSMutableDictionary *candidateMap = [[NSMutableDictionary alloc] init];
     for (NSString *key in @[
         @"identifier", @"ownerBeaconIdentifier", @"stableIdentifier", @"uuid",
         @"beaconUUID", @"accessoryIdentifier", @"productUUID", @"correlationIdentifier"
     ]) {
         id value = [self directFindMyCandidateValueFromObject:beacon key:key];
         NSString *normalized = [self normalizedSearchPartyIdentifierString:value];
-        if (normalized.length > 0 && ![candidates containsObject:normalized]) {
-            [candidates addObject:normalized];
+        if (normalized.length > 0) {
+            candidateMap[key] = normalized;
         }
     }
-    return [candidates copy];
+    return [candidateMap copy];
 }
 
 - (NSDictionary *)searchPartyLocationInfoAccessorValuesForObject:(id)object {
@@ -2765,7 +2783,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 
     NSUInteger focusedProbeStep = 0;
-    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 4) {
+    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 5) {
         focusedProbeStep = requestedFocusedStep;
         startedProbe[@"dedicated_probe"] = @YES;
     } else {
@@ -2784,6 +2802,8 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         focusedProbeSelector = @"SPOwnerSessionLocationFetch.controlledContext";
     } else if (focusedProbeStep == 4) {
         focusedProbeSelector = @"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.sourceSubsets";
+    } else if (focusedProbeStep == 5) {
+        focusedProbeSelector = @"SPOwnerSessionXPCProtocol.requestLiveLocationForUUID.identifierVariants";
     }
 
     NSArray *methods = [self searchPartyLocationMethodDiagnosticsForObject:targetSession];
@@ -2829,7 +2849,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         @"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:",
         focusedProbeSelector,
     ];
-    startedProbe[@"pending_completion_count"] = focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3);
+    startedProbe[@"pending_completion_count"] = focusedProbeStep == 5 ? @6 : (focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3));
     [self storeFindMySearchPartyLocationProbe:startedProbe];
 
     id capturedLocationFetch = nil;
@@ -2932,6 +2952,43 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                 NSArray *identifierArray = [searchIdentifiers allObjects];
                 id generatedSearchLocationSources = realSearchLocationSources ?: [searchLocationSources allObjects];
                 NSArray *sourceArray = [self objectChildrenForValue:generatedSearchLocationSources];
+                NSMutableArray *liveRequestCandidates = [[NSMutableArray alloc] init];
+                NSMutableSet *seenLiveRequestIdentifiers = [[NSMutableSet alloc] init];
+                for (id beacon in beacons) {
+                    if (liveRequestCandidates.count >= 4) {
+                        break;
+                    }
+                    NSString *name = [[self firstObjectValueFromObject:beacon
+                                                                  keys:@[@"name", @"displayName", @"accessoryName"]
+                                                             selectors:@[@"name", @"displayName", @"accessoryName"]] description];
+                    NSDictionary *candidateMap = [self searchPartyIdentifierCandidateMapForBeacon:beacon];
+                    for (NSString *variantKey in @[@"identifier", @"ownerBeaconIdentifier", @"stableIdentifier", @"uuid", @"beaconUUID", @"accessoryIdentifier", @"productUUID", @"correlationIdentifier"]) {
+                        if (liveRequestCandidates.count >= 4) {
+                            break;
+                        }
+                        NSString *normalized = candidateMap[variantKey];
+                        if (normalized.length == 0 || [seenLiveRequestIdentifiers containsObject:normalized]) {
+                            continue;
+                        }
+                        id rawValue = [self directFindMyCandidateValueFromObject:beacon key:variantKey];
+                        id requestValue = rawValue;
+                        if (![requestValue isKindOfClass:[NSUUID class]]) {
+                            NSUUID *uuidValue = [[NSUUID alloc] initWithUUIDString:normalized];
+                            requestValue = uuidValue ?: rawValue ?: normalized;
+                        }
+                        if (requestValue == nil || requestValue == [NSNull null]) {
+                            continue;
+                        }
+                        [seenLiveRequestIdentifiers addObject:normalized];
+                        [liveRequestCandidates addObject:@{
+                            @"variant": variantKey,
+                            @"identifier": normalized,
+                            @"name": name.length > 0 ? name : @"<nil>",
+                            @"request_value": requestValue,
+                            @"request_value_class": [self classNameForObject:requestValue],
+                        }];
+                    }
+                }
 
                 Class contextClass = NSClassFromString(@"SPLocationFetchContext");
                 id context = contextClass == nil ? nil : [[contextClass alloc] init];
@@ -3204,6 +3261,52 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                             [proxyLocationForContextInvocation invoke];
                         } else {
                             appendProbeCompletion(@"SPOwnerSessionXPCProtocol.locationForContext:completion:", nil);
+                        }
+                    }
+
+                    if (focusedProbeStep == 5) {
+                        SEL requestLiveLocationSelector = NSSelectorFromString(@"requestLiveLocationForUUID:completion:");
+                        NSMethodSignature *requestLiveLocationSignature = [ownerProxy methodSignatureForSelector:requestLiveLocationSelector];
+                        @synchronized ([BlueBubblesHelper class]) {
+                            NSMutableArray *arguments = [[NSMutableArray alloc] init];
+                            for (NSDictionary *candidate in liveRequestCandidates) {
+                                [arguments addObject:@{
+                                    @"variant": candidate[@"variant"] ?: @"<nil>",
+                                    @"identifier": candidate[@"identifier"] ?: @"<nil>",
+                                    @"name": candidate[@"name"] ?: @"<nil>",
+                                    @"request_value_class": candidate[@"request_value_class"] ?: @"<nil>",
+                                }];
+                            }
+                            findMySearchPartyLocationProbe[@"live_request_arguments"] = arguments;
+                        }
+
+                        if (ownerProxy != nil &&
+                            requestLiveLocationSignature != nil &&
+                            requestLiveLocationSignature.numberOfArguments == 4 &&
+                            liveRequestCandidates.count > 0) {
+                            for (NSUInteger candidateIndex = 0; candidateIndex < 4; candidateIndex++) {
+                                NSString *selectorLabel = [NSString stringWithFormat:@"SPOwnerSessionXPCProtocol.requestLiveLocationForUUID.variant.%lu", (unsigned long)candidateIndex];
+                                if (candidateIndex >= liveRequestCandidates.count) {
+                                    appendProbeCompletion(selectorLabel, nil);
+                                    continue;
+                                }
+                                NSDictionary *candidate = liveRequestCandidates[candidateIndex];
+                                id requestValue = candidate[@"request_value"];
+                                void (^liveRequestCompletion)(id) = ^(id result) {
+                                    appendProbeCompletion(selectorLabel, result);
+                                };
+                                NSInvocation *liveRequestInvocation = [NSInvocation invocationWithMethodSignature:requestLiveLocationSignature];
+                                [liveRequestInvocation setTarget:ownerProxy];
+                                [liveRequestInvocation setSelector:requestLiveLocationSelector];
+                                [liveRequestInvocation setArgument:&requestValue atIndex:2];
+                                [liveRequestInvocation setArgument:&liveRequestCompletion atIndex:3];
+                                [liveRequestInvocation retainArguments];
+                                [liveRequestInvocation invoke];
+                            }
+                        } else {
+                            for (NSUInteger candidateIndex = 0; candidateIndex < 4; candidateIndex++) {
+                                appendProbeCompletion([NSString stringWithFormat:@"SPOwnerSessionXPCProtocol.requestLiveLocationForUUID.variant.%lu", (unsigned long)candidateIndex], nil);
+                            }
                         }
                     }
                 } @catch (NSException *exception) {
