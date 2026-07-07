@@ -630,6 +630,37 @@ probe should split method calls by expected argument type:
 - inspect whether those methods return a service-owned beacon object or
   identifier that differs from the local `allBeaconsWithCompletion:` UUIDs.
 
+## Next track: identifier resolution before location fetch
+
+The next probe should resolve local beacon identifiers through SearchParty XPC
+before asking for coordinates. The live request path proved the selector is
+callable, but raw local UUID candidates either completed with `nil` or did not
+complete. A reasonable explanation is that the location APIs expect a
+service-owned identifier or service-returned beacon object rather than every
+identifier visible on local `SPBeacon` instances.
+
+Planned instrumentation:
+
+- Add a focused route for identifier resolution.
+- Call `SPOwnerSessionXPCProtocol beaconForIdentifier:completion:` with string
+  identifiers, especially `stableIdentifier`.
+- Call `SPOwnerSessionXPCProtocol beaconForUUID:completion:` with `NSUUID`
+  variants such as `identifier`, `productUUID`, and `ownerBeaconIdentifier`
+  when present.
+- Optionally call `beaconGroupsForUUIDs:completion:` with a small UUID sample.
+- Compact returned beacon objects with the existing beacon serializer and
+  direct field inspection.
+- Compare returned service-side identifiers to the local `allBeacons` fields.
+
+Expected useful outcomes:
+
+- A non-nil service-returned beacon whose identifiers differ from the local
+  cached beacon.
+- A returned object exposing a location-bearing field or a provider-specific
+  identifier.
+- A consistent `nil` or timeout result, which would push the next lead toward
+  SearchParty authorization/session state rather than identifier translation.
+
 ## Static inspection: fetch context detail
 
 The next instrumentation pass focuses on the context object passed into
