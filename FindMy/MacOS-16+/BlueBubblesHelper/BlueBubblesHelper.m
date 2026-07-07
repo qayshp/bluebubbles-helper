@@ -29,6 +29,7 @@
 - (void)handleFindMySearchPartyBeaconProbeStartWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyBeaconProbeStatusWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyLocationProbeStartWithTransaction:(NSString *)transaction;
+- (void)handleFindMySearchPartyLocationProbeStartWithTransaction:(NSString *)transaction focusedStep:(NSUInteger)focusedStep;
 - (void)handleFindMySearchPartyLocationProbeStatusWithTransaction:(NSString *)transaction;
 - (void)appendFindMySearchPartyLocationProbeCompletionForProbeId:(NSString *)probeId selectorName:(NSString *)selectorName result:(id)result;
 - (NSDictionary *)serializeFMLFriend:(id)friend handle:(id)handle location:(id)location;
@@ -467,6 +468,21 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
 
     if ([event isEqualToString:@"debug-findmy-searchparty-locations-start"]) {
         [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-searchparty-locations-latest-single"]) {
+        [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:1];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-searchparty-locations-source-subset"]) {
+        [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:4];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-searchparty-locations-proxy-context"]) {
+        [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:3];
         return;
     }
 
@@ -2533,9 +2549,13 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
 }
 
 - (void)handleFindMySearchPartyLocationProbeStartWithTransaction:(NSString *)transaction {
+    [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:0];
+}
+
+- (void)handleFindMySearchPartyLocationProbeStartWithTransaction:(NSString *)transaction focusedStep:(NSUInteger)requestedFocusedStep {
     if (![NSThread isMainThread]) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction];
+            [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:requestedFocusedStep];
         });
         return;
     }
@@ -2579,10 +2599,16 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
     }
 
     NSUInteger focusedProbeStep = 0;
-    @synchronized ([BlueBubblesHelper class]) {
-        NSUInteger focusedProbeSteps[] = {4, 3, 1, 2};
-        focusedProbeStep = focusedProbeSteps[findMySearchPartyLocationProbeStepIndex % 4];
-        findMySearchPartyLocationProbeStepIndex += 1;
+    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 4) {
+        focusedProbeStep = requestedFocusedStep;
+        startedProbe[@"dedicated_probe"] = @YES;
+    } else {
+        @synchronized ([BlueBubblesHelper class]) {
+            NSUInteger focusedProbeSteps[] = {4, 3, 1, 2};
+            focusedProbeStep = focusedProbeSteps[findMySearchPartyLocationProbeStepIndex % 4];
+            findMySearchPartyLocationProbeStepIndex += 1;
+        }
+        startedProbe[@"dedicated_probe"] = @NO;
     }
 
     NSString *focusedProbeSelector = @"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.singleIdentifier";
