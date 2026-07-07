@@ -521,6 +521,73 @@ SearchParty internals, but should target current-location result/cache/update
 objects keyed by known beacon UUIDs instead of expanding UI paths or saved
 places.
 
+### Live try: targeted SearchParty location probes
+
+After the shallow safe-location sampler, the existing dedicated SearchParty
+location probes were exercised again through the BlueBubbles API:
+
+```text
+POST /api/v1/icloud/findmy/searchparty/locations/latest-single
+POST /api/v1/icloud/findmy/searchparty/locations/source-subset
+POST /api/v1/icloud/findmy/searchparty/locations/resolved-beacon-location
+POST /api/v1/icloud/findmy/searchparty/locations/context-single-identifier
+POST /api/v1/icloud/findmy/searchparty/locations/compact
+```
+
+Observed behavior:
+
+- `latest-single` started successfully, but still had pending completions after
+  the short poll window.
+- `source-subset` started successfully, but also still had pending completions
+  after the short poll window.
+- `resolved-beacon-location` did not return within the 25-second local curl
+  timeout.
+- `context-single-identifier` gave the most useful data and then timed out
+  with partial results.
+
+The `context-single-identifier` probe confirms that the helper can rewrite the
+captured `SPLocationFetchContext` to a concrete generated identifier and keep
+the full source list:
+
+```text
+focused_probe_step: 10
+beacon_result_class: __NSSetI
+beacon_count: 53
+context_search_identifier_count: 53
+context_search_location_source_count: 12
+single_identifier_context_assignment.search_identifiers_final_count: 1
+single_identifier_context_assignment.search_location_sources_final_count: 12
+```
+
+It also produced passive location callbacks:
+
+```text
+passive_location_event_count: 8
+passive selectors:
+  receivedUpdatedLocation:
+  setLocationUpdateBlock:
+result_class: SPLocationFetchResult
+locations_by_beacon_identifier_count: 0
+```
+
+Partial completions:
+
+```text
+SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.singleIdentifierContext -> <nil>
+SPOwnerSession.locationsForBeacons:completion: -> __NSDictionary0
+```
+
+Interpretation:
+
+The current instrumentation can trigger SearchParty location update callbacks,
+but the callback result still reports an empty `locationsByBeaconIdentifier`.
+That makes `receivedUpdatedLocation:` important, but the location payload is
+not in the public `locationsByBeaconIdentifier` accessor for these local
+results. The next probe should inspect the `SPLocationFetchResult` object
+itself during passive callbacks: ivars, related result accessors, and any
+non-`locationsByBeaconIdentifier` collections should be sampled while the
+callback object is still live.
+
 ## Static inspection: fetch context detail
 
 `SPLocationFetchContext` exposes the fields most likely to explain why the
