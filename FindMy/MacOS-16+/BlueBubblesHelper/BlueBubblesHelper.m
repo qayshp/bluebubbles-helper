@@ -52,6 +52,7 @@
 - (NSDictionary *)searchPartyLastOnlineInfoSummaryForBeacons:(NSArray *)beacons context:(id)context;
 - (NSDictionary *)searchPartyLocationInfoAccessorValuesForObject:(id)object;
 - (NSDictionary *)searchPartyLocationInfoIvarValuesForObject:(id)object;
+- (NSDictionary *)searchPartyResultDeepDiagnosticsForObject:(id)object;
 - (NSDictionary *)directFindMyFieldsForObject:(id)object;
 - (NSArray *)findMyListRowsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (NSDictionary *)activeFindMyListDiagnosticsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
@@ -724,10 +725,25 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
             continue;
         }
 
+        NSMutableArray *ivars = [[NSMutableArray alloc] init];
+        unsigned int ivarCount = 0;
+        Ivar *ivarList = class_copyIvarList(class, &ivarCount);
+        for (unsigned int i = 0; i < ivarCount; i++) {
+            Ivar ivar = ivarList[i];
+            const char *name = ivar_getName(ivar);
+            const char *type = ivar_getTypeEncoding(ivar);
+            [ivars addObject:@{
+                @"name": name == NULL ? @"<nil>" : [NSString stringWithUTF8String:name],
+                @"type": type == NULL ? @"<nil>" : [NSString stringWithUTF8String:type],
+            }];
+        }
+        free(ivarList);
+
         diagnostics[className] = @{
             @"available": @YES,
             @"class_methods": [self selectorNamesForClass:class includeClassMethods:YES],
             @"instance_methods": [self selectorNamesForClass:class includeClassMethods:NO],
+            @"ivars": ivars,
         };
     }
     return [diagnostics copy];
@@ -1309,6 +1325,10 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         if (fields.count > 0) {
             snapshot[@"fields"] = fields;
         }
+        NSDictionary *deepResultDiagnostics = [self searchPartyResultDeepDiagnosticsForObject:result];
+        if (deepResultDiagnostics.count > 0) {
+            snapshot[@"deep_result_diagnostics"] = deepResultDiagnostics;
+        }
         NSString *description = [result description];
         if (description.length > 0) {
             snapshot[@"result_description"] = description.length > 220 ? [description substringToIndex:220] : description;
@@ -1808,6 +1828,161 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
     return [entries copy];
 }
 
+- (BOOL)isSearchPartyResultObject:(id)object {
+    NSString *className = [self classNameForObject:object];
+    return [className isEqualToString:@"SPLocationFetchResult"] ||
+           [className isEqualToString:@"SPDeviceEventFetchResult"];
+}
+
+- (BOOL)selectorNameMatchesSearchPartyResultDeepDiagnostics:(NSString *)selectorName {
+    if (selectorName.length == 0 ||
+        [selectorName hasPrefix:@"set"] ||
+        [selectorName rangeOfString:@":"].location != NSNotFound) {
+        return NO;
+    }
+    NSArray *ignoredTerms = @[@"accessibility", @"Accessibility", @"ITK_", @"vk_", @"VN", @"_ax", @"focusGroup"];
+    for (NSString *term in ignoredTerms) {
+        if ([selectorName rangeOfString:term options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            return NO;
+        }
+    }
+
+    NSArray *terms = @[
+        @"location", @"locations", @"Location", @"Locations",
+        @"beacon", @"beacons", @"Beacon", @"Beacons",
+        @"device", @"devices", @"Device", @"Devices",
+        @"event", @"events", @"Event", @"Events",
+        @"cache", @"cached", @"Cache", @"Cached",
+        @"result", @"results", @"Result", @"Results"
+    ];
+    for (NSString *term in terms) {
+        if ([selectorName rangeOfString:term options:NSCaseInsensitiveSearch].location != NSNotFound) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
+- (NSDictionary *)searchPartyResultDeepDiagnosticsForObject:(id)object {
+    if (![self isSearchPartyResultObject:object]) {
+        return @{};
+    }
+
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"class": [self classNameForObject:object],
+    }];
+
+    NSArray *candidateKeys = @[
+        @"locationsByBeaconIdentifier", @"locationByBeaconIdentifier", @"locationsByIdentifier",
+        @"locations", @"location", @"locationCache", @"cachedLocation", @"cache",
+        @"beaconLocations", @"beaconLocation", @"beaconEvents", @"beaconEventByBeaconIdentifier",
+        @"results", @"result", @"devices", @"deviceEvents", @"events", @"items", @"beacons"
+    ];
+    NSMutableDictionary *keyValues = [[NSMutableDictionary alloc] init];
+    for (NSString *key in candidateKeys) {
+        id value = [self safeValueForKey:key object:object];
+        if (value == nil || value == [NSNull null]) {
+            continue;
+        }
+
+        NSMutableDictionary *valueEntry = [[NSMutableDictionary alloc] initWithDictionary:@{
+            @"summary": [self summaryForValue:value],
+        }];
+        NSDictionary *location = [self serializeLocationObject:value];
+        if (location != (NSDictionary *)[NSNull null]) {
+            valueEntry[@"location"] = location;
+        }
+        if ([value isKindOfClass:[NSDictionary class]]) {
+            valueEntry[@"entries"] = [self compactLocationDictionaryEntries:value];
+        } else if ([value isKindOfClass:[NSArray class]] || [value isKindOfClass:[NSSet class]]) {
+            valueEntry[@"children"] = [self compactBeaconSummariesForBeacons:[self objectChildrenForValue:value]];
+        } else {
+            NSDictionary *fields = [self directFindMyFieldsForObject:value];
+            if (fields.count > 0) {
+                valueEntry[@"fields"] = fields;
+            }
+        }
+        NSString *description = [value description];
+        if (description.length > 0) {
+            valueEntry[@"description"] = description.length > 240 ? [description substringToIndex:240] : description;
+        }
+        keyValues[key] = [valueEntry copy];
+    }
+    if (keyValues.count > 0) {
+        diagnostics[@"candidate_key_values"] = keyValues;
+    }
+
+    NSMutableDictionary *accessorValues = [[NSMutableDictionary alloc] init];
+    NSMutableArray *methodDiagnostics = [[NSMutableArray alloc] init];
+    NSMutableSet *seenSelectors = [[NSMutableSet alloc] initWithArray:candidateKeys];
+    Class methodClass = [object class];
+    NSUInteger methodDepth = 0;
+    while (methodClass != nil && methodDepth < 5 && methodDiagnostics.count < 120) {
+        unsigned int methodCount = 0;
+        Method *methodList = class_copyMethodList(methodClass, &methodCount);
+        for (unsigned int i = 0; i < methodCount && methodDiagnostics.count < 120; i++) {
+            Method method = methodList[i];
+            SEL selector = method_getName(method);
+            NSString *selectorName = NSStringFromSelector(selector);
+            if ([seenSelectors containsObject:selectorName] ||
+                ![self selectorNameMatchesSearchPartyResultDeepDiagnostics:selectorName]) {
+                continue;
+            }
+            [seenSelectors addObject:selectorName];
+
+            NSMethodSignature *signature = [object methodSignatureForSelector:selector];
+            NSMutableDictionary *methodEntry = [[NSMutableDictionary alloc] initWithDictionary:@{
+                @"selector": selectorName ?: @"<nil>",
+                @"declaring_class": NSStringFromClass(methodClass) ?: @"<nil>",
+                @"type_encoding": [NSString stringWithUTF8String:method_getTypeEncoding(method) ?: ""] ?: @"",
+            }];
+            if (signature != nil) {
+                const char *returnType = signature.methodReturnType;
+                methodEntry[@"argument_count"] = @(signature.numberOfArguments);
+                methodEntry[@"return_type"] = returnType == NULL ? @"<nil>" : [NSString stringWithUTF8String:returnType];
+                if (signature.numberOfArguments == 2 && returnType != NULL && returnType[0] == '@' && accessorValues.count < 40) {
+                    id value = [self safeObjectValueFromObject:object selectorName:selectorName];
+                    if (value != nil && value != [NSNull null]) {
+                        NSMutableDictionary *valueEntry = [[NSMutableDictionary alloc] initWithDictionary:@{
+                            @"summary": [self summaryForValue:value],
+                        }];
+                        NSDictionary *location = [self serializeLocationObject:value];
+                        if (location != (NSDictionary *)[NSNull null]) {
+                            valueEntry[@"location"] = location;
+                        }
+                        if ([value isKindOfClass:[NSDictionary class]]) {
+                            valueEntry[@"entries"] = [self compactLocationDictionaryEntries:value];
+                        } else {
+                            NSDictionary *fields = [self directFindMyFieldsForObject:value];
+                            if (fields.count > 0) {
+                                valueEntry[@"fields"] = fields;
+                            }
+                        }
+                        accessorValues[selectorName] = [valueEntry copy];
+                    }
+                }
+            }
+            [methodDiagnostics addObject:[methodEntry copy]];
+        }
+        free(methodList);
+        methodClass = class_getSuperclass(methodClass);
+        methodDepth++;
+    }
+    if (methodDiagnostics.count > 0) {
+        diagnostics[@"methods"] = methodDiagnostics;
+    }
+    if (accessorValues.count > 0) {
+        diagnostics[@"accessor_values"] = accessorValues;
+    }
+
+    NSArray *ivars = [self findMyDirectIvarClassSnapshotForObject:object];
+    if (ivars.count > 0) {
+        diagnostics[@"ivars"] = ivars;
+    }
+
+    return [diagnostics copy];
+}
+
 - (NSDictionary *)searchPartyLocationProbeResultForSelector:(NSString *)selectorName result:(id)result {
     NSMutableDictionary *entry = [[NSMutableDictionary alloc] initWithDictionary:@{
         @"selector": selectorName ?: @"<nil>",
@@ -1833,6 +2008,10 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
     NSDictionary *fields = [self directFindMyFieldsForObject:result];
     if (fields.count > 0) {
         entry[@"fields"] = fields;
+    }
+    NSDictionary *deepResultDiagnostics = [self searchPartyResultDeepDiagnosticsForObject:result];
+    if (deepResultDiagnostics.count > 0) {
+        entry[@"deep_result_diagnostics"] = deepResultDiagnostics;
     }
     NSString *className = [self classNameForObject:result];
     if ([self className:className matchesAnyTerm:@[@"Location", @"Fetch", @"SPOwner", @"Beacon"]]) {
@@ -2202,6 +2381,11 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         @"SPLocationFetchResult",
         @"SPOwnerSessionLocationFetch",
         @"SPBeacon",
+        @"FMXPCSession",
+        @"SPBeaconManagerSimpleBeaconUpdateInterface",
+        @"SPSimpleBeaconContext",
+        @"FindMyLocateSession",
+        @"FMFSession",
     ]];
 
     NSMutableArray *accessorResults = [[NSMutableArray alloc] init];
