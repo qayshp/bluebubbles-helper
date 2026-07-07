@@ -58,6 +58,7 @@
 - (NSDictionary *)searchPartyFetchContextDiagnosticsForContext:(id)context;
 - (NSDictionary *)searchPartyLocationInfoAccessorValuesForObject:(id)object;
 - (NSDictionary *)searchPartyLocationInfoIvarValuesForObject:(id)object;
+- (NSArray *)searchPartyLocationBearingChildSnapshotsForValue:(id)value;
 - (NSDictionary *)searchPartyIdentifierCandidateMapForBeacon:(id)beacon;
 - (NSDictionary *)searchPartyResultDeepDiagnosticsForObject:(id)object;
 - (NSDictionary *)directFindMyFieldsForObject:(id)object;
@@ -2704,6 +2705,19 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                     NSDictionary *location = [self serializeLocationObject:value];
                     if (location != (NSDictionary *)[NSNull null]) {
                         values[ivarName] = @{@"location": location, @"class": [self classNameForObject:value]};
+                    } else if ([self className:ivarName matchesAnyTerm:@[@"location"]] ||
+                               [self className:[self classNameForObject:value] matchesAnyTerm:@[@"Location"]]) {
+                        NSArray *children = [self searchPartyLocationBearingChildSnapshotsForValue:value];
+                        if (children.count > 0) {
+                            values[ivarName] = @{
+                                @"class": [self classNameForObject:value],
+                                @"summary": [self summaryForValue:value],
+                                @"children": children,
+                            };
+                        } else {
+                            NSString *stringValue = [self stringValueForFindMyValue:value];
+                            values[ivarName] = stringValue ?: [self summaryForValue:value];
+                        }
                     } else {
                         NSString *stringValue = [self stringValueForFindMyValue:value];
                         values[ivarName] = stringValue ?: [self summaryForValue:value];
@@ -2932,11 +2946,30 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
             @"name": name.length > 0 ? name : @"<nil>",
             @"matched_key": matchedKey ?: @"<nil>",
             @"identifier_candidates": candidateIdentifiers ?: @[],
+            @"beacon_class": [self classNameForObject:beacon] ?: @"<nil>",
+            @"beacon_summary": [self summaryForValue:beacon],
+            @"beacon_serialized": [self serializeOwnerBeacon:beacon],
             @"last_online_class": [self classNameForObject:matchedValue],
             @"last_online_summary": [self summaryForValue:matchedValue],
             @"last_online_detail": [self searchPartyLocationProbeResultForSelector:@"SPLastOnlineLocationInfo" result:matchedValue],
         }];
 
+        NSDictionary *beaconLocation = [self serializeLocationObject:beacon];
+        if (beaconLocation != (NSDictionary *)[NSNull null]) {
+            match[@"beacon_location"] = beaconLocation;
+        }
+        NSDictionary *beaconFields = [self directFindMyFieldsForObject:beacon];
+        if (beaconFields.count > 0) {
+            match[@"beacon_fields"] = beaconFields;
+        }
+        NSDictionary *beaconAccessors = [self searchPartyLocationInfoAccessorValuesForObject:beacon];
+        if (beaconAccessors.count > 0) {
+            match[@"beacon_accessors"] = beaconAccessors;
+        }
+        NSDictionary *beaconIvars = [self searchPartyLocationInfoIvarValuesForObject:beacon];
+        if (beaconIvars.count > 0) {
+            match[@"beacon_ivars"] = beaconIvars;
+        }
         NSDictionary *location = [self serializeLocationObject:matchedValue];
         if (location != (NSDictionary *)[NSNull null]) {
             match[@"location"] = location;
@@ -3098,6 +3131,33 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         probe[@"location_fetch_last_context_class"] = [self classNameForObject:locationFetchLastContext] ?: @"<nil>";
         probe[@"location_fetch_last_context_id"] = locationFetchLastContext == nil ? @"<nil>" : [NSString stringWithFormat:@"%p", locationFetchLastContext];
         probe[@"location_fetch_last_context_detail"] = [self searchPartyFetchContextDiagnosticsForContext:locationFetchLastContext];
+    } else if ([checkpoint isEqualToString:@"beacon-last-online-correlation"]) {
+        id capturedContext = nil;
+        @synchronized ([BlueBubblesHelper class]) {
+            capturedContext = findMyCapturedSearchPartyLocationContext;
+        }
+        id cachedBeacons = [self safeObjectValueFromObject:targetSession selectorName:@"allBeacons"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"allBeaconsCache"];
+        NSArray *beacons = [self objectChildrenForValue:cachedBeacons];
+        id lastOnlineInfo = [self safeObjectValueFromObject:capturedContext selectorName:@"lastOnlineLocationInfo"];
+        NSMutableArray *lastOnlineKeys = [[NSMutableArray alloc] init];
+        if ([lastOnlineInfo isKindOfClass:[NSDictionary class]]) {
+            for (id key in [(NSDictionary *)lastOnlineInfo allKeys]) {
+                NSString *normalized = [self normalizedSearchPartyIdentifierString:key];
+                if (normalized.length > 0) {
+                    [lastOnlineKeys addObject:normalized];
+                }
+            }
+            [lastOnlineKeys sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+        }
+        probe[@"captured_context_class"] = [self classNameForObject:capturedContext] ?: @"<nil>";
+        probe[@"beacon_cache_class"] = [self classNameForObject:cachedBeacons] ?: @"<nil>";
+        probe[@"beacon_cache_summary"] = [self summaryForValue:cachedBeacons];
+        probe[@"beacon_count"] = @(beacons.count);
+        probe[@"last_online_info_class"] = [self classNameForObject:lastOnlineInfo] ?: @"<nil>";
+        probe[@"last_online_key_count"] = @(lastOnlineKeys.count);
+        probe[@"last_online_keys"] = [lastOnlineKeys copy];
+        probe[@"beacon_last_online_correlation"] = [self searchPartyLastOnlineInfoSummaryForBeacons:beacons context:capturedContext];
+        probe[@"beacon_summaries_sample"] = [self compactBeaconSummariesForBeacons:beacons];
     } else {
         probe[@"error"] = [NSString stringWithFormat:@"Unknown delegated checkpoint: %@", checkpoint ?: @"<nil>"];
     }
@@ -4632,6 +4692,49 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 
     return @[value];
+}
+
+- (NSArray *)searchPartyLocationBearingChildSnapshotsForValue:(id)value {
+    NSArray *children = [self objectChildrenForValue:value];
+    if (children.count == 0) {
+        return @[];
+    }
+
+    NSMutableArray *snapshots = [[NSMutableArray alloc] init];
+    for (id child in children) {
+        if (snapshots.count >= 8) {
+            break;
+        }
+
+        NSMutableDictionary *snapshot = [[NSMutableDictionary alloc] initWithDictionary:@{
+            @"class": [self classNameForObject:child],
+            @"summary": [self summaryForValue:child],
+        }];
+
+        NSString *description = [child description];
+        if (description.length > 0) {
+            snapshot[@"description"] = description.length > 240 ? [description substringToIndex:240] : description;
+        }
+
+        NSDictionary *location = [self serializeLocationObject:child];
+        if (location != (NSDictionary *)[NSNull null]) {
+            snapshot[@"location"] = location;
+        }
+
+        NSDictionary *fields = [self directFindMyFieldsForObject:child];
+        if (fields.count > 0) {
+            snapshot[@"fields"] = fields;
+        }
+
+        NSDictionary *ivars = [self searchPartyLocationInfoIvarValuesForObject:child];
+        if (ivars.count > 0) {
+            snapshot[@"ivars"] = ivars;
+        }
+
+        [snapshots addObject:[snapshot copy]];
+    }
+
+    return [snapshots copy];
 }
 
 - (NSDictionary *)inspectObject:(id)object {

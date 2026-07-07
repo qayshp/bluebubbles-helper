@@ -348,6 +348,115 @@ correlate these 10 UUIDs against known beacons/devices, then invoke or observe a
 fetch path that uses one or more of those UUIDs as explicit
 `searchIdentifiers`, instead of relying on the broad zero-identifier context.
 
+## Live try: beacon to last-online correlation
+
+Tested locally on 2026-07-07 with helper dylib md5 values:
+
+- `94ee8b2d278ab7f9aaaf245f979764cf`: first
+  `beacon-last-online-correlation` checkpoint.
+- `0e536e63baba7887bacf5bca8f073a4c`: added matched-beacon detail.
+- `1c7e20d6a58c1c73d1b0bbb19405bc5f`: expanded nested
+  location-bearing collections such as `SPSafeLocation`.
+
+Route shape:
+
+```text
+POST /api/v1/icloud/findmy/searchparty/locations/delegated-checkpoint/beacon-last-online-correlation
+```
+
+What the checkpoint does:
+
+1. Reads the captured `SPLocationFetchContext`.
+2. Reads `lastOnlineLocationInfo` from that context.
+3. Reads cached owner beacons from `SPOwnerSession.allBeacons` /
+   `allBeaconsCache`.
+4. Compares normalized beacon identifiers, stable identifiers, product UUIDs,
+   and related candidate IDs against the last-online UUID keys.
+5. Returns matched beacon details without touching the XPC proxy.
+
+Initial result before populating the beacon cache:
+
+```text
+captured_context_class: SPLocationFetchContext
+last_online_key_count: 10
+beacon_cache_class: <nil>
+beacon_count: 0
+matched_beacon_count: 0
+```
+
+After running:
+
+```text
+POST /api/v1/icloud/findmy/searchparty/beacons/start
+POST /api/v1/icloud/findmy/searchparty/beacons
+POST /api/v1/icloud/findmy/searchparty/locations/delegated-checkpoint/beacon-last-online-correlation
+```
+
+the owner session returned:
+
+```text
+beacon_count: 53
+last_online_key_count: 10
+matched_beacon_count: 5
+```
+
+Matched last-online UUIDs:
+
+| Beacon name | Last-online UUID |
+| --- | --- |
+| `DJ's MacBook Air` | `6C5AC97A-2CAE-41D9-B5C3-1AE242B46698` |
+| `DJ's iPhone` | `180BEF7B-4C3A-47D0-ABC7-0FA8E84657B8` |
+| `Qays's iPhone` | `FC5CC077-364C-466B-A08D-3A6E00361111` |
+| `DJ's Apple Watch` | `4C1CE7A2-533D-4ADB-8CE2-80D2CE19D238` |
+| `qhp-mbp-14-6` | `243A7F6E-B4ED-481F-A2E0-54EF9AD6EDB6` |
+
+The `qhp-mbp-14-6` record is especially useful because the local Find My UI was
+reported to show a location for it. SearchParty correlation found:
+
+```text
+SPBeacon.name: qhp-mbp-14-6
+SPBeacon.identifier: 243A7F6E-B4ED-481F-A2E0-54EF9AD6EDB6
+SPBeacon.stableIdentifier: l:/00006021-001249190E43C01E
+SPBeacon._type: selfBeaconing
+SPBeacon._model: Mac14,6
+SPLastOnlineLocationInfo.timestamp: 2026-07-07 20:50:12 +0000
+SPLastOnlineLocationInfo._updatedOn: 2026-07-07 20:51:33 +0000
+```
+
+No current coordinate was present on:
+
+- the matched `SPBeacon` itself;
+- the matched `SPLastOnlineLocationInfo`;
+- `SPLocationFetchResult.locationsByBeaconIdentifier`, which is still empty in
+  the observed local result path.
+
+The expanded nested-location pass did find `SPBeacon._safeLocations`:
+
+```text
+_safeLocations class: __NSSingleObjectSetI
+child class: SPSafeLocation
+SPSafeLocation.name: Home
+SPSafeLocation._location class: CLLocation
+CLLocation format:
+  latitude: <redacted double>
+  longitude: <redacted double>
+  horizontalAccuracy: <double>
+  timeStamp: <epoch milliseconds double>
+```
+
+Interpretation:
+
+`SPSafeLocation` proves that nested SearchParty owner-beacon objects can carry
+`CLLocation` coordinates, and the serializer can now extract them. However, the
+safe-location coordinate is a named saved place/geofence associated with the
+beacon, not the device's current Find My location. It should not be treated as
+the answer for item/device live or last-known coordinates.
+
+The best next lead is to find the sibling object that joins these same
+last-online beacon UUIDs to actual current/last-known coordinates. The matching
+for `qhp-mbp-14-6` gives a concrete target UUID:
+`243A7F6E-B4ED-481F-A2E0-54EF9AD6EDB6`.
+
 ## Static inspection: fetch context detail
 
 `SPLocationFetchContext` exposes the fields most likely to explain why the
