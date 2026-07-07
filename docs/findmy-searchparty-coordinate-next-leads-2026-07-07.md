@@ -521,6 +521,68 @@ SearchParty internals, but should target current-location result/cache/update
 objects keyed by known beacon UUIDs instead of expanding UI paths or saved
 places.
 
+### Useful side result: saved safe locations for geofencing
+
+The `SPBeacon.safeLocations` path is useful even though it is not the live or
+recent Find My location path.
+
+Observed object chain:
+
+```text
+SPOwnerSession
+  -> allBeacons / allBeaconsCache
+     -> SPBeacon
+        -> safeLocations / _safeLocations
+           -> SPSafeLocation
+              -> _location: CLLocation
+```
+
+Observed safe-location record shape:
+
+```text
+SPBeacon.name: <beacon display name>
+SPBeacon.identifier candidates:
+  <UUID>
+  <stable identifier>
+safe_locations_class: __NSSingleObjectSetI | __NSSetI
+SPSafeLocation.name: <saved place name, when present>
+SPSafeLocation._location:
+  latitude: 0.0
+  longitude: 0.0
+  horizontalAccuracy: <double>
+  timeStamp: <epoch milliseconds double>
+```
+
+The route that currently exposes this bounded sample is:
+
+```text
+POST /api/v1/icloud/findmy/searchparty/locations/delegated-checkpoint/owner-location-graph
+```
+
+Current implementation behavior:
+
+- reads cached owner beacons from `allBeacons` / `allBeaconsCache`;
+- samples each beacon's `safeLocations` collection;
+- returns the beacon name, identifier candidates, safe-location collection
+  summary, and serialized `CLLocation` data;
+- intentionally does not traverse proxy, XPC, broad session, or UI paths.
+
+Why this matters:
+
+Safe locations appear to be saved places/geofences associated with owner
+beacons, such as a named home/work-like location or other configured place.
+Those coordinates can be useful later for geofencing, labeling, or determining
+whether a live/recent item location is near a saved place.
+
+Important limitation:
+
+`SPSafeLocation` coordinates are not evidence of the current or last-known
+physical item/device position. Some items have no live location, some have only
+recent/last-known locations, and some may have saved safe locations that do not
+match their current position. Live/recent item and device support still needs a
+separate SearchParty path that returns current or recent coordinates keyed by
+beacon/device identifiers.
+
 ### Live try: targeted SearchParty location probes
 
 After the shallow safe-location sampler, the existing dedicated SearchParty
