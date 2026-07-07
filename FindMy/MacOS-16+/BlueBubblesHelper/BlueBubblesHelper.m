@@ -570,6 +570,11 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         return;
     }
 
+    if ([event isEqualToString:@"debug-findmy-searchparty-locations-last-online-identifiers"]) {
+        [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:16];
+        return;
+    }
+
     if ([event isEqualToString:@"debug-findmy-searchparty-locations-callback-watch"]) {
         [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:11];
         return;
@@ -2508,10 +2513,12 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
             @"callback_watch_method_availability",
             @"callback_watch_context",
             @"single_identifier_context_method_availability",
+            @"last_online_context_method_availability",
             @"delegated_context_method_availability",
             @"callback_watch_note",
             @"delegated_context_note",
             @"single_identifier_context_assignment",
+            @"last_online_context_assignment",
             @"controlled_context_assignment",
         ]) {
             id value = findMySearchPartyLocationProbe[key];
@@ -3289,7 +3296,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 
     NSUInteger focusedProbeStep = 0;
-    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 15) {
+    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 16) {
         focusedProbeStep = requestedFocusedStep;
         startedProbe[@"dedicated_probe"] = @YES;
     } else {
@@ -3330,6 +3337,8 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         focusedProbeSelector = @"SPOwnerSessionXPCProtocol.delegatedLocationForContext";
     } else if (focusedProbeStep == 15) {
         focusedProbeSelector = @"SPOwnerSessionXPCProtocol.delegatedLocationPassiveWatch";
+    } else if (focusedProbeStep == 16) {
+        focusedProbeSelector = @"SPOwnerSessionLocationFetch.lastOnlineIdentifiers";
     }
 
     NSArray *methods = [self searchPartyLocationMethodDiagnosticsForObject:targetSession];
@@ -3375,7 +3384,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         @"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:",
         focusedProbeSelector,
     ];
-    startedProbe[@"pending_completion_count"] = focusedProbeStep == 15 ? @0 : ((focusedProbeStep == 9 || focusedProbeStep == 10) ? @5 : ((focusedProbeStep == 11 || focusedProbeStep == 12 || focusedProbeStep == 13) ? @3 : ((focusedProbeStep == 5 || focusedProbeStep == 6) ? @6 : (focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3)))));
+    startedProbe[@"pending_completion_count"] = focusedProbeStep == 15 ? @0 : (focusedProbeStep == 16 ? @6 : ((focusedProbeStep == 9 || focusedProbeStep == 10) ? @5 : ((focusedProbeStep == 11 || focusedProbeStep == 12 || focusedProbeStep == 13) ? @3 : ((focusedProbeStep == 5 || focusedProbeStep == 6) ? @6 : (focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3))))));
     [self storeFindMySearchPartyLocationProbe:startedProbe];
 
     id capturedLocationFetch = nil;
@@ -3712,16 +3721,95 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                 singleIdentifierContextAssignment[@"search_identifiers_final_count"] = @([[self objectChildrenForValue:[self safeObjectValueFromObject:singleIdentifierContext selectorName:@"searchIdentifiers"]] count]);
                 singleIdentifierContextAssignment[@"search_location_sources_final_count"] = @([[self objectChildrenForValue:[self safeObjectValueFromObject:singleIdentifierContext selectorName:@"searchLocationSources"]] count]);
 
+                NSMutableArray *lastOnlineIdentifierValues = [[NSMutableArray alloc] init];
+                NSMutableArray *lastOnlineIdentifierStrings = [[NSMutableArray alloc] init];
+                NSMutableSet *seenLastOnlineIdentifiers = [[NSMutableSet alloc] init];
+                NSString *preferredLastOnlineIdentifier = @"243A7F6E-B4ED-481F-A2E0-54EF9AD6EDB6";
+                NSMutableArray *lastOnlineKeys = [[NSMutableArray alloc] init];
+                if ([realLastOnlineInfo isKindOfClass:[NSDictionary class]]) {
+                    [lastOnlineKeys addObjectsFromArray:[(NSDictionary *)realLastOnlineInfo allKeys]];
+                }
+                [lastOnlineKeys sortUsingComparator:^NSComparisonResult(id a, id b) {
+                    NSString *aString = [self normalizedSearchPartyIdentifierString:a] ?: [a description];
+                    NSString *bString = [self normalizedSearchPartyIdentifierString:b] ?: [b description];
+                    if ([aString isEqualToString:preferredLastOnlineIdentifier]) {
+                        return NSOrderedAscending;
+                    }
+                    if ([bString isEqualToString:preferredLastOnlineIdentifier]) {
+                        return NSOrderedDescending;
+                    }
+                    return [aString localizedCaseInsensitiveCompare:bString];
+                }];
+                for (id key in lastOnlineKeys) {
+                    if (lastOnlineIdentifierValues.count >= 10) {
+                        break;
+                    }
+                    NSUUID *uuidValue = nil;
+                    if ([key isKindOfClass:[NSUUID class]]) {
+                        uuidValue = key;
+                    } else {
+                        uuidValue = [[NSUUID alloc] initWithUUIDString:[key description]];
+                    }
+                    NSString *normalized = [uuidValue UUIDString];
+                    if (uuidValue == nil || normalized.length == 0 || [seenLastOnlineIdentifiers containsObject:normalized]) {
+                        continue;
+                    }
+                    [seenLastOnlineIdentifiers addObject:normalized];
+                    [lastOnlineIdentifierValues addObject:uuidValue];
+                    [lastOnlineIdentifierStrings addObject:normalized];
+                }
+
+                id lastOnlineContext = contextClass == nil ? nil : [[contextClass alloc] init];
+                [self setSafeValue:@"com.apple.findmy" forKey:@"bundleIdentifier" object:lastOnlineContext];
+                [self setSafeValue:realLastContext == nil ? @0 : @"foregroundRefresh" forKey:@"cachePolicy" object:lastOnlineContext];
+                [self setSafeValue:@YES forKey:@"subscribe" object:lastOnlineContext];
+                [self setSafeValue:@YES forKey:@"reportDeviceEvents" object:lastOnlineContext];
+                if (lastOnlineIdentifierValues.count > 0) {
+                    [self setSafeValue:lastOnlineIdentifierValues forKey:@"searchIdentifiers" object:lastOnlineContext];
+                }
+                if (realSearchTypes != nil && realSearchTypes != [NSNull null]) {
+                    [self setSafeValue:realSearchTypes forKey:@"searchTypes" object:lastOnlineContext];
+                }
+                if (realSearchLocationSources != nil && realSearchLocationSources != [NSNull null]) {
+                    [self setSafeValue:realSearchLocationSources forKey:@"searchLocationSources" object:lastOnlineContext];
+                } else if (searchLocationSources.count > 0) {
+                    [self setSafeValue:[searchLocationSources allObjects] forKey:@"searchLocationSources" object:lastOnlineContext];
+                }
+                if (realLastOnlineInfo != nil && realLastOnlineInfo != [NSNull null]) {
+                    [self setSafeValue:realLastOnlineInfo forKey:@"lastOnlineLocationInfo" object:lastOnlineContext];
+                }
+                id lastOnlineContextIdentifiersAfterKVC = [self safeObjectValueFromObject:lastOnlineContext selectorName:@"searchIdentifiers"];
+                id lastOnlineContextSourcesAfterKVC = [self safeObjectValueFromObject:lastOnlineContext selectorName:@"searchLocationSources"];
+                NSMutableDictionary *lastOnlineContextAssignment = [[NSMutableDictionary alloc] initWithDictionary:@{
+                    @"preferred_identifier": preferredLastOnlineIdentifier,
+                    @"identifier_strings": [lastOnlineIdentifierStrings copy],
+                    @"search_identifiers_after_kvc_count": @([[self objectChildrenForValue:lastOnlineContextIdentifiersAfterKVC] count]),
+                    @"search_location_sources_after_kvc_count": @([[self objectChildrenForValue:lastOnlineContextSourcesAfterKVC] count]),
+                }];
+                if ([[self objectChildrenForValue:lastOnlineContextIdentifiersAfterKVC] count] == 0 && lastOnlineIdentifierValues.count > 0) {
+                    lastOnlineContextAssignment[@"search_identifiers_ivar_write"] = @([self setSafeIvarObjectValue:lastOnlineIdentifierValues ivarName:@"_searchIdentifiers" object:lastOnlineContext]);
+                }
+                if ([[self objectChildrenForValue:lastOnlineContextSourcesAfterKVC] count] == 0 && generatedSearchLocationSources != nil && generatedSearchLocationSources != [NSNull null]) {
+                    lastOnlineContextAssignment[@"search_location_sources_ivar_write"] = @([self setSafeIvarObjectValue:generatedSearchLocationSources ivarName:@"_searchLocationSources" object:lastOnlineContext]);
+                }
+                if (lastOnlineIdentifierValues.count > 0) {
+                    lastOnlineContextAssignment[@"primary_index_range_ivar_write"] = @([self setSafeIvarRangeValue:NSMakeRange(0, lastOnlineIdentifierValues.count) ivarName:@"_primaryIndexRange" object:lastOnlineContext]);
+                }
+                lastOnlineContextAssignment[@"search_identifiers_final_count"] = @([[self objectChildrenForValue:[self safeObjectValueFromObject:lastOnlineContext selectorName:@"searchIdentifiers"]] count]);
+                lastOnlineContextAssignment[@"search_location_sources_final_count"] = @([[self objectChildrenForValue:[self safeObjectValueFromObject:lastOnlineContext selectorName:@"searchLocationSources"]] count]);
+
                 @synchronized ([BlueBubblesHelper class]) {
                     findMySearchPartyLocationProbe[@"real_last_context_summary"] = [self compactSearchPartyLocationProbeResultForSelector:@"SPLocationFetchContext.lastContext" result:realLastContext];
                     findMySearchPartyLocationProbe[@"real_last_online_info"] = lastOnlineSummary;
                     findMySearchPartyLocationProbe[@"context_summary"] = [self compactSearchPartyLocationProbeResultForSelector:@"SPLocationFetchContext" result:context];
                     findMySearchPartyLocationProbe[@"single_identifier_context_summary"] = [self compactSearchPartyLocationProbeResultForSelector:@"SPLocationFetchContext.singleIdentifier" result:singleIdentifierContext];
+                    findMySearchPartyLocationProbe[@"last_online_context_summary"] = [self compactSearchPartyLocationProbeResultForSelector:@"SPLocationFetchContext.lastOnlineIdentifiers" result:lastOnlineContext];
                     findMySearchPartyLocationProbe[@"context_search_identifier_count"] = @(searchIdentifiers.count);
                     findMySearchPartyLocationProbe[@"context_search_location_source_count"] = realSearchLocationSources != nil ? @([[self objectChildrenForValue:realSearchLocationSources] count]) : @(searchLocationSources.count);
                     findMySearchPartyLocationProbe[@"context_report_device_events"] = @YES;
                     findMySearchPartyLocationProbe[@"controlled_context_assignment"] = controlledContextAssignment;
                     findMySearchPartyLocationProbe[@"single_identifier_context_assignment"] = singleIdentifierContextAssignment;
+                    findMySearchPartyLocationProbe[@"last_online_context_assignment"] = lastOnlineContextAssignment;
                 }
 
                 id invocationTarget = locationFetch ?: targetSession;
@@ -4015,6 +4103,101 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                             [singleProxyLocationForContextInvocation invoke];
                         } else {
                             appendProbeCompletion(@"SPOwnerSessionXPCProtocol.locationForContext:completion:.singleIdentifierContext", nil);
+                        }
+                    }
+
+                    if (focusedProbeStep == 16) {
+                        id lastOnlineContextTarget = locationFetch ?: [self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"];
+                        SEL locationForContextSelector = NSSelectorFromString(@"locationForContext:completion:");
+                        NSMethodSignature *locationForContextSignature = [lastOnlineContextTarget methodSignatureForSelector:locationForContextSelector];
+                        SEL subscribeForContextSelector = NSSelectorFromString(@"subscribeAndFetchLocationForContext:completion:");
+                        NSMethodSignature *subscribeForContextSignature = [lastOnlineContextTarget methodSignatureForSelector:subscribeForContextSelector];
+                        SEL proxyLocationForContextSelector = NSSelectorFromString(@"locationForContext:completion:");
+                        NSMethodSignature *proxyLocationForContextSignature = [ownerProxy methodSignatureForSelector:proxyLocationForContextSelector];
+
+                        @synchronized ([BlueBubblesHelper class]) {
+                            findMySearchPartyLocationProbe[@"last_online_context_method_availability"] = @{
+                                @"latestLocationsForIdentifiers": @(ownerProxy != nil && latestLocationsSignature != nil && latestLocationsSignature.numberOfArguments == 6),
+                                @"locationFetch.locationForContext": @(lastOnlineContextTarget != nil && locationForContextSignature != nil && locationForContextSignature.numberOfArguments == 4),
+                                @"locationFetch.subscribeAndFetchLocationForContext": @(lastOnlineContextTarget != nil && subscribeForContextSignature != nil && subscribeForContextSignature.numberOfArguments == 4),
+                                @"proxy.locationForContext": @(ownerProxy != nil && proxyLocationForContextSignature != nil && proxyLocationForContextSignature.numberOfArguments == 4),
+                            };
+                        }
+
+                        if (ownerProxy != nil &&
+                            latestLocationsSignature != nil &&
+                            latestLocationsSignature.numberOfArguments == 6 &&
+                            lastOnlineIdentifierValues.count > 0) {
+                            NSArray *lastOnlineIdentifierArgument = [lastOnlineIdentifierValues copy];
+                            id lastOnlineFetchLimit = @(lastOnlineIdentifierArgument.count);
+                            void (^lastOnlineLatestCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.lastOnlineIdentifiers", result);
+                            };
+                            NSInvocation *lastOnlineLatestInvocation = [NSInvocation invocationWithMethodSignature:latestLocationsSignature];
+                            [lastOnlineLatestInvocation setTarget:ownerProxy];
+                            [lastOnlineLatestInvocation setSelector:latestLocationsSelector];
+                            [lastOnlineLatestInvocation setArgument:&lastOnlineIdentifierArgument atIndex:2];
+                            [lastOnlineLatestInvocation setArgument:&lastOnlineFetchLimit atIndex:3];
+                            [lastOnlineLatestInvocation setArgument:&generatedSearchLocationSources atIndex:4];
+                            [lastOnlineLatestInvocation setArgument:&lastOnlineLatestCompletion atIndex:5];
+                            [lastOnlineLatestInvocation retainArguments];
+                            [lastOnlineLatestInvocation invoke];
+                        } else {
+                            appendProbeCompletion(@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.lastOnlineIdentifiers", nil);
+                        }
+
+                        if (lastOnlineContextTarget != nil &&
+                            lastOnlineContext != nil &&
+                            locationForContextSignature != nil &&
+                            locationForContextSignature.numberOfArguments == 4) {
+                            void (^lastOnlineLocationForContextCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(@"SPOwnerSessionLocationFetch.locationForContext:completion:.lastOnlineIdentifiers", result);
+                            };
+                            NSInvocation *lastOnlineLocationForContextInvocation = [NSInvocation invocationWithMethodSignature:locationForContextSignature];
+                            [lastOnlineLocationForContextInvocation setTarget:lastOnlineContextTarget];
+                            [lastOnlineLocationForContextInvocation setSelector:locationForContextSelector];
+                            [lastOnlineLocationForContextInvocation setArgument:&lastOnlineContext atIndex:2];
+                            [lastOnlineLocationForContextInvocation setArgument:&lastOnlineLocationForContextCompletion atIndex:3];
+                            [lastOnlineLocationForContextInvocation retainArguments];
+                            [lastOnlineLocationForContextInvocation invoke];
+                        } else {
+                            appendProbeCompletion(@"SPOwnerSessionLocationFetch.locationForContext:completion:.lastOnlineIdentifiers", nil);
+                        }
+
+                        if (lastOnlineContextTarget != nil &&
+                            lastOnlineContext != nil &&
+                            subscribeForContextSignature != nil &&
+                            subscribeForContextSignature.numberOfArguments == 4) {
+                            void (^lastOnlineSubscribeForContextCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.lastOnlineIdentifiers", result);
+                            };
+                            NSInvocation *lastOnlineSubscribeForContextInvocation = [NSInvocation invocationWithMethodSignature:subscribeForContextSignature];
+                            [lastOnlineSubscribeForContextInvocation setTarget:lastOnlineContextTarget];
+                            [lastOnlineSubscribeForContextInvocation setSelector:subscribeForContextSelector];
+                            [lastOnlineSubscribeForContextInvocation setArgument:&lastOnlineContext atIndex:2];
+                            [lastOnlineSubscribeForContextInvocation setArgument:&lastOnlineSubscribeForContextCompletion atIndex:3];
+                            [lastOnlineSubscribeForContextInvocation retainArguments];
+                            [lastOnlineSubscribeForContextInvocation invoke];
+                        } else {
+                            appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.lastOnlineIdentifiers", nil);
+                        }
+
+                        if (ownerProxy != nil &&
+                            lastOnlineContext != nil &&
+                            proxyLocationForContextSignature != nil &&
+                            proxyLocationForContextSignature.numberOfArguments == 4) {
+                            void (^lastOnlineProxyLocationForContextCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(@"SPOwnerSessionXPCProtocol.locationForContext:completion:.lastOnlineIdentifiers", result);
+                            };
+                            NSInvocation *lastOnlineProxyLocationForContextInvocation = [NSInvocation invocationWithMethodSignature:proxyLocationForContextSignature];
+                            [lastOnlineProxyLocationForContextInvocation setTarget:ownerProxy];
+                            [lastOnlineProxyLocationForContextInvocation setSelector:proxyLocationForContextSelector];
+                            [lastOnlineProxyLocationForContextInvocation setArgument:&lastOnlineContext atIndex:2];
+                            [lastOnlineProxyLocationForContextInvocation setArgument:&lastOnlineProxyLocationForContextCompletion atIndex:3];
+                            [lastOnlineProxyLocationForContextInvocation retainArguments];
+                            [lastOnlineProxyLocationForContextInvocation invoke];
+                        } else {
+                            appendProbeCompletion(@"SPOwnerSessionXPCProtocol.locationForContext:completion:.lastOnlineIdentifiers", nil);
                         }
                     }
 

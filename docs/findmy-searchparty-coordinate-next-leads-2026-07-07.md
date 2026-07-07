@@ -706,6 +706,78 @@ identifier/source combination is not the one Find My uses for the visible
 current coordinate, or the coordinate is populated in another object before a
 non-empty `SPLocationFetchResult` is constructed.
 
+### Live try: last-online identifiers as upstream context
+
+The next upstream probe tested whether Find My's own
+`SPLocationFetchContext.lastOnlineLocationInfo` UUID keys are the correct
+`searchIdentifiers` for current/recent coordinates.
+
+New API route:
+
+```text
+POST /api/v1/icloud/findmy/searchparty/locations/last-online-identifiers
+```
+
+Probe behavior:
+
+- reads the captured `SPLocationFetchContext.lastOnlineLocationInfo` dictionary;
+- builds a fresh `SPLocationFetchContext`;
+- sets `searchIdentifiers` to up to ten last-online UUID keys;
+- prioritizes the known locally visible device UUID
+  `243A7F6E-B4ED-481F-A2E0-54EF9AD6EDB6`;
+- preserves the captured context's `searchTypes`, `searchLocationSources`,
+  `cachePolicy`, `subscribe`, `reportDeviceEvents`, and
+  `lastOnlineLocationInfo`;
+- invokes `latestLocationsForIdentifiers:fetchLimit:sources:completion:`,
+  `locationForContext:completion:`,
+  `subscribeAndFetchLocationForContext:completion:`, and proxy
+  `locationForContext:completion:` when available.
+
+Observed context assignment:
+
+```text
+focused_probe_step: 16
+preferred_identifier: 243A7F6E-B4ED-481F-A2E0-54EF9AD6EDB6
+search_identifiers_final_count: 10
+search_location_sources_final_count: 12
+method availability:
+  latestLocationsForIdentifiers: true
+  locationFetch.locationForContext: true
+  locationFetch.subscribeAndFetchLocationForContext: true
+  proxy.locationForContext: true
+```
+
+Observed completion behavior after a longer poll:
+
+```text
+status: timed_out
+pending_completion_count: 3
+completion_results: 3
+
+SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion: -> <nil>
+SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.lastOnlineIdentifiers -> <nil>
+SPOwnerSession.locationsForBeacons:completion: -> __NSDictionary0
+```
+
+The passive update callbacks fired, but all `SPLocationFetchResult` objects
+were still empty:
+
+```text
+passive_location_event_count: 10
+receivedUpdatedLocation: SPLocationFetchResult
+setLocationUpdateBlock: SPLocationFetchResult
+locations_by_beacon_identifier_count: 0
+_locationsByBeaconIdentifier: __NSDictionary0
+```
+
+Interpretation:
+
+Using last-online UUIDs, including the known visible `qhp-mbp-14-6` UUID, is
+not sufficient by itself to produce a non-empty `SPLocationFetchResult` through
+this route. The current coordinate path likely needs either a different
+identifier form, a different source/cache policy combination, or a separate
+SearchParty object populated before the empty result object is built.
+
 ## Static inspection: fetch context detail
 
 `SPLocationFetchContext` exposes the fields most likely to explain why the
