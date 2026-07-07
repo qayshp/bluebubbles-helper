@@ -51,6 +51,7 @@
 - (NSDictionary *)findMySearchPartyBeaconProbeStatus;
 - (NSDictionary *)findMySearchPartyLocationProbeStatus;
 - (NSDictionary *)searchPartyLastOnlineInfoSummaryForBeacons:(NSArray *)beacons context:(id)context;
+- (NSDictionary *)searchPartyFetchContextDiagnosticsForContext:(id)context;
 - (NSDictionary *)searchPartyLocationInfoAccessorValuesForObject:(id)object;
 - (NSDictionary *)searchPartyLocationInfoIvarValuesForObject:(id)object;
 - (NSDictionary *)searchPartyResultDeepDiagnosticsForObject:(id)object;
@@ -2218,6 +2219,9 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     if ([lastOnlineLocationInfo isKindOfClass:[NSDictionary class]]) {
         entry[@"last_online_location_info_count"] = @([(NSDictionary *)lastOnlineLocationInfo count]);
     }
+    if ([[self classNameForObject:result] isEqualToString:@"SPLocationFetchContext"]) {
+        entry[@"context_detail"] = [self searchPartyFetchContextDiagnosticsForContext:result];
+    }
 
     NSMutableDictionary *relatedObjects = [[NSMutableDictionary alloc] init];
     for (NSString *relatedSelector in @[@"proxy", @"_proxy", @"session", @"connection", @"serviceDescription", @"locationFetch", @"simpleBeaconUpdateInterface", @"context"]) {
@@ -2489,6 +2493,128 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 
     return [values copy];
+}
+
+- (NSDictionary *)searchPartyFetchContextDiagnosticsForContext:(id)context {
+    if (context == nil || context == [NSNull null]) {
+        return @{};
+    }
+
+    NSMutableDictionary *detail = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"context_class": [self classNameForObject:context],
+        @"context_id": [NSString stringWithFormat:@"%p", context],
+        @"context_summary": [self summaryForValue:context],
+    }];
+
+    NSArray *arraySelectors = @[
+        @"searchIdentifiers",
+        @"searchTypes",
+        @"searchPriority",
+        @"searchLocationSources",
+    ];
+    for (NSString *selectorName in arraySelectors) {
+        id value = [self safeObjectValueFromObject:context selectorName:selectorName];
+        NSArray *children = [self objectChildrenForValue:value];
+        NSMutableArray *sample = [[NSMutableArray alloc] init];
+        for (id child in children) {
+            if (sample.count >= 12) {
+                break;
+            }
+            NSMutableDictionary *entry = [[NSMutableDictionary alloc] initWithDictionary:@{
+                @"class": [self classNameForObject:child],
+                @"summary": [self summaryForValue:child],
+            }];
+            NSString *stringValue = [self stringValueForFindMyValue:child] ?: [child description];
+            if (stringValue.length > 0) {
+                entry[@"value"] = stringValue.length > 240 ? [stringValue substringToIndex:240] : stringValue;
+            }
+            [sample addObject:[entry copy]];
+        }
+        detail[[NSString stringWithFormat:@"%@_class", selectorName]] = [self classNameForObject:value];
+        detail[[NSString stringWithFormat:@"%@_summary", selectorName]] = [self summaryForValue:value];
+        detail[[NSString stringWithFormat:@"%@_count", selectorName]] = @(children.count);
+        detail[[NSString stringWithFormat:@"%@_sample", selectorName]] = sample;
+    }
+
+    for (NSString *selectorName in @[@"cachePolicy", @"bundleIdentifier"]) {
+        id value = [self safeObjectValueFromObject:context selectorName:selectorName];
+        if (value != nil && value != [NSNull null]) {
+            detail[selectorName] = @{
+                @"class": [self classNameForObject:value],
+                @"summary": [self summaryForValue:value],
+                @"value": [self stringValueForFindMyValue:value] ?: [value description] ?: @"<nil>",
+            };
+        }
+    }
+
+    for (NSString *selectorName in @[@"subscribe", @"reportDeviceEvents"]) {
+        id value = [self safeJSONValueFromObject:context zeroArgumentSelectorName:selectorName];
+        if (value != nil && value != [NSNull null]) {
+            detail[selectorName] = value;
+        }
+    }
+
+    SEL primaryIndexRangeSelector = NSSelectorFromString(@"primaryIndexRange");
+    if ([context respondsToSelector:primaryIndexRangeSelector]) {
+        NSMethodSignature *signature = [context methodSignatureForSelector:primaryIndexRangeSelector];
+        const char *returnType = signature == nil ? NULL : signature.methodReturnType;
+        if (returnType != NULL && strstr(returnType, "NSRange") != NULL) {
+            @try {
+                NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+                [invocation setTarget:context];
+                [invocation setSelector:primaryIndexRangeSelector];
+                [invocation invoke];
+                NSRange range = NSMakeRange(0, 0);
+                [invocation getReturnValue:&range];
+                detail[@"primaryIndexRange"] = @{
+                    @"location": @(range.location),
+                    @"length": @(range.length),
+                };
+            } @catch (NSException *exception) {
+            }
+        }
+    }
+
+    id lastOnlineInfo = [self safeObjectValueFromObject:context selectorName:@"lastOnlineLocationInfo"];
+    detail[@"lastOnlineLocationInfo_class"] = [self classNameForObject:lastOnlineInfo];
+    detail[@"lastOnlineLocationInfo_summary"] = [self summaryForValue:lastOnlineInfo];
+    if ([lastOnlineInfo isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *dictionary = (NSDictionary *)lastOnlineInfo;
+        NSMutableArray *entries = [[NSMutableArray alloc] init];
+        for (id key in dictionary.allKeys) {
+            if (entries.count >= 5) {
+                break;
+            }
+            id value = dictionary[key];
+            NSMutableDictionary *entry = [[NSMutableDictionary alloc] initWithDictionary:@{
+                @"key_class": [self classNameForObject:key],
+                @"key": [self normalizedSearchPartyIdentifierString:key] ?: [key description] ?: @"<nil>",
+                @"value_class": [self classNameForObject:value],
+                @"value_summary": [self summaryForValue:value],
+            }];
+            NSString *description = [value description];
+            if (description.length > 0) {
+                entry[@"value_description"] = description.length > 240 ? [description substringToIndex:240] : description;
+            }
+            NSDictionary *accessors = [self searchPartyLocationInfoAccessorValuesForObject:value];
+            if (accessors.count > 0) {
+                entry[@"accessors"] = accessors;
+            }
+            NSDictionary *ivars = [self searchPartyLocationInfoIvarValuesForObject:value];
+            if (ivars.count > 0) {
+                entry[@"ivars"] = ivars;
+            }
+            NSDictionary *location = [self serializeLocationObject:value];
+            if (location != (NSDictionary *)[NSNull null]) {
+                entry[@"location"] = location;
+            }
+            [entries addObject:[entry copy]];
+        }
+        detail[@"lastOnlineLocationInfo_count"] = @(dictionary.count);
+        detail[@"lastOnlineLocationInfo_entries_sample"] = entries;
+    }
+
+    return [detail copy];
 }
 
 - (NSDictionary *)searchPartyLastOnlineInfoSummaryForBeacons:(NSArray *)beacons context:(id)context {

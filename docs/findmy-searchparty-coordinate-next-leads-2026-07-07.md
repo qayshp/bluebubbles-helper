@@ -258,3 +258,188 @@ Next better leads:
 - Inspect `SPLocationFetchContext` values immediately before the empty result is
   produced, especially `searchLocationSources`, `searchTypes`,
   `searchPriority`, `cachePolicy`, and `primaryIndexRange`.
+
+## Static inspection: fetch context detail
+
+`SPLocationFetchContext` exposes the fields most likely to explain why the
+local `SPLocationFetchResult` is empty:
+
+```text
+_subscribe
+_reportDeviceEvents
+_cachePolicy
+_searchIdentifiers
+_searchPriority
+_searchTypes
+_searchLocationSources
+_lastOnlineLocationInfo
+_bundleIdentifier
+_primaryIndexRange
+```
+
+Instrumentation added on 2026-07-07:
+
+- When a SearchParty probe result or related object is an
+  `SPLocationFetchContext`, attach `context_detail`.
+- For `searchIdentifiers`, `searchTypes`, `searchPriority`, and
+  `searchLocationSources`, capture the runtime class, summary, count, and a
+  bounded sample.
+- Capture scalar/summary values for `cachePolicy`, `bundleIdentifier`,
+  `subscribe`, `reportDeviceEvents`, and `primaryIndexRange`.
+- Capture `lastOnlineLocationInfo` runtime class, count, key sample, and a
+  bounded sample of value accessors/ivars.
+- Keep the payload bounded so `/api/v1/icloud/findmy/searchparty/debug`
+  returns valid JSON instead of overflowing the helper output path.
+
+## Live try: fetch context detail
+
+Tested locally on 2026-07-07 with helper dylib md5
+`e907b486ccdd5b54ddb8cb5d31af8389`.
+
+Baseline Android-facing route results from the same server run:
+
+```text
+GET /api/v1/icloud/findmy/friends  -> status 200, data list count 8
+GET /api/v1/icloud/findmy/devices  -> status 200, data null
+GET /api/v1/icloud/findmy/items    -> status 200, data null
+```
+
+The trimmed debug route returned clean JSON:
+
+```text
+POST /api/v1/icloud/findmy/searchparty/debug
+response size: 41843 bytes
+context_detail_count: 4
+```
+
+Observed real `SPLocationFetchContext` values:
+
+```text
+context_class: SPLocationFetchContext
+searchIdentifiers_class: Swift.__EmptyArrayStorage
+searchIdentifiers_count: 0
+searchIdentifiers_sample: []
+searchTypes_class: Swift.__SwiftDeferredNSArray
+searchTypes_count: 6
+searchTypes_sample: hele, selfBeaconing, accessory, localFindable, accessory, durian
+searchPriority_class: <nil>
+searchPriority_count: 0
+searchPriority_sample: []
+searchLocationSources_class: Swift.__SwiftDeferredNSArray
+searchLocationSources_count: 12
+searchLocationSources_sample:
+  connectionEvent
+  connectionmaintenance
+  disconnection
+  harvesterNetwork
+  harvesterOnDiskNearOwner
+  harvesterOnDiskWild
+  intentLocationUpdate
+  intentResponse
+  localReductiveFilter
+  pairingLocationManager
+  selfPublish
+  ownedDeviceLocation
+cachePolicy: foregroundRefresh
+bundleIdentifier: com.apple.findmy
+subscribe: true
+reportDeviceEvents: false or true depending on captured context snapshot
+primaryIndexRange: { location: 0, length: 0 }
+lastOnlineLocationInfo_class: _TtGCs26_SwiftDeferredNSDictionaryV10Foundation4UUIDCSo24SPLastOnlineLocationInfo_$
+lastOnlineLocationInfo_count: 10
+```
+
+The sampled `lastOnlineLocationInfo` keys were UUIDs. The sampled values were
+`SPLastOnlineLocationInfo` objects with timestamp-only state:
+
+```text
+accessors: timestamp
+ivars: _timestamp, _updatedOn
+```
+
+No sampled `SPLastOnlineLocationInfo` value exposed latitude, longitude, or a
+nested location object through the existing accessor/ivar serializers.
+
+Then the active latest-single route was triggered:
+
+```text
+POST /api/v1/icloud/findmy/searchparty/locations/latest-single
+POST /api/v1/icloud/findmy/searchparty/locations
+```
+
+The probe path itself constructed or passed 53 identifiers and 12 sources:
+
+```text
+latest_locations_identifier_count: 53
+latest_locations_source_count: 12
+context_search_identifier_count: 53
+context_search_location_source_count: 12
+context_report_device_events: true
+```
+
+However, Find My's real retained `lastContext` still reported:
+
+```text
+searchIdentifiers_count: 0
+primaryIndexRange: { location: 0, length: 0 }
+lastOnlineLocationInfo_count: 10
+```
+
+The completed callbacks were still empty:
+
+```text
+SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion: -> nil
+SPOwnerSession.locationsForBeacons:completion: -> __NSDictionary0 count 0
+```
+
+Interpretation:
+
+The local result path is now well-instrumented, and it consistently shows
+empty locations. The strongest new signal is that the real
+`SPLocationFetchContext` retained by `SPOwnerSessionLocationFetch` has no
+`searchIdentifiers` and a zero-length `primaryIndexRange`, even though it has a
+non-empty `lastOnlineLocationInfo` map and the full set of location sources.
+
+The active probe can collect 53 beacon identifiers and call the XPC
+`latestLocationsForIdentifiers:fetchLimit:sources:completion:` path, but that
+does not appear to mutate Find My's real retained context or produce a non-empty
+`locationsByBeaconIdentifier` result on this machine.
+
+Next better lead:
+
+- Stop treating the retained Find My context as authoritative for identifier
+  population. Instead, build a controlled `SPLocationFetchContext` using the 53
+  known identifiers and the 12 observed sources, then call
+  `SPOwnerSessionLocationFetch locationForContext:completion:` or
+  `subscribeAndFetchLocationForContext:completion:` with that explicit context.
+- If constructing the context through public initializers is not possible,
+  clone the real context and set `_searchIdentifiers` / `_primaryIndexRange`
+  with KVC or ivar writes before invoking the fetch method.
+
+## Static inspection: fetch context detail
+
+The next instrumentation pass focuses on the context object passed into
+`subscribeAndFetchLocationForContext:completion:` and related fetch methods.
+The result setter showed that `SPLocationFetchResult` receives an empty
+dictionary, so the useful question is whether the inbound context asks for a
+location fetch that SearchParty considers ineligible or empty.
+
+Instrumentation added:
+
+- Add `searchPartyFetchContextDiagnosticsForContext:`.
+- Attach `context_detail` to every captured location invocation with a context.
+- Attach `context_detail` to `SPLocationFetchContext` summaries.
+- Capture bounded samples for:
+  - `searchIdentifiers`
+  - `searchTypes`
+  - `searchPriority`
+  - `searchLocationSources`
+  - `lastOnlineLocationInfo`
+- Capture scalar/simple context fields when available:
+  - `cachePolicy`
+  - `bundleIdentifier`
+  - `subscribe`
+  - `reportDeviceEvents`
+  - `primaryIndexRange`
+- For sampled `lastOnlineLocationInfo` values, capture accessors, ivars,
+  descriptions, and any direct location serialization result.
