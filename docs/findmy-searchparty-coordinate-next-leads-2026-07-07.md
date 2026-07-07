@@ -1665,3 +1665,97 @@ swizzling appears unsafe even before a completion result is available. The next
 delegated-location investigation should use a smaller purpose-built helper entry
 point that stores probe state before each individual operation and enables only
 one operation per run, starting with non-XPC, non-swizzling reads.
+
+## Live Try: Delegated Checkpoint Route
+
+Commit context:
+
+- helper dylib hash: `e77808bbc32cbaaf1c646d629da08d05`
+- helper actions:
+  `debug-findmy-searchparty-locations-delegated-checkpoint-<checkpoint>`
+- server route:
+  `POST /api/v1/icloud/findmy/searchparty/locations/delegated-checkpoint/:checkpoint`
+
+Purpose:
+
+The previous delegated-watch route still hid too much work inside one request.
+This route bypasses the shared location probe setup and performs exactly one
+small operation per request. Success returns JSON. Failure is visible as a curl
+timeout plus immediate Find My helper disconnect in the server log.
+
+Checkpoint results:
+
+| Checkpoint | Result | Notes |
+| --- | --- | --- |
+| `session` | safe | Returned `SPOwnerSession`; two captured owner sessions were present. |
+| `location-fetch` | safe | Returned `SPOwnerSessionLocationFetch`. |
+| `proxy` | unsafe | Timed out; Find My helper disconnected and Find My was force quit. |
+| `responds-owner` | safe | `SPOwnerSession` responds to both delegated selectors. |
+| `responds-location-fetch` | safe | `SPOwnerSessionLocationFetch` responds to neither delegated selector. |
+| `responds-proxy` | unsafe | Timed out; same proxy-read crash pattern. |
+| `signature-owner` | safe | Both owner delegated selectors have `args=4 return=v`. |
+| `signature-location-fetch` | safe | Both delegated selector signatures are `<nil>` on location fetch. |
+| `signature-proxy` | unsafe | Timed out; same proxy-read crash pattern. |
+
+Safe owner-session selector evidence:
+
+```json
+{
+  "owner_responds": {
+    "delegatedLocationForContext:completion:": true,
+    "subscribeDelegatedLocationUpdatesForContext:completion:": true
+  },
+  "owner_signatures": {
+    "delegatedLocationForContext:completion:": "args=4 return=v",
+    "subscribeDelegatedLocationUpdatesForContext:completion:": "args=4 return=v"
+  }
+}
+```
+
+Safe location-fetch selector evidence:
+
+```json
+{
+  "location_fetch_class": "SPOwnerSessionLocationFetch",
+  "location_fetch_responds": {
+    "delegatedLocationForContext:completion:": false,
+    "subscribeDelegatedLocationUpdatesForContext:completion:": false
+  },
+  "location_fetch_signatures": {
+    "delegatedLocationForContext:completion:": "<nil>",
+    "subscribeDelegatedLocationUpdatesForContext:completion:": "<nil>"
+  }
+}
+```
+
+Unsafe proxy-read pattern:
+
+```text
+Request to .../delegated-checkpoint/proxy
+Private API Helper (com.apple.findmy) disconnected
+FindMy Process was force quit
+FindMyDylibPlugin Detected DYLIB crash for App FindMy
+```
+
+The same pattern happened for `responds-proxy` and `signature-proxy`, because
+both checkpoints first read `proxy` / `_proxy`.
+
+Interpretation:
+
+The next useful target is `SPOwnerSession` itself. The owner session exposes the
+delegated-location methods with a normal `context, completion` shape. The XPC
+proxy should be avoided for now: merely reading it through the current helper
+path is enough to crash Find My. The location-fetch object does not implement
+the delegated selectors.
+
+Next safer step:
+
+Add owner-only checkpoints that avoid proxy reads completely and test
+non-invoking owner behavior first. Good candidates:
+
+1. Capture whether a cached or prior `SPLocationFetchContext` exists without
+   creating a new one.
+2. Inspect the cached context summary if present.
+3. Build the smallest owner-only delegated invocation checkpoint, but do not run
+   it automatically; gate it behind a new explicit route after context shape is
+   documented.

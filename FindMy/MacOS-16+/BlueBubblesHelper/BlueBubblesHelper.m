@@ -30,6 +30,7 @@
 - (void)handleFindMySearchPartyBeaconProbeStatusWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyLocationProbeStartWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyLocationProbeStartWithTransaction:(NSString *)transaction focusedStep:(NSUInteger)focusedStep;
+- (void)handleFindMySearchPartyDelegatedCheckpointWithTransaction:(NSString *)transaction checkpoint:(NSString *)checkpoint;
 - (void)handleFindMySearchPartyLocationProbeStatusWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyLocationProbeCompactStatusWithTransaction:(NSString *)transaction;
 - (void)appendFindMySearchPartyLocationProbeCompletionForProbeId:(NSString *)probeId selectorName:(NSString *)selectorName result:(id)result;
@@ -590,6 +591,13 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
 
     if ([event isEqualToString:@"debug-findmy-searchparty-locations-delegated-watch"]) {
         [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:15];
+        return;
+    }
+
+    NSString *delegatedCheckpointPrefix = @"debug-findmy-searchparty-locations-delegated-checkpoint-";
+    if ([event hasPrefix:delegatedCheckpointPrefix]) {
+        NSString *checkpoint = [event substringFromIndex:delegatedCheckpointPrefix.length];
+        [self handleFindMySearchPartyDelegatedCheckpointWithTransaction:transaction checkpoint:checkpoint];
         return;
     }
 
@@ -2963,6 +2971,118 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
 
 - (void)handleFindMySearchPartyLocationProbeStartWithTransaction:(NSString *)transaction {
     [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:0];
+}
+
+- (void)handleFindMySearchPartyDelegatedCheckpointWithTransaction:(NSString *)transaction checkpoint:(NSString *)checkpoint {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleFindMySearchPartyDelegatedCheckpointWithTransaction:transaction checkpoint:checkpoint];
+        });
+        return;
+    }
+
+    NSArray *capturedSessions = [self capturedSearchPartyOwnerSessions];
+    id targetSession = nil;
+    NSString *targetSessionIdentifier = nil;
+    for (NSDictionary *entry in capturedSessions) {
+        id session = entry[@"object"];
+        if (session != nil && session != [NSNull null]) {
+            targetSession = session;
+            targetSessionIdentifier = entry[@"object_id"];
+            break;
+        }
+    }
+
+    NSString *probeId = [[NSUUID UUID] UUIDString];
+    NSMutableDictionary *probe = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"probe_id": probeId,
+        @"status": targetSession == nil ? @"unavailable" : @"started",
+        @"started_at": @([[NSDate date] timeIntervalSince1970]),
+        @"delegated_checkpoint": checkpoint ?: @"<nil>",
+        @"captured_owner_session_count": @(capturedSessions.count),
+        @"session_id": targetSessionIdentifier ?: [NSNull null],
+        @"note": @"Checkpoint delegated probe bypasses shared location probe setup. Each route call performs exactly one small operation.",
+    }];
+    [self storeFindMySearchPartyLocationProbe:probe];
+
+    if (targetSession == nil) {
+        probe[@"error"] = @"No captured SPOwnerSession is available";
+        probe[@"status"] = @"completed";
+        probe[@"completed_at"] = @([[NSDate date] timeIntervalSince1970]);
+        [self storeFindMySearchPartyLocationProbe:probe];
+        [[NetworkController sharedInstance] sendMessage:@{
+            @"transactionId": transaction ?: [NSNull null],
+            @"location_probe": [self findMySearchPartyLocationProbeStatus],
+        }];
+        return;
+    }
+
+    DLog("BLUEBUBBLESHELPER: Delegated checkpoint starting: %{public}@", checkpoint ?: @"<nil>");
+
+    NSArray *delegatedSelectors = @[
+        @"delegatedLocationForContext:completion:",
+        @"subscribeDelegatedLocationUpdatesForContext:completion:",
+    ];
+    void (^appendResponds)(NSMutableDictionary *, NSString *, id) = ^(NSMutableDictionary *target, NSString *prefix, id object) {
+        NSMutableDictionary *values = [[NSMutableDictionary alloc] init];
+        for (NSString *selectorName in delegatedSelectors) {
+            SEL selector = NSSelectorFromString(selectorName);
+            values[selectorName] = @([object respondsToSelector:selector]);
+        }
+        target[prefix] = values;
+    };
+    void (^appendSignatures)(NSMutableDictionary *, NSString *, id) = ^(NSMutableDictionary *target, NSString *prefix, id object) {
+        NSMutableDictionary *values = [[NSMutableDictionary alloc] init];
+        for (NSString *selectorName in delegatedSelectors) {
+            SEL selector = NSSelectorFromString(selectorName);
+            NSMethodSignature *signature = [object methodSignatureForSelector:selector];
+            values[selectorName] = signature == nil ? @"<nil>" : [NSString stringWithFormat:@"args=%lu return=%s", (unsigned long)signature.numberOfArguments, signature.methodReturnType];
+        }
+        target[prefix] = values;
+    };
+
+    if ([checkpoint isEqualToString:@"session"]) {
+        probe[@"session_class"] = [self classNameForObject:targetSession] ?: @"<nil>";
+    } else if ([checkpoint isEqualToString:@"location-fetch"]) {
+        id locationFetch = [self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"];
+        probe[@"location_fetch_class"] = [self classNameForObject:locationFetch] ?: @"<nil>";
+        probe[@"location_fetch_id"] = locationFetch == nil ? @"<nil>" : [NSString stringWithFormat:@"%p", locationFetch];
+    } else if ([checkpoint isEqualToString:@"proxy"]) {
+        id ownerProxy = [self safeObjectValueFromObject:targetSession selectorName:@"proxy"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"_proxy"];
+        probe[@"proxy_class"] = [self classNameForObject:ownerProxy] ?: @"<nil>";
+        probe[@"proxy_id"] = ownerProxy == nil ? @"<nil>" : [NSString stringWithFormat:@"%p", ownerProxy];
+    } else if ([checkpoint isEqualToString:@"responds-owner"]) {
+        appendResponds(probe, @"owner_responds", targetSession);
+    } else if ([checkpoint isEqualToString:@"responds-location-fetch"]) {
+        id locationFetch = [self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"];
+        probe[@"location_fetch_class"] = [self classNameForObject:locationFetch] ?: @"<nil>";
+        appendResponds(probe, @"location_fetch_responds", locationFetch);
+    } else if ([checkpoint isEqualToString:@"responds-proxy"]) {
+        id ownerProxy = [self safeObjectValueFromObject:targetSession selectorName:@"proxy"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"_proxy"];
+        probe[@"proxy_class"] = [self classNameForObject:ownerProxy] ?: @"<nil>";
+        appendResponds(probe, @"proxy_responds", ownerProxy);
+    } else if ([checkpoint isEqualToString:@"signature-owner"]) {
+        appendSignatures(probe, @"owner_signatures", targetSession);
+    } else if ([checkpoint isEqualToString:@"signature-location-fetch"]) {
+        id locationFetch = [self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"];
+        probe[@"location_fetch_class"] = [self classNameForObject:locationFetch] ?: @"<nil>";
+        appendSignatures(probe, @"location_fetch_signatures", locationFetch);
+    } else if ([checkpoint isEqualToString:@"signature-proxy"]) {
+        id ownerProxy = [self safeObjectValueFromObject:targetSession selectorName:@"proxy"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"_proxy"];
+        probe[@"proxy_class"] = [self classNameForObject:ownerProxy] ?: @"<nil>";
+        appendSignatures(probe, @"proxy_signatures", ownerProxy);
+    } else {
+        probe[@"error"] = [NSString stringWithFormat:@"Unknown delegated checkpoint: %@", checkpoint ?: @"<nil>"];
+    }
+
+    probe[@"status"] = @"completed";
+    probe[@"pending_completion_count"] = @0;
+    probe[@"completed_at"] = @([[NSDate date] timeIntervalSince1970]);
+    [self storeFindMySearchPartyLocationProbe:probe];
+    [[NetworkController sharedInstance] sendMessage:@{
+        @"transactionId": transaction ?: [NSNull null],
+        @"location_probe": [self findMySearchPartyLocationProbeStatus],
+    }];
 }
 
 - (void)handleFindMySearchPartyLocationProbeStartWithTransaction:(NSString *)transaction focusedStep:(NSUInteger)requestedFocusedStep {
