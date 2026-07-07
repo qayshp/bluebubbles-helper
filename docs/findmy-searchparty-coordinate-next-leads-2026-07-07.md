@@ -444,6 +444,17 @@ CLLocation format:
   timeStamp: <epoch milliseconds double>
 ```
 
+The captured runtime object was a `CLLocation`. `CL` is interpreted here as
+Apple's Core Location framework prefix. The local serializer extracts the same
+shape it uses for any Core Location object:
+
+```text
+latitude: 0.0
+longitude: 0.0
+horizontalAccuracy: 105.47012059171354
+timeStamp: 1783457528544.0112
+```
+
 Interpretation:
 
 `SPSafeLocation` proves that nested SearchParty owner-beacon objects can carry
