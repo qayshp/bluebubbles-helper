@@ -1083,3 +1083,104 @@ payload, including large context/accessor snapshots, grew too large or was
 truncated over the private API socket response. The next instrumentation step
 should add a compact status mode or trim repeated large fields for long-running
 callback-watch probes before relying on late polling.
+
+## Live try: compact callback-watch status
+
+Helper build copied into the server for this run:
+`52751901ea2f3159ad33681a309d049f`.
+
+Route added:
+
+- `POST /api/v1/icloud/findmy/searchparty/locations/compact`
+
+Purpose:
+
+The normal full status route can return very large context, accessor, and object
+snapshots. During callback-watch testing, that eventually produced a private API
+JSON decode failure. The compact route keeps only the fields needed for this
+coordinate search:
+
+- probe status and focused step
+- pending completion count
+- context identifier/source counts
+- callback-watch method availability
+- compact completion summaries
+- compact passive location update summaries
+- non-empty location dictionaries if any appear
+
+Fresh callback-watch validation:
+
+1. Start:
+
+```text
+POST /api/v1/icloud/findmy/searchparty/locations/callback-watch
+
+HTTP status: 200
+focused_probe_step: 11
+pending_completion_count: 3
+probe status: started
+```
+
+2. Poll compact status after about 80 seconds:
+
+```text
+POST /api/v1/icloud/findmy/searchparty/locations/compact
+
+HTTP status: 200
+probe status: timed_out
+focused_probe_step: 11
+pending_completion_count: 1
+passive_location_event_count: 4
+callback_watch_method_availability:
+  locationFetch.subscribeAndFetchLocationForContext: present
+```
+
+Compact completion results:
+
+```text
+SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.callbackWatch
+  result class: <nil>
+
+SPOwnerSession.locationsForBeacons:completion:
+  result class: __NSDictionary0
+```
+
+Compact passive events:
+
+```text
+receivedUpdatedLocation:
+  source class: SPOwnerSessionLocationFetch
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+
+setLocationUpdateBlock:
+  source class: SPOwnerSession
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+
+receivedUpdatedLocation:
+  source class: SPOwnerSessionLocationFetch
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+
+setLocationUpdateBlock:
+  source class: SPOwnerSession
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+```
+
+Interpretation:
+
+The compact route fixes the observability problem from the prior late poll. It
+does not change the coordinate result: the subscription callback channel still
+fires, but the `SPLocationFetchResult` objects delivered through that channel
+have empty `locationsByBeaconIdentifier` dictionaries on this Mac.
+
+Next best lead:
+
+Use the compact route for longer observation windows, then add one more focused
+probe that uses the full real context instead of the single-identifier narrowed
+context while still watching passive callbacks. If full-context passive results
+also stay empty, the likely remaining gap is service-side location eligibility
+or a different owner-session/device-specific request path, rather than response
+transport or callback visibility.

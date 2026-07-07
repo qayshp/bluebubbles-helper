@@ -31,6 +31,7 @@
 - (void)handleFindMySearchPartyLocationProbeStartWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyLocationProbeStartWithTransaction:(NSString *)transaction focusedStep:(NSUInteger)focusedStep;
 - (void)handleFindMySearchPartyLocationProbeStatusWithTransaction:(NSString *)transaction;
+- (void)handleFindMySearchPartyLocationProbeCompactStatusWithTransaction:(NSString *)transaction;
 - (void)appendFindMySearchPartyLocationProbeCompletionForProbeId:(NSString *)probeId selectorName:(NSString *)selectorName result:(id)result;
 - (void)appendFindMySearchPartyLocationProbePassiveEventWithSelectorName:(NSString *)selectorName phase:(NSString *)phase context:(id)context result:(id)result source:(id)source;
 - (NSDictionary *)serializeFMLFriend:(id)friend handle:(id)handle location:(id)location;
@@ -51,6 +52,7 @@
 - (NSDictionary *)findMySearchPartyDebugSnapshot;
 - (NSDictionary *)findMySearchPartyBeaconProbeStatus;
 - (NSDictionary *)findMySearchPartyLocationProbeStatus;
+- (NSDictionary *)findMySearchPartyLocationProbeCompactStatus;
 - (NSDictionary *)searchPartyLastOnlineInfoSummaryForBeacons:(NSArray *)beacons context:(id)context;
 - (NSDictionary *)searchPartyFetchContextDiagnosticsForContext:(id)context;
 - (NSDictionary *)searchPartyLocationInfoAccessorValuesForObject:(id)object;
@@ -560,6 +562,11 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
 
     if ([event isEqualToString:@"debug-findmy-searchparty-locations"]) {
         [self handleFindMySearchPartyLocationProbeStatusWithTransaction:transaction];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-searchparty-locations-compact"]) {
+        [self handleFindMySearchPartyLocationProbeCompactStatusWithTransaction:transaction];
         return;
     }
 
@@ -2357,6 +2364,96 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 }
 
+- (NSArray *)compactSearchPartyLocationProbeEntries:(NSArray *)entries limit:(NSUInteger)limit {
+    if (![entries isKindOfClass:[NSArray class]]) {
+        return @[];
+    }
+
+    NSUInteger start = entries.count > limit ? entries.count - limit : 0;
+    NSMutableArray *compactEntries = [[NSMutableArray alloc] init];
+    for (NSUInteger index = start; index < entries.count; index++) {
+        id rawEntry = entries[index];
+        if (![rawEntry isKindOfClass:[NSDictionary class]]) {
+            continue;
+        }
+
+        NSDictionary *entry = (NSDictionary *)rawEntry;
+        NSMutableDictionary *compactEntry = [[NSMutableDictionary alloc] init];
+        for (NSString *key in @[@"selector", @"phase", @"timestamp", @"source_class", @"result_class"]) {
+            id value = entry[key];
+            if (value != nil && value != [NSNull null]) {
+                compactEntry[key] = value;
+            }
+        }
+
+        NSDictionary *result = [entry[@"result"] isKindOfClass:[NSDictionary class]] ? entry[@"result"] : entry;
+        for (NSString *key in @[@"locations_by_beacon_identifier_count", @"beacon_event_by_beacon_identifier_count", @"result_class"]) {
+            id value = result[key];
+            if (value != nil && value != [NSNull null] && compactEntry[key] == nil) {
+                compactEntry[key] = value;
+            }
+        }
+        id location = result[@"location"];
+        if (location != nil && location != [NSNull null]) {
+            compactEntry[@"location"] = location;
+        }
+        id locationEntries = result[@"locations_by_beacon_identifier_entries"];
+        if ([locationEntries isKindOfClass:[NSArray class]] && [(NSArray *)locationEntries count] > 0) {
+            compactEntry[@"locations_by_beacon_identifier_entries"] = locationEntries;
+        }
+        id eventEntries = result[@"beacon_event_by_beacon_identifier_entries"];
+        if ([eventEntries isKindOfClass:[NSArray class]] && [(NSArray *)eventEntries count] > 0) {
+            compactEntry[@"beacon_event_by_beacon_identifier_entries"] = eventEntries;
+        }
+
+        [compactEntries addObject:compactEntry];
+    }
+    return [compactEntries copy];
+}
+
+- (NSDictionary *)findMySearchPartyLocationProbeCompactStatus {
+    @synchronized ([BlueBubblesHelper class]) {
+        if (findMySearchPartyLocationProbe == nil) {
+            return @{
+                @"status": @"not_started",
+            };
+        }
+
+        NSMutableDictionary *compact = [[NSMutableDictionary alloc] init];
+        for (NSString *key in @[
+            @"probe_id",
+            @"status",
+            @"started_at",
+            @"completed_at",
+            @"focused_probe_step",
+            @"dedicated_probe",
+            @"pending_completion_count",
+            @"captured_owner_session_count",
+            @"beacon_result_class",
+            @"beacon_result_summary",
+            @"context_search_identifier_count",
+            @"context_search_location_source_count",
+            @"passive_location_event_count",
+            @"last_passive_location_event_at",
+            @"callback_watch_method_availability",
+            @"single_identifier_context_method_availability",
+            @"callback_watch_note",
+            @"single_identifier_context_assignment",
+            @"controlled_context_assignment",
+        ]) {
+            id value = findMySearchPartyLocationProbe[key];
+            if (value != nil && value != [NSNull null]) {
+                compact[key] = value;
+            }
+        }
+
+        compact[@"completion_results"] = [self compactSearchPartyLocationProbeEntries:findMySearchPartyLocationProbe[@"completion_results"] limit:12];
+        compact[@"passive_location_events"] = [self compactSearchPartyLocationProbeEntries:findMySearchPartyLocationProbe[@"passive_location_events"] limit:20];
+
+        return [compact copy];
+    }
+}
+
 - (void)storeFindMySearchPartyLocationProbe:(NSDictionary *)probe {
     @synchronized ([BlueBubblesHelper class]) {
         findMySearchPartyLocationProbe = [[NSMutableDictionary alloc] initWithDictionary:probe ?: @{}];
@@ -3980,6 +4077,13 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     [[NetworkController sharedInstance] sendMessage:@{
         @"transactionId": transaction ?: [NSNull null],
         @"location_probe": [self findMySearchPartyLocationProbeStatus],
+    }];
+}
+
+- (void)handleFindMySearchPartyLocationProbeCompactStatusWithTransaction:(NSString *)transaction {
+    [[NetworkController sharedInstance] sendMessage:@{
+        @"transactionId": transaction ?: [NSNull null],
+        @"location_probe": [self findMySearchPartyLocationProbeCompactStatus],
     }];
 }
 
