@@ -75,6 +75,8 @@ static NSMutableArray<NSDictionary *> *findMySearchPartyAccessorSnapshots;
 static NSMutableDictionary<NSString *, id> *findMyCapturedObjectsByIdentifier;
 static NSMutableDictionary *findMySearchPartyBeaconProbe;
 static NSMutableDictionary *findMySearchPartyLocationProbe;
+static id findMyCapturedSearchPartyLocationFetch;
+static id findMyCapturedSearchPartyLocationContext;
 static id findMyCapturedDevicesDataSource;
 static id findMyCapturedItemsDataSource;
 static BOOL findMySwizzlesInstalled;
@@ -334,6 +336,35 @@ static void BBFindMyLocationFetchContextCompletion(id self, SEL _cmd, id context
     if (originalValue != nil) {
         void (*original)(id, SEL, id, id) = (void (*)(id, SEL, id, id))[originalValue pointerValue];
         original(self, _cmd, context, completionForOriginal);
+    }
+}
+
+static void BBFindMySearchPartyLocationObjectArgument(id self, SEL _cmd, id value) {
+    NSString *selectorName = NSStringFromSelector(_cmd);
+    if ([selectorName isEqualToString:@"setLastContext:"]) {
+        [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyLocationInvocationForTarget:self
+                                                                                       selector:_cmd
+                                                                                        context:value
+                                                                                         result:nil
+                                                                                          phase:@"setter"];
+    } else {
+        [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:value source:self selector:_cmd];
+        if ([value respondsToSelector:NSSelectorFromString(@"locationsByBeaconIdentifier")]) {
+            id locations = [[BlueBubblesHelper sharedInstance] safeObjectValueFromObject:value selectorName:@"locationsByBeaconIdentifier"];
+            [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:locations
+                                                                                source:value
+                                                                              selector:NSSelectorFromString(@"locationsByBeaconIdentifier")];
+        }
+    }
+
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        void (*original)(id, SEL, id) = (void (*)(id, SEL, id))[originalValue pointerValue];
+        original(self, _cmd, value);
     }
 }
 
@@ -873,13 +904,19 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         @"setProxy:",
         @"setSession:",
     ]) {
-        IMP replacement = ([selectorName isEqualToString:@"setLocationUpdates:"] || [selectorName isEqualToString:@"setLocationUpdateBlock:"])
-            ? (IMP)BBFindMyLocationUpdateBlockSetter
-            : (IMP)BBFindMyInterestingObjectSetter;
+        IMP replacement = (IMP)BBFindMyInterestingObjectSetter;
+        if ([selectorName isEqualToString:@"setLocationUpdates:"] || [selectorName isEqualToString:@"setLocationUpdateBlock:"]) {
+            replacement = (IMP)BBFindMyLocationUpdateBlockSetter;
+        } else if ([selectorName isEqualToString:@"setLastContext:"]) {
+            replacement = (IMP)BBFindMySearchPartyLocationObjectArgument;
+        }
         [self swizzleInstanceMethodForClass:ownerSessionLocationFetchClass
                                    selector:NSSelectorFromString(selectorName)
                                 replacement:replacement];
     }
+    [self swizzleInstanceMethodForClass:ownerSessionLocationFetchClass
+                               selector:NSSelectorFromString(@"receivedUpdatedLocation:")
+                            replacement:(IMP)BBFindMySearchPartyLocationObjectArgument];
     for (NSString *selectorName in @[
         @"subscribeAndFetchLocationForContext:completion:",
         @"locationForContext:completion:",
@@ -900,6 +937,19 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
                                     replacement:(IMP)BBFindMySearchPartyResultAccessor];
         }
     }
+    Class simpleBeaconInterfaceClass = NSClassFromString(@"SPBeaconManagerSimpleBeaconUpdateInterface");
+    [self swizzleInstanceMethodForClass:simpleBeaconInterfaceClass
+                               selector:NSSelectorFromString(@"simpleBeacons")
+                            replacement:(IMP)BBFindMySearchPartyResultAccessor];
+    [self swizzleInstanceMethodForClass:simpleBeaconInterfaceClass
+                               selector:NSSelectorFromString(@"receivedSimpleBeaconUpdates:")
+                            replacement:(IMP)BBFindMySearchPartyLocationObjectArgument];
+    [self swizzleInstanceMethodForClass:simpleBeaconInterfaceClass
+                               selector:NSSelectorFromString(@"receivedSimpleBeaconRemovals:")
+                            replacement:(IMP)BBFindMySearchPartyLocationObjectArgument];
+    [self swizzleInstanceMethodForClass:simpleBeaconInterfaceClass
+                               selector:NSSelectorFromString(@"startUpdatingSimpleBeaconsWithContext:completion:")
+                            replacement:(IMP)BBFindMyLocationFetchContextCompletion];
 }
 
 - (NSDictionary *)findMySwizzleDiagnostics {
@@ -1243,7 +1293,22 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         NSDictionary *dictionary = (NSDictionary *)result;
         snapshot[@"result_count"] = @(dictionary.count);
         snapshot[@"entries"] = [self compactEntriesForSearchPartyAccessorResult:dictionary];
+    } else if ([result isKindOfClass:[NSArray class]]) {
+        NSArray *array = (NSArray *)result;
+        snapshot[@"result_count"] = @(array.count);
+        snapshot[@"result_summary"] = [self summaryForValue:array];
+        snapshot[@"beacon_summaries"] = [self compactBeaconSummariesForBeacons:array];
+    } else if ([result isKindOfClass:[NSSet class]]) {
+        NSSet *set = (NSSet *)result;
+        snapshot[@"result_count"] = @(set.count);
+        snapshot[@"result_summary"] = [self summaryForValue:set];
+        snapshot[@"beacon_summaries"] = [self compactBeaconSummariesForBeacons:[set allObjects]];
     } else if (result != nil) {
+        snapshot[@"result_summary"] = [self summaryForValue:result];
+        NSDictionary *fields = [self directFindMyFieldsForObject:result];
+        if (fields.count > 0) {
+            snapshot[@"fields"] = fields;
+        }
         NSString *description = [result description];
         if (description.length > 0) {
             snapshot[@"result_description"] = description.length > 220 ? [description substringToIndex:220] : description;
@@ -1284,6 +1349,12 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
          snapshot[@"selector"], snapshot[@"source_class"], snapshot[@"phase"], snapshot[@"context"] ?: @"<nil>", snapshot[@"result"] ?: @"<nil>");
 
     @synchronized ([BlueBubblesHelper class]) {
+        if ([NSStringFromClass([target class]) isEqualToString:@"SPOwnerSessionLocationFetch"]) {
+            findMyCapturedSearchPartyLocationFetch = target;
+        }
+        if ([NSStringFromClass([context class]) isEqualToString:@"SPLocationFetchContext"]) {
+            findMyCapturedSearchPartyLocationContext = context;
+        }
         if (findMySearchPartyAccessorSnapshots == nil) {
             findMySearchPartyAccessorSnapshots = [[NSMutableArray alloc] init];
         }
@@ -2160,12 +2231,28 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         @"SPOwnerSessionLocationFetch.locationForContext:completion:",
         @"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:",
         @"SPOwnerSession.locationsForBeacons:completion:",
+        @"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:",
     ];
-    startedProbe[@"pending_completion_count"] = @3;
+    startedProbe[@"pending_completion_count"] = @4;
+    [self storeFindMySearchPartyLocationProbe:startedProbe];
+
+    id capturedLocationFetch = nil;
+    id capturedLocationContext = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        capturedLocationFetch = findMyCapturedSearchPartyLocationFetch;
+        capturedLocationContext = findMyCapturedSearchPartyLocationContext;
+    }
+    if (capturedLocationFetch != nil) {
+        startedProbe[@"captured_location_fetch_summary"] = [self searchPartyLocationProbeResultForSelector:@"SPOwnerSessionLocationFetch" result:capturedLocationFetch];
+    }
+    if (capturedLocationContext != nil) {
+        startedProbe[@"captured_location_context_summary"] = [self searchPartyLocationProbeResultForSelector:@"SPLocationFetchContext" result:capturedLocationContext];
+    }
     [self storeFindMySearchPartyLocationProbe:startedProbe];
 
     if (![targetSession respondsToSelector:NSSelectorFromString(@"allBeaconsWithCompletion:")] ||
         (![targetSession respondsToSelector:NSSelectorFromString(@"subscribeAndFetchLocationForContext:completion:")] &&
+         ![capturedLocationFetch respondsToSelector:NSSelectorFromString(@"subscribeAndFetchLocationForContext:completion:")] &&
          ![[self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"] respondsToSelector:NSSelectorFromString(@"subscribeAndFetchLocationForContext:completion:")])) {
         startedProbe[@"status"] = @"completed";
         startedProbe[@"completed_at"] = @([[NSDate date] timeIntervalSince1970]);
@@ -2192,7 +2279,15 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         void (^locationsForBeaconsCompletion)(id) = ^(id result) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
-                                                                  selectorName:@"SPOwnerSession.locationsForBeacons:completion:"
+                                                              selectorName:@"SPOwnerSession.locationsForBeacons:completion:"
+                                                                    result:result];
+            });
+        };
+
+        void (^simpleBeaconsCompletion)(id) = ^(id result) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
+                                                                  selectorName:@"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:"
                                                                         result:result];
             });
         };
@@ -2234,8 +2329,8 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
                     }
                 }
 
-                id locationFetch = [self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"];
-                id realLastContext = [self safeObjectValueFromObject:locationFetch selectorName:@"lastContext"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"lastContext"];
+                id locationFetch = capturedLocationFetch ?: [self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"];
+                id realLastContext = capturedLocationContext ?: [self safeObjectValueFromObject:locationFetch selectorName:@"lastContext"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"lastContext"];
                 id realSearchTypes = [self safeObjectValueFromObject:realLastContext selectorName:@"searchTypes"];
                 id realSearchLocationSources = [self safeObjectValueFromObject:realLastContext selectorName:@"searchLocationSources"];
                 id realLastOnlineInfo = [self safeObjectValueFromObject:realLastContext selectorName:@"lastOnlineLocationInfo"];
@@ -2318,6 +2413,31 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
                     } else {
                         [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
                                                                           selectorName:@"SPOwnerSession.locationsForBeacons:completion:"
+                                                                                result:nil];
+                    }
+
+                    id simpleBeaconInterface = [self safeObjectValueFromObject:targetSession selectorName:@"simpleBeaconUpdateInterface"];
+                    id simpleBeaconContext = [self safeValueForKey:@"context" object:simpleBeaconInterface] ?: [self safeObjectValueFromObject:simpleBeaconInterface selectorName:@"context"];
+                    SEL startSimpleBeaconsSelector = NSSelectorFromString(@"startUpdatingSimpleBeaconsWithContext:completion:");
+                    NSMethodSignature *startSimpleBeaconsSignature = [simpleBeaconInterface methodSignatureForSelector:startSimpleBeaconsSelector];
+                    @synchronized ([BlueBubblesHelper class]) {
+                        findMySearchPartyLocationProbe[@"simple_beacon_interface_summary"] = [self searchPartyLocationProbeResultForSelector:@"SPBeaconManagerSimpleBeaconUpdateInterface" result:simpleBeaconInterface];
+                        findMySearchPartyLocationProbe[@"simple_beacon_context_summary"] = [self searchPartyLocationProbeResultForSelector:@"SPSimpleBeaconContext" result:simpleBeaconContext];
+                    }
+                    if (simpleBeaconInterface != nil &&
+                        simpleBeaconContext != nil &&
+                        startSimpleBeaconsSignature != nil &&
+                        startSimpleBeaconsSignature.numberOfArguments == 4) {
+                        NSInvocation *simpleBeaconsInvocation = [NSInvocation invocationWithMethodSignature:startSimpleBeaconsSignature];
+                        [simpleBeaconsInvocation setTarget:simpleBeaconInterface];
+                        [simpleBeaconsInvocation setSelector:startSimpleBeaconsSelector];
+                        [simpleBeaconsInvocation setArgument:&simpleBeaconContext atIndex:2];
+                        [simpleBeaconsInvocation setArgument:&simpleBeaconsCompletion atIndex:3];
+                        [simpleBeaconsInvocation retainArguments];
+                        [simpleBeaconsInvocation invoke];
+                    } else {
+                        [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
+                                                                          selectorName:@"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:"
                                                                                 result:nil];
                     }
                 } @catch (NSException *exception) {
@@ -3097,6 +3217,9 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
 
 - (NSDictionary *)directFindMyFieldsForObject:(id)object {
     if (object == nil || object == [NSNull null]) {
+        return @{};
+    }
+    if ([object isKindOfClass:[NSArray class]] || [object isKindOfClass:[NSSet class]] || [object isKindOfClass:[NSDictionary class]]) {
         return @{};
     }
 
