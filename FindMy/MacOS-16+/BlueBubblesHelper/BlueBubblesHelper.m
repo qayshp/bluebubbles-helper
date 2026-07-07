@@ -79,6 +79,7 @@ static NSMutableArray<NSDictionary *> *findMySearchPartyAccessorSnapshots;
 static NSMutableDictionary<NSString *, id> *findMyCapturedObjectsByIdentifier;
 static NSMutableDictionary *findMySearchPartyBeaconProbe;
 static NSMutableDictionary *findMySearchPartyLocationProbe;
+static NSUInteger findMySearchPartyLocationProbeStepIndex;
 static id findMyCapturedSearchPartyLocationFetch;
 static id findMyCapturedSearchPartyLocationContext;
 static id findMyCapturedDevicesDataSource;
@@ -2577,6 +2578,22 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         startedProbe[@"called_start_refreshing"] = @YES;
     }
 
+    NSUInteger focusedProbeStep = 0;
+    @synchronized ([BlueBubblesHelper class]) {
+        NSUInteger focusedProbeSteps[] = {4, 3, 1, 2};
+        focusedProbeStep = focusedProbeSteps[findMySearchPartyLocationProbeStepIndex % 4];
+        findMySearchPartyLocationProbeStepIndex += 1;
+    }
+
+    NSString *focusedProbeSelector = @"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.singleIdentifier";
+    if (focusedProbeStep == 2) {
+        focusedProbeSelector = @"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.exactContextArguments";
+    } else if (focusedProbeStep == 3) {
+        focusedProbeSelector = @"SPOwnerSessionXPCProtocol.locationForContext:completion:";
+    } else if (focusedProbeStep == 4) {
+        focusedProbeSelector = @"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.sourceSubsets";
+    }
+
     NSArray *methods = [self searchPartyLocationMethodDiagnosticsForObject:targetSession];
     startedProbe[@"method_count"] = @(methods.count);
     startedProbe[@"lower_layer_class_diagnostics"] = [self compactRuntimeDiagnosticsForClassNames:@[
@@ -2617,14 +2634,13 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
 
     startedProbe[@"accessor_results"] = accessorResults;
     startedProbe[@"candidate_completion_selectors"] = candidateCompletionSelectors;
+    startedProbe[@"focused_probe_step"] = @(focusedProbeStep);
     startedProbe[@"invoked_location_selectors"] = @[
-        @"SPOwnerSessionLocationFetch.locationForContext:completion:",
-        @"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:",
         @"SPOwnerSession.locationsForBeacons:completion:",
         @"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:",
-        @"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers:fetchLimit:sources:completion:",
+        focusedProbeSelector,
     ];
-    startedProbe[@"pending_completion_count"] = @5;
+    startedProbe[@"pending_completion_count"] = focusedProbeStep == 4 ? @6 : @3;
     [self storeFindMySearchPartyLocationProbe:startedProbe];
 
     id capturedLocationFetch = nil;
@@ -2651,44 +2667,32 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         startedProbe[@"error"] = @"SPOwnerSession does not respond to allBeaconsWithCompletion: and subscribeAndFetchLocationForContext:completion:";
         [self storeFindMySearchPartyLocationProbe:startedProbe];
     } else {
-        void (^locationForContextCompletion)(id) = ^(id result) {
+        void (^appendProbeCompletion)(NSString *, id) = ^(NSString *selectorName, id result) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
-                                                                  selectorName:@"SPOwnerSessionLocationFetch.locationForContext:completion:"
+                                                                  selectorName:selectorName
                                                                         result:result];
             });
+        };
+
+        void (^locationForContextCompletion)(id) = ^(id result) {
+            appendProbeCompletion(@"SPOwnerSessionLocationFetch.locationForContext:completion:", result);
         };
 
         void (^subscribeLocationsCompletion)(id) = ^(id result) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
-                                                                  selectorName:@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:"
-                                                                        result:result];
-            });
+            appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:", result);
         };
 
         void (^locationsForBeaconsCompletion)(id) = ^(id result) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
-                                                              selectorName:@"SPOwnerSession.locationsForBeacons:completion:"
-                                                                    result:result];
-            });
+            appendProbeCompletion(@"SPOwnerSession.locationsForBeacons:completion:", result);
         };
 
         void (^simpleBeaconsCompletion)(id) = ^(id result) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
-                                                                  selectorName:@"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:"
-                                                                        result:result];
-            });
+            appendProbeCompletion(@"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:", result);
         };
 
         void (^latestLocationsCompletion)(id) = ^(id result) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
-                                                                  selectorName:@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers:fetchLimit:sources:completion:"
-                                                                        result:result];
-            });
+            appendProbeCompletion(@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers:fetchLimit:sources:completion:", result);
         };
 
         void (^beaconsCompletion)(id) = ^(id beaconsResult) {
@@ -2730,6 +2734,7 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
 
                 id locationFetch = capturedLocationFetch ?: [self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"];
                 id realLastContext = capturedLocationContext ?: [self safeObjectValueFromObject:locationFetch selectorName:@"lastContext"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"lastContext"];
+                id realSearchIdentifiers = [self safeObjectValueFromObject:realLastContext selectorName:@"searchIdentifiers"];
                 id realSearchTypes = [self safeObjectValueFromObject:realLastContext selectorName:@"searchTypes"];
                 id realSearchLocationSources = [self safeObjectValueFromObject:realLastContext selectorName:@"searchLocationSources"];
                 id realLastOnlineInfo = [self safeObjectValueFromObject:realLastContext selectorName:@"lastOnlineLocationInfo"];
@@ -2767,39 +2772,6 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
 
                 id invocationTarget = locationFetch ?: targetSession;
                 @try {
-                    SEL locationForContextSelector = NSSelectorFromString(@"locationForContext:completion:");
-                    NSMethodSignature *locationForContextSignature = [invocationTarget methodSignatureForSelector:locationForContextSelector];
-                    if (locationForContextSignature == nil || locationForContextSignature.numberOfArguments != 4) {
-                        @synchronized ([BlueBubblesHelper class]) {
-                            findMySearchPartyLocationProbe[@"status"] = @"failed";
-                            findMySearchPartyLocationProbe[@"error"] = @"Unexpected locationForContext:completion: method signature";
-                        }
-                    } else {
-                        NSInvocation *locationForContextInvocation = [NSInvocation invocationWithMethodSignature:locationForContextSignature];
-                        [locationForContextInvocation setTarget:invocationTarget];
-                        [locationForContextInvocation setSelector:locationForContextSelector];
-                        [locationForContextInvocation setArgument:&context atIndex:2];
-                        [locationForContextInvocation setArgument:&locationForContextCompletion atIndex:3];
-                        [locationForContextInvocation retainArguments];
-                        [locationForContextInvocation invoke];
-                    }
-
-                    SEL subscribeSelector = NSSelectorFromString(@"subscribeAndFetchLocationForContext:completion:");
-                    NSMethodSignature *subscribeSignature = [invocationTarget methodSignatureForSelector:subscribeSelector];
-                    if (subscribeSignature != nil && subscribeSignature.numberOfArguments == 4) {
-                        NSInvocation *subscribeInvocation = [NSInvocation invocationWithMethodSignature:subscribeSignature];
-                        [subscribeInvocation setTarget:invocationTarget];
-                        [subscribeInvocation setSelector:subscribeSelector];
-                        [subscribeInvocation setArgument:&context atIndex:2];
-                        [subscribeInvocation setArgument:&subscribeLocationsCompletion atIndex:3];
-                        [subscribeInvocation retainArguments];
-                        [subscribeInvocation invoke];
-                    } else {
-                        [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
-                                                                          selectorName:@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:"
-                                                                                result:nil];
-                    }
-
                     SEL locationsForBeaconsSelector = NSSelectorFromString(@"locationsForBeacons:completion:");
                     NSMethodSignature *locationsForBeaconsSignature = [targetSession methodSignatureForSelector:locationsForBeaconsSelector];
                     if (locationsForBeaconsSignature != nil && locationsForBeaconsSignature.numberOfArguments == 4) {
@@ -2844,33 +2816,144 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
                     id ownerProxy = [self safeObjectValueFromObject:locationFetch selectorName:@"proxy"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"proxy"];
                     SEL latestLocationsSelector = NSSelectorFromString(@"latestLocationsForIdentifiers:fetchLimit:sources:completion:");
                     NSMethodSignature *latestLocationsSignature = [ownerProxy methodSignatureForSelector:latestLocationsSelector];
+                    NSArray *identifierArray = [searchIdentifiers allObjects];
+                    id sources = realSearchLocationSources ?: [searchLocationSources allObjects];
+                    NSArray *sourceArray = [self objectChildrenForValue:sources];
                     if (ownerProxy != nil &&
                         latestLocationsSignature != nil &&
                         latestLocationsSignature.numberOfArguments == 6 &&
                         searchIdentifiers.count > 0) {
-                        NSArray *identifierArray = [searchIdentifiers allObjects];
-                        id fetchLimit = @(identifierArray.count);
-                        id sources = realSearchLocationSources ?: [searchLocationSources allObjects];
-                        NSInvocation *latestLocationsInvocation = [NSInvocation invocationWithMethodSignature:latestLocationsSignature];
-                        [latestLocationsInvocation setTarget:ownerProxy];
-                        [latestLocationsInvocation setSelector:latestLocationsSelector];
-                        [latestLocationsInvocation setArgument:&identifierArray atIndex:2];
-                        [latestLocationsInvocation setArgument:&fetchLimit atIndex:3];
-                        [latestLocationsInvocation setArgument:&sources atIndex:4];
-                        [latestLocationsInvocation setArgument:&latestLocationsCompletion atIndex:5];
-                        [latestLocationsInvocation retainArguments];
-                        [latestLocationsInvocation invoke];
+                        id generatedFetchLimit = @(identifierArray.count);
                         @synchronized ([BlueBubblesHelper class]) {
                             findMySearchPartyLocationProbe[@"latest_locations_proxy_summary"] = [self compactRelatedSearchPartyObject:ownerProxy matchingTerms:@[
                                 @"location", @"locations", @"beacon", @"device", @"event", @"fetch", @"source"
                             ]];
                             findMySearchPartyLocationProbe[@"latest_locations_identifier_count"] = @(identifierArray.count);
-                            findMySearchPartyLocationProbe[@"latest_locations_source_count"] = @([[self objectChildrenForValue:sources] count]);
+                            findMySearchPartyLocationProbe[@"latest_locations_source_count"] = @(sourceArray.count);
+                            findMySearchPartyLocationProbe[@"latest_locations_argument_classes"] = @{
+                                @"generated_identifiers_class": [self classNameForObject:identifierArray],
+                                @"generated_identifier_element_class": identifierArray.count > 0 ? [self classNameForObject:identifierArray[0]] : @"<nil>",
+                                @"generated_identifier_set_class": [self classNameForObject:searchIdentifiers],
+                                @"real_search_identifiers_class": [self classNameForObject:realSearchIdentifiers],
+                                @"real_search_identifiers_count": @([[self objectChildrenForValue:realSearchIdentifiers] count]),
+                                @"sources_argument_class": [self classNameForObject:sources],
+                                @"source_element_class": sourceArray.count > 0 ? [self classNameForObject:sourceArray[0]] : @"<nil>",
+                                @"real_search_location_sources_class": [self classNameForObject:realSearchLocationSources],
+                                @"fetch_limit_class": [self classNameForObject:generatedFetchLimit],
+                            };
                         }
+
+                        id firstIdentifier = identifierArray.count > 0 ? identifierArray[0] : nil;
+                        if (focusedProbeStep == 1 && firstIdentifier != nil) {
+                            NSArray *singleIdentifierArray = @[firstIdentifier];
+                            id singleFetchLimit = @1;
+                            void (^singleIdentifierCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.singleIdentifier", result);
+                            };
+                            NSInvocation *singleIdentifierInvocation = [NSInvocation invocationWithMethodSignature:latestLocationsSignature];
+                            [singleIdentifierInvocation setTarget:ownerProxy];
+                            [singleIdentifierInvocation setSelector:latestLocationsSelector];
+                            [singleIdentifierInvocation setArgument:&singleIdentifierArray atIndex:2];
+                            [singleIdentifierInvocation setArgument:&singleFetchLimit atIndex:3];
+                            [singleIdentifierInvocation setArgument:&sources atIndex:4];
+                            [singleIdentifierInvocation setArgument:&singleIdentifierCompletion atIndex:5];
+                            [singleIdentifierInvocation retainArguments];
+                            [singleIdentifierInvocation invoke];
+                        } else if (focusedProbeStep == 1) {
+                            appendProbeCompletion(@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.singleIdentifier", nil);
+                        }
+
+                        if (focusedProbeStep == 2) {
+                            id exactIdentifiers = [[self objectChildrenForValue:realSearchIdentifiers] count] > 0 ? realSearchIdentifiers : searchIdentifiers;
+                            id exactFetchLimit = @([[self objectChildrenForValue:exactIdentifiers] count]);
+                            void (^exactContextArgumentsCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.exactContextArguments", result);
+                            };
+                            NSInvocation *exactContextArgumentsInvocation = [NSInvocation invocationWithMethodSignature:latestLocationsSignature];
+                            [exactContextArgumentsInvocation setTarget:ownerProxy];
+                            [exactContextArgumentsInvocation setSelector:latestLocationsSelector];
+                            [exactContextArgumentsInvocation setArgument:&exactIdentifiers atIndex:2];
+                            [exactContextArgumentsInvocation setArgument:&exactFetchLimit atIndex:3];
+                            [exactContextArgumentsInvocation setArgument:&sources atIndex:4];
+                            [exactContextArgumentsInvocation setArgument:&exactContextArgumentsCompletion atIndex:5];
+                            [exactContextArgumentsInvocation retainArguments];
+                            [exactContextArgumentsInvocation invoke];
+                        }
+
+                        if (focusedProbeStep == 4) {
+                            NSUInteger sourceSubsetLimit = 4;
+                            for (NSUInteger sourceIndex = 0; sourceIndex < sourceSubsetLimit; sourceIndex++) {
+                                NSString *selectorLabel = [NSString stringWithFormat:@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.sourceSubset.%lu", (unsigned long)sourceIndex];
+                                if (firstIdentifier == nil || sourceIndex >= sourceArray.count) {
+                                    appendProbeCompletion(selectorLabel, nil);
+                                    continue;
+                                }
+
+                                NSArray *singleIdentifierArray = @[firstIdentifier];
+                                id singleFetchLimit = @1;
+                                id sourceObject = sourceArray[sourceIndex];
+                                NSArray *singleSourceArray = @[sourceObject];
+                                void (^sourceSubsetCompletion)(id) = ^(id result) {
+                                    appendProbeCompletion(selectorLabel, result);
+                                };
+                                NSInvocation *sourceSubsetInvocation = [NSInvocation invocationWithMethodSignature:latestLocationsSignature];
+                                [sourceSubsetInvocation setTarget:ownerProxy];
+                                [sourceSubsetInvocation setSelector:latestLocationsSelector];
+                                [sourceSubsetInvocation setArgument:&singleIdentifierArray atIndex:2];
+                                [sourceSubsetInvocation setArgument:&singleFetchLimit atIndex:3];
+                                [sourceSubsetInvocation setArgument:&singleSourceArray atIndex:4];
+                                [sourceSubsetInvocation setArgument:&sourceSubsetCompletion atIndex:5];
+                                [sourceSubsetInvocation retainArguments];
+                                [sourceSubsetInvocation invoke];
+                                @synchronized ([BlueBubblesHelper class]) {
+                                    NSMutableArray *sourceSubsetArguments = nil;
+                                    id existingArguments = findMySearchPartyLocationProbe[@"latest_locations_source_subset_arguments"];
+                                    if ([existingArguments isKindOfClass:[NSArray class]]) {
+                                        sourceSubsetArguments = [[NSMutableArray alloc] initWithArray:existingArguments];
+                                    } else {
+                                        sourceSubsetArguments = [[NSMutableArray alloc] init];
+                                    }
+                                    [sourceSubsetArguments addObject:@{
+                                        @"selector": selectorLabel,
+                                        @"source_class": [self classNameForObject:sourceObject],
+                                        @"source_summary": [self summaryForValue:sourceObject],
+                                    }];
+                                    findMySearchPartyLocationProbe[@"latest_locations_source_subset_arguments"] = sourceSubsetArguments;
+                                }
+                            }
+                        }
+
                     } else {
-                        [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
-                                                                          selectorName:@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers:fetchLimit:sources:completion:"
-                                                                                result:nil];
+                        if (focusedProbeStep == 1) {
+                            appendProbeCompletion(@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.singleIdentifier", nil);
+                        } else if (focusedProbeStep == 2) {
+                            appendProbeCompletion(@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.exactContextArguments", nil);
+                        } else if (focusedProbeStep == 4) {
+                            for (NSUInteger sourceIndex = 0; sourceIndex < 4; sourceIndex++) {
+                                appendProbeCompletion([NSString stringWithFormat:@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.sourceSubset.%lu", (unsigned long)sourceIndex], nil);
+                            }
+                        }
+                    }
+
+                    if (focusedProbeStep == 3) {
+                        SEL proxyLocationForContextSelector = NSSelectorFromString(@"locationForContext:completion:");
+                        NSMethodSignature *proxyLocationForContextSignature = [ownerProxy methodSignatureForSelector:proxyLocationForContextSelector];
+                        if (ownerProxy != nil &&
+                            proxyLocationForContextSignature != nil &&
+                            proxyLocationForContextSignature.numberOfArguments == 4) {
+                            void (^proxyLocationForContextCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(@"SPOwnerSessionXPCProtocol.locationForContext:completion:", result);
+                            };
+                            NSInvocation *proxyLocationForContextInvocation = [NSInvocation invocationWithMethodSignature:proxyLocationForContextSignature];
+                            [proxyLocationForContextInvocation setTarget:ownerProxy];
+                            [proxyLocationForContextInvocation setSelector:proxyLocationForContextSelector];
+                            [proxyLocationForContextInvocation setArgument:&context atIndex:2];
+                            [proxyLocationForContextInvocation setArgument:&proxyLocationForContextCompletion atIndex:3];
+                            [proxyLocationForContextInvocation retainArguments];
+                            [proxyLocationForContextInvocation invoke];
+                        } else {
+                            appendProbeCompletion(@"SPOwnerSessionXPCProtocol.locationForContext:completion:", nil);
+                        }
                     }
                 } @catch (NSException *exception) {
                     @synchronized ([BlueBubblesHelper class]) {
