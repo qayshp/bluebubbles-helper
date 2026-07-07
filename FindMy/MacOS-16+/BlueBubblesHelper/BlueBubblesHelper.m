@@ -522,6 +522,11 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         return;
     }
 
+    if ([event isEqualToString:@"debug-findmy-searchparty-locations-resolve-identifiers"]) {
+        [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:6];
+        return;
+    }
+
     if ([event isEqualToString:@"debug-findmy-searchparty-locations"]) {
         [self handleFindMySearchPartyLocationProbeStatusWithTransaction:transaction];
         return;
@@ -2783,7 +2788,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 
     NSUInteger focusedProbeStep = 0;
-    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 5) {
+    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 6) {
         focusedProbeStep = requestedFocusedStep;
         startedProbe[@"dedicated_probe"] = @YES;
     } else {
@@ -2804,6 +2809,8 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         focusedProbeSelector = @"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.sourceSubsets";
     } else if (focusedProbeStep == 5) {
         focusedProbeSelector = @"SPOwnerSessionXPCProtocol.requestLiveLocationForUUID.identifierVariants";
+    } else if (focusedProbeStep == 6) {
+        focusedProbeSelector = @"SPOwnerSessionXPCProtocol.identifierResolution";
     }
 
     NSArray *methods = [self searchPartyLocationMethodDiagnosticsForObject:targetSession];
@@ -2849,7 +2856,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         @"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:",
         focusedProbeSelector,
     ];
-    startedProbe[@"pending_completion_count"] = focusedProbeStep == 5 ? @6 : (focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3));
+    startedProbe[@"pending_completion_count"] = (focusedProbeStep == 5 || focusedProbeStep == 6) ? @6 : (focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3));
     [self storeFindMySearchPartyLocationProbe:startedProbe];
 
     id capturedLocationFetch = nil;
@@ -2953,9 +2960,11 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                 id generatedSearchLocationSources = realSearchLocationSources ?: [searchLocationSources allObjects];
                 NSArray *sourceArray = [self objectChildrenForValue:generatedSearchLocationSources];
                 NSMutableArray *liveRequestCandidates = [[NSMutableArray alloc] init];
+                NSMutableArray *identifierResolutionCandidates = [[NSMutableArray alloc] init];
                 NSMutableSet *seenLiveRequestIdentifiers = [[NSMutableSet alloc] init];
+                NSMutableSet *seenResolutionIdentifiers = [[NSMutableSet alloc] init];
                 for (id beacon in beacons) {
-                    if (liveRequestCandidates.count >= 4) {
+                    if (liveRequestCandidates.count >= 4 && identifierResolutionCandidates.count >= 6) {
                         break;
                     }
                     NSString *name = [[self firstObjectValueFromObject:beacon
@@ -2963,11 +2972,11 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                                                              selectors:@[@"name", @"displayName", @"accessoryName"]] description];
                     NSDictionary *candidateMap = [self searchPartyIdentifierCandidateMapForBeacon:beacon];
                     for (NSString *variantKey in @[@"identifier", @"ownerBeaconIdentifier", @"stableIdentifier", @"uuid", @"beaconUUID", @"accessoryIdentifier", @"productUUID", @"correlationIdentifier"]) {
-                        if (liveRequestCandidates.count >= 4) {
+                        if (liveRequestCandidates.count >= 4 && identifierResolutionCandidates.count >= 6) {
                             break;
                         }
                         NSString *normalized = candidateMap[variantKey];
-                        if (normalized.length == 0 || [seenLiveRequestIdentifiers containsObject:normalized]) {
+                        if (normalized.length == 0) {
                             continue;
                         }
                         id rawValue = [self directFindMyCandidateValueFromObject:beacon key:variantKey];
@@ -2979,14 +2988,31 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                         if (requestValue == nil || requestValue == [NSNull null]) {
                             continue;
                         }
-                        [seenLiveRequestIdentifiers addObject:normalized];
-                        [liveRequestCandidates addObject:@{
+                        NSDictionary *candidate = @{
                             @"variant": variantKey,
                             @"identifier": normalized,
                             @"name": name.length > 0 ? name : @"<nil>",
                             @"request_value": requestValue,
                             @"request_value_class": [self classNameForObject:requestValue],
-                        }];
+                        };
+                        if (liveRequestCandidates.count < 4 && ![seenLiveRequestIdentifiers containsObject:normalized]) {
+                            [seenLiveRequestIdentifiers addObject:normalized];
+                            [liveRequestCandidates addObject:candidate];
+                        }
+                        BOOL isStringIdentifier = [requestValue isKindOfClass:[NSString class]];
+                        BOOL isUUIDIdentifier = [requestValue isKindOfClass:[NSUUID class]];
+                        BOOL usefulResolutionVariant = [variantKey isEqualToString:@"stableIdentifier"] ||
+                                                       [variantKey isEqualToString:@"identifier"] ||
+                                                       [variantKey isEqualToString:@"productUUID"] ||
+                                                       [variantKey isEqualToString:@"ownerBeaconIdentifier"] ||
+                                                       [variantKey isEqualToString:@"beaconUUID"];
+                        if (identifierResolutionCandidates.count < 6 &&
+                            usefulResolutionVariant &&
+                            (isStringIdentifier || isUUIDIdentifier) &&
+                            ![seenResolutionIdentifiers containsObject:[NSString stringWithFormat:@"%@:%@", variantKey, normalized]]) {
+                            [seenResolutionIdentifiers addObject:[NSString stringWithFormat:@"%@:%@", variantKey, normalized]];
+                            [identifierResolutionCandidates addObject:candidate];
+                        }
                     }
                 }
 
@@ -3307,6 +3333,125 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                             for (NSUInteger candidateIndex = 0; candidateIndex < 4; candidateIndex++) {
                                 appendProbeCompletion([NSString stringWithFormat:@"SPOwnerSessionXPCProtocol.requestLiveLocationForUUID.variant.%lu", (unsigned long)candidateIndex], nil);
                             }
+                        }
+                    }
+
+                    if (focusedProbeStep == 6) {
+                        SEL beaconForIdentifierSelector = NSSelectorFromString(@"beaconForIdentifier:completion:");
+                        SEL beaconForUUIDSelector = NSSelectorFromString(@"beaconForUUID:completion:");
+                        SEL beaconGroupsForUUIDsSelector = NSSelectorFromString(@"beaconGroupsForUUIDs:completion:");
+                        NSMethodSignature *beaconForIdentifierSignature = [ownerProxy methodSignatureForSelector:beaconForIdentifierSelector];
+                        NSMethodSignature *beaconForUUIDSignature = [ownerProxy methodSignatureForSelector:beaconForUUIDSelector];
+                        NSMethodSignature *beaconGroupsForUUIDsSignature = [ownerProxy methodSignatureForSelector:beaconGroupsForUUIDsSelector];
+
+                        NSMutableArray *stringCandidates = [[NSMutableArray alloc] init];
+                        NSMutableArray *uuidCandidates = [[NSMutableArray alloc] init];
+                        for (NSDictionary *candidate in identifierResolutionCandidates) {
+                            id requestValue = candidate[@"request_value"];
+                            if ([requestValue isKindOfClass:[NSString class]] && stringCandidates.count < 2) {
+                                [stringCandidates addObject:candidate];
+                            } else if ([requestValue isKindOfClass:[NSUUID class]] && uuidCandidates.count < 3) {
+                                [uuidCandidates addObject:candidate];
+                            }
+                        }
+
+                        @synchronized ([BlueBubblesHelper class]) {
+                            NSMutableArray *arguments = [[NSMutableArray alloc] init];
+                            for (NSDictionary *candidate in identifierResolutionCandidates) {
+                                if (arguments.count >= 6) {
+                                    break;
+                                }
+                                [arguments addObject:@{
+                                    @"variant": candidate[@"variant"] ?: @"<nil>",
+                                    @"identifier": candidate[@"identifier"] ?: @"<nil>",
+                                    @"name": candidate[@"name"] ?: @"<nil>",
+                                    @"request_value_class": candidate[@"request_value_class"] ?: @"<nil>",
+                                }];
+                            }
+                            findMySearchPartyLocationProbe[@"identifier_resolution_arguments"] = arguments;
+                            findMySearchPartyLocationProbe[@"identifier_resolution_method_availability"] = @{
+                                @"beaconForIdentifier": @(ownerProxy != nil && beaconForIdentifierSignature != nil && beaconForIdentifierSignature.numberOfArguments == 4),
+                                @"beaconForUUID": @(ownerProxy != nil && beaconForUUIDSignature != nil && beaconForUUIDSignature.numberOfArguments == 4),
+                                @"beaconGroupsForUUIDs": @(ownerProxy != nil && beaconGroupsForUUIDsSignature != nil && beaconGroupsForUUIDsSignature.numberOfArguments == 4),
+                            };
+                        }
+
+                        NSUInteger focusedCompletionIndex = 0;
+                        BOOL canCallBeaconForIdentifier = ownerProxy != nil && beaconForIdentifierSignature != nil && beaconForIdentifierSignature.numberOfArguments == 4;
+                        for (NSUInteger i = 0; i < 1; i++) {
+                            NSString *selectorLabel = [NSString stringWithFormat:@"SPOwnerSessionXPCProtocol.beaconForIdentifier.variant.%lu", (unsigned long)i];
+                            if (!canCallBeaconForIdentifier || i >= stringCandidates.count) {
+                                appendProbeCompletion(selectorLabel, nil);
+                                focusedCompletionIndex += 1;
+                                continue;
+                            }
+                            NSDictionary *candidate = stringCandidates[i];
+                            id requestValue = candidate[@"request_value"];
+                            void (^resolutionCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(selectorLabel, result);
+                            };
+                            NSInvocation *resolutionInvocation = [NSInvocation invocationWithMethodSignature:beaconForIdentifierSignature];
+                            [resolutionInvocation setTarget:ownerProxy];
+                            [resolutionInvocation setSelector:beaconForIdentifierSelector];
+                            [resolutionInvocation setArgument:&requestValue atIndex:2];
+                            [resolutionInvocation setArgument:&resolutionCompletion atIndex:3];
+                            [resolutionInvocation retainArguments];
+                            [resolutionInvocation invoke];
+                            focusedCompletionIndex += 1;
+                        }
+
+                        BOOL canCallBeaconForUUID = ownerProxy != nil && beaconForUUIDSignature != nil && beaconForUUIDSignature.numberOfArguments == 4;
+                        for (NSUInteger i = 0; i < 2; i++) {
+                            NSString *selectorLabel = [NSString stringWithFormat:@"SPOwnerSessionXPCProtocol.beaconForUUID.variant.%lu", (unsigned long)i];
+                            if (!canCallBeaconForUUID || i >= uuidCandidates.count) {
+                                appendProbeCompletion(selectorLabel, nil);
+                                focusedCompletionIndex += 1;
+                                continue;
+                            }
+                            NSDictionary *candidate = uuidCandidates[i];
+                            id requestValue = candidate[@"request_value"];
+                            void (^resolutionCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(selectorLabel, result);
+                            };
+                            NSInvocation *resolutionInvocation = [NSInvocation invocationWithMethodSignature:beaconForUUIDSignature];
+                            [resolutionInvocation setTarget:ownerProxy];
+                            [resolutionInvocation setSelector:beaconForUUIDSelector];
+                            [resolutionInvocation setArgument:&requestValue atIndex:2];
+                            [resolutionInvocation setArgument:&resolutionCompletion atIndex:3];
+                            [resolutionInvocation retainArguments];
+                            [resolutionInvocation invoke];
+                            focusedCompletionIndex += 1;
+                        }
+
+                        BOOL canCallBeaconGroupsForUUIDs = ownerProxy != nil && beaconGroupsForUUIDsSignature != nil && beaconGroupsForUUIDsSignature.numberOfArguments == 4;
+                        NSString *groupsSelectorLabel = @"SPOwnerSessionXPCProtocol.beaconGroupsForUUIDs.sample";
+                        if (canCallBeaconGroupsForUUIDs && uuidCandidates.count > 0) {
+                            NSMutableArray *uuidValues = [[NSMutableArray alloc] init];
+                            for (NSDictionary *candidate in uuidCandidates) {
+                                id requestValue = candidate[@"request_value"];
+                                if ([requestValue isKindOfClass:[NSUUID class]] && uuidValues.count < 3) {
+                                    [uuidValues addObject:requestValue];
+                                }
+                            }
+                            NSArray *uuidArray = [uuidValues copy];
+                            void (^groupsCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(groupsSelectorLabel, result);
+                            };
+                            NSInvocation *groupsInvocation = [NSInvocation invocationWithMethodSignature:beaconGroupsForUUIDsSignature];
+                            [groupsInvocation setTarget:ownerProxy];
+                            [groupsInvocation setSelector:beaconGroupsForUUIDsSelector];
+                            [groupsInvocation setArgument:&uuidArray atIndex:2];
+                            [groupsInvocation setArgument:&groupsCompletion atIndex:3];
+                            [groupsInvocation retainArguments];
+                            [groupsInvocation invoke];
+                        } else {
+                            appendProbeCompletion(groupsSelectorLabel, nil);
+                        }
+                        focusedCompletionIndex += 1;
+
+                        while (focusedCompletionIndex < 4) {
+                            appendProbeCompletion([NSString stringWithFormat:@"SPOwnerSessionXPCProtocol.identifierResolution.unused.%lu", (unsigned long)focusedCompletionIndex], nil);
+                            focusedCompletionIndex += 1;
                         }
                     }
                 } @catch (NSException *exception) {

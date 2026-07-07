@@ -688,3 +688,69 @@ Instrumentation added:
   - `primaryIndexRange`
 - For sampled `lastOnlineLocationInfo` values, capture accessors, ivars,
   descriptions, and any direct location serialization result.
+
+## Live try: identifier resolution
+
+Helper build copied into the server for this run:
+`9f7f173e66ea8d169cdd0ed9bdd04615`.
+
+Routes exercised:
+
+- `POST /api/v1/icloud/findmy/searchparty/locations/resolve-identifiers`
+- `POST /api/v1/icloud/findmy/searchparty/locations`
+
+The focused probe found these methods on the
+`__NSXPCInterfaceProxy_SPOwnerSessionXPCProtocol` proxy:
+
+- `beaconForIdentifier:completion:`
+- `beaconForUUID:completion:`
+- `beaconGroupsForUUIDs:completion:`
+
+The helper built a small candidate set from local beacon fields while keeping
+the route output bounded. The useful argument formats were:
+
+- `identifier`: `__NSConcreteUUID`, format `UUID`
+- `stableIdentifier`: `__NSCFString`, format `A:/UUID~#SERIAL`
+- `productUUID`: `__NSConcreteUUID`, format `UUID`
+
+The live status response timed out with `pending_completion_count` at `5`.
+Only one completion fired:
+
+```text
+SPOwnerSession.locationsForBeacons:completion:
+  result class: __NSDictionary0
+  count: 0
+```
+
+No completion arrived during the observed window for:
+
+- `beaconForIdentifier:completion:`
+- `beaconForUUID:completion:`
+- `beaconGroupsForUUIDs:completion:`
+
+The same run captured a populated fetch context later in the log:
+
+- `searchIdentifiers`: `__NSArrayI_Transfer`, count `53`, element class
+  `__NSConcreteUUID`
+- `primaryIndexRange`: `{ location: 0, length: 53 }`
+- `lastOnlineLocationInfo`: Swift deferred dictionary, count `10`
+- `searchLocationSources`: count `12`
+- `searchTypes`: count `6`
+
+Interpretation:
+
+The identifier-resolution selectors are present and can be invoked without an
+immediate Objective-C exception, but they did not call back in this combined
+probe. That points either to SearchParty service/session gating, missing call
+preconditions, or the combined probe issuing too many XPC calls at once. The
+separate context capture is still promising because SearchParty itself is
+building a 53-identifier location fetch context.
+
+Next useful probe:
+
+- split these into one-method routes so a single `beaconForUUID:` or
+  `beaconForIdentifier:` call cannot be masked by other pending XPC calls;
+- start with one `beaconForUUID:` call using a UUID from the captured
+  `searchIdentifiers` array rather than a local beacon property; and
+- inspect unified logs around the XPC call for service-side rejection or
+  authorization errors.
