@@ -5,6 +5,19 @@ Yes. The most likely location-bearing places, in order:
 1. `SPLocationFetchResult.locationsByBeaconIdentifier`
 This is still the best candidate. It sounds exactly like the map we need: beacon identifier -> location object/result. We have observed the selector, but it returned an empty dictionary in the current runs.
 
+   Follow-up investigation:
+
+   - `receivedUpdatedLocation:` receives an `SPLocationFetchResult`.
+   - `SPOwnerSession.setLocationUpdateBlock:` also receives an `SPLocationFetchResult`.
+   - Deep runtime inspection of that object found one relevant ivar:
+     - `_locationsByBeaconIdentifier`
+     - type: `NSDictionary`
+     - value: empty dictionary, count `0`
+   - Calling/accessing `locationsByBeaconIdentifier` returns the same empty dictionary.
+   - No other useful location/result/cache/beacon dictionary surfaced from the object. The only extra method that appeared in the filtered probe was inherited NSObject noise: `_crComputeDeviceType`.
+
+   Current conclusion: this is structurally correct but currently empty on this Mac. `SPLocationFetchResult` does not appear to be hiding another populated location array or map in the captured update result; the object's relevant storage is exactly `_locationsByBeaconIdentifier`.
+
 2. `SPOwnerSession.locationCache`
 This is the next best field. It was present on `SPOwnerSession`, but observed as an empty dictionary. If Find My populates device/item locations asynchronously, this may become useful after the right refresh/update path fires.
 
