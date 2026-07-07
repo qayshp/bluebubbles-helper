@@ -1184,3 +1184,134 @@ context while still watching passive callbacks. If full-context passive results
 also stay empty, the likely remaining gap is service-side location eligibility
 or a different owner-session/device-specific request path, rather than response
 transport or callback visibility.
+
+## Live try: full-context passive callback watch
+
+Helper build copied into the server for this run:
+`265ac359c99ca78ae3fff3efa24bdeb3`.
+
+Route added:
+
+- `POST /api/v1/icloud/findmy/searchparty/locations/callback-watch-full-context`
+
+Purpose:
+
+The prior callback-watch probe used a narrowed one-identifier
+`SPLocationFetchContext`. This probe tests whether the full generated context,
+with all collected SearchParty identifiers and all collected location sources,
+causes the service to populate `SPLocationFetchResult locationsByBeaconIdentifier`
+through the same passive callback channel.
+
+Probe shape:
+
+1. Build the generated full `SPLocationFetchContext`.
+2. Preserve:
+   - all collected `searchIdentifiers`
+   - all collected `searchLocationSources`
+   - captured `searchTypes`
+   - captured `lastOnlineLocationInfo`
+   - `subscribe = true`
+   - `reportDeviceEvents = true`
+3. Set `_primaryIndexRange` to cover the full generated identifier array.
+4. Call:
+   - `SPOwnerSessionLocationFetch subscribeAndFetchLocationForContext:completion:`
+5. Poll:
+   - `POST /api/v1/icloud/findmy/searchparty/locations/compact`
+
+Start result:
+
+```text
+HTTP status: 200
+focused_probe_step: 12
+pending_completion_count: 3
+probe status: started
+```
+
+Compact status after about 80 seconds:
+
+```text
+HTTP status: 200
+probe status: completed
+focused_probe_step: 12
+callback_watch_context: full
+pending_completion_count: 0
+context_search_identifier_count: 53
+context_search_location_source_count: 12
+passive_location_event_count: 6
+locationFetch.subscribeAndFetchLocationForContext: present
+```
+
+Completion results:
+
+```text
+SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:
+  result class: <nil>
+
+SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.fullContextCallbackWatch
+  result class: <nil>
+
+SPOwnerSession.locationsForBeacons:completion:
+  result class: __NSDictionary0
+```
+
+Passive callback results:
+
+```text
+receivedUpdatedLocation:
+  source class: SPOwnerSessionLocationFetch
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+
+setLocationUpdateBlock:
+  source class: SPOwnerSession
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+
+receivedUpdatedLocation:
+  source class: SPOwnerSessionLocationFetch
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+
+setLocationUpdateBlock:
+  source class: SPOwnerSession
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+
+receivedUpdatedLocation:
+  source class: SPOwnerSessionLocationFetch
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+
+setLocationUpdateBlock:
+  source class: SPOwnerSession
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+```
+
+Interpretation:
+
+Full-context subscription behaves better operationally than the single-identifier
+watch because the focused probe completed instead of timing out. It also
+delivered six passive `SPLocationFetchResult` objects. However, every passive
+result still had an empty `locationsByBeaconIdentifier` dictionary.
+
+This makes the strongest current conclusion:
+
+- The helper can see SearchParty owner sessions.
+- The helper can build a full context with 53 identifiers and 12 location
+  sources.
+- The helper can subscribe successfully enough for SearchParty to call passive
+  update methods.
+- The callback transport and compact polling route work.
+- The actual SearchParty result payloads visible through this owner-session
+  location-fetch path are empty on this Mac.
+
+Next lead:
+
+Move away from `SPOwnerSessionLocationFetch` context subscription as the primary
+coordinate source and inspect the XPC/service methods that Find My uses for
+device rows with known local locations, especially the methods around
+`ownedDeviceLocation`, device event updates, delegated location updates, and any
+device-specific provider/session classes. The current evidence points away from
+"we missed the callback" and toward "this is not the callback path that carries
+device/item coordinates on this host."

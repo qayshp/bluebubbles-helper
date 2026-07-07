@@ -560,6 +560,11 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         return;
     }
 
+    if ([event isEqualToString:@"debug-findmy-searchparty-locations-callback-watch-full-context"]) {
+        [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:12];
+        return;
+    }
+
     if ([event isEqualToString:@"debug-findmy-searchparty-locations"]) {
         [self handleFindMySearchPartyLocationProbeStatusWithTransaction:transaction];
         return;
@@ -2436,6 +2441,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
             @"passive_location_event_count",
             @"last_passive_location_event_at",
             @"callback_watch_method_availability",
+            @"callback_watch_context",
             @"single_identifier_context_method_availability",
             @"callback_watch_note",
             @"single_identifier_context_assignment",
@@ -2967,7 +2973,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 
     NSUInteger focusedProbeStep = 0;
-    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 11) {
+    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 12) {
         focusedProbeStep = requestedFocusedStep;
         startedProbe[@"dedicated_probe"] = @YES;
     } else {
@@ -3000,6 +3006,8 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         focusedProbeSelector = @"SPOwnerSessionLocationFetch.contextSingleIdentifier";
     } else if (focusedProbeStep == 11) {
         focusedProbeSelector = @"SPOwnerSessionLocationFetch.singleIdentifierCallbackWatch";
+    } else if (focusedProbeStep == 12) {
+        focusedProbeSelector = @"SPOwnerSessionLocationFetch.fullContextCallbackWatch";
     }
 
     NSArray *methods = [self searchPartyLocationMethodDiagnosticsForObject:targetSession];
@@ -3045,7 +3053,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         @"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:",
         focusedProbeSelector,
     ];
-    startedProbe[@"pending_completion_count"] = (focusedProbeStep == 9 || focusedProbeStep == 10) ? @5 : (focusedProbeStep == 11 ? @3 : ((focusedProbeStep == 5 || focusedProbeStep == 6) ? @6 : (focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3))));
+    startedProbe[@"pending_completion_count"] = (focusedProbeStep == 9 || focusedProbeStep == 10) ? @5 : ((focusedProbeStep == 11 || focusedProbeStep == 12) ? @3 : ((focusedProbeStep == 5 || focusedProbeStep == 6) ? @6 : (focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3))));
     [self storeFindMySearchPartyLocationProbe:startedProbe];
 
     id capturedLocationFetch = nil;
@@ -3678,6 +3686,38 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                             [callbackWatchInvocation invoke];
                         } else {
                             appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.callbackWatch", nil);
+                        }
+                    }
+
+                    if (focusedProbeStep == 12) {
+                        id fullContextTarget = locationFetch ?: [self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"];
+                        SEL subscribeForContextSelector = NSSelectorFromString(@"subscribeAndFetchLocationForContext:completion:");
+                        NSMethodSignature *subscribeForContextSignature = [fullContextTarget methodSignatureForSelector:subscribeForContextSelector];
+
+                        @synchronized ([BlueBubblesHelper class]) {
+                            findMySearchPartyLocationProbe[@"callback_watch_method_availability"] = @{
+                                @"locationFetch.subscribeAndFetchLocationForContext": @(fullContextTarget != nil && subscribeForContextSignature != nil && subscribeForContextSignature.numberOfArguments == 4),
+                            };
+                            findMySearchPartyLocationProbe[@"callback_watch_context"] = @"full";
+                            findMySearchPartyLocationProbe[@"callback_watch_note"] = @"Full-context callback watch uses the generated context with all collected searchIdentifiers and searchLocationSources, then polls compact passive_location_events.";
+                        }
+
+                        if (fullContextTarget != nil &&
+                            context != nil &&
+                            subscribeForContextSignature != nil &&
+                            subscribeForContextSignature.numberOfArguments == 4) {
+                            void (^fullContextSubscribeCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.fullContextCallbackWatch", result);
+                            };
+                            NSInvocation *fullContextWatchInvocation = [NSInvocation invocationWithMethodSignature:subscribeForContextSignature];
+                            [fullContextWatchInvocation setTarget:fullContextTarget];
+                            [fullContextWatchInvocation setSelector:subscribeForContextSelector];
+                            [fullContextWatchInvocation setArgument:&context atIndex:2];
+                            [fullContextWatchInvocation setArgument:&fullContextSubscribeCompletion atIndex:3];
+                            [fullContextWatchInvocation retainArguments];
+                            [fullContextWatchInvocation invoke];
+                        } else {
+                            appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.fullContextCallbackWatch", nil);
                         }
                     }
 
