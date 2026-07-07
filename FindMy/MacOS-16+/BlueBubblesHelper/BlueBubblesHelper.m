@@ -41,6 +41,7 @@
 - (void)captureFindMyInterestingObject:(id)object source:(NSString *)source selector:(SEL)selector;
 - (void)captureFindMyInterestingSetterObject:(id)object value:(id)value selector:(SEL)selector;
 - (void)captureFindMySearchPartyAccessorResult:(id)result source:(id)source selector:(SEL)selector;
+- (void)captureFindMySearchPartyLocationInvocationForTarget:(id)target selector:(SEL)selector context:(id)context result:(id)result phase:(NSString *)phase;
 - (NSDictionary *)capturedFindMyDataSourceDiagnostics;
 - (NSDictionary *)capturedFindMyPassiveDiagnostics;
 - (NSDictionary *)compactFindMyRefreshDiagnostics:(NSDictionary *)diagnostics;
@@ -290,6 +291,46 @@ static void BBFindMyLocationUpdateBlockSetter(id self, SEL _cmd, id value) {
     }
 
     [[BlueBubblesHelper sharedInstance] captureFindMyInterestingSetterObject:self value:value selector:_cmd];
+}
+
+static void BBFindMyLocationFetchContextCompletion(id self, SEL _cmd, id context, id completion) {
+    [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyLocationInvocationForTarget:self
+                                                                                   selector:_cmd
+                                                                                    context:context
+                                                                                     result:nil
+                                                                                      phase:@"before"];
+
+    id completionForOriginal = completion;
+    NSString *signature = BBFindMyBlockSignature(completion);
+    if (completion != nil && (signature == nil || [signature rangeOfString:@"SPLocationFetchResult"].location != NSNotFound || [signature rangeOfString:@"@"].location != NSNotFound)) {
+        void (^originalCompletion)(id) = [completion copy];
+        completionForOriginal = [^(id result) {
+            [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyLocationInvocationForTarget:self
+                                                                                           selector:_cmd
+                                                                                            context:context
+                                                                                             result:result
+                                                                                              phase:@"completion"];
+            if ([result respondsToSelector:NSSelectorFromString(@"locationsByBeaconIdentifier")]) {
+                id locations = [[BlueBubblesHelper sharedInstance] safeObjectValueFromObject:result selectorName:@"locationsByBeaconIdentifier"];
+                [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:locations
+                                                                                    source:result
+                                                                                  selector:NSSelectorFromString(@"locationsByBeaconIdentifier")];
+            }
+            if (originalCompletion != nil) {
+                originalCompletion(result);
+            }
+        } copy];
+    }
+
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        void (*original)(id, SEL, id, id) = (void (*)(id, SEL, id, id))[originalValue pointerValue];
+        original(self, _cmd, context, completionForOriginal);
+    }
 }
 
 static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
@@ -708,6 +749,14 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
                                    selector:NSSelectorFromString(selectorName)
                                 replacement:replacement];
     }
+    for (NSString *selectorName in @[
+        @"subscribeAndFetchLocationForContext:completion:",
+        @"locationForContext:completion:",
+    ]) {
+        [self swizzleInstanceMethodForClass:ownerSessionClass
+                                   selector:NSSelectorFromString(selectorName)
+                                replacement:(IMP)BBFindMyLocationFetchContextCompletion];
+    }
 
     Class ownerSessionLocationFetchClass = NSClassFromString(@"SPOwnerSessionLocationFetch");
     for (NSString *selectorName in @[
@@ -726,6 +775,14 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         [self swizzleInstanceMethodForClass:ownerSessionLocationFetchClass
                                    selector:NSSelectorFromString(selectorName)
                                 replacement:replacement];
+    }
+    for (NSString *selectorName in @[
+        @"subscribeAndFetchLocationForContext:completion:",
+        @"locationForContext:completion:",
+    ]) {
+        [self swizzleInstanceMethodForClass:ownerSessionLocationFetchClass
+                                   selector:NSSelectorFromString(selectorName)
+                                replacement:(IMP)BBFindMyLocationFetchContextCompletion];
     }
 
     NSDictionary<NSString *, NSArray<NSString *> *> *searchPartyResultAccessors = @{
@@ -812,6 +869,7 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
                 @"name": [NSString stringWithUTF8String:ivar_getName(ivar)] ?: @"<nil>",
                 @"type": [NSString stringWithUTF8String:type] ?: @"<nil>",
                 @"class": [self classNameForObject:value],
+                @"summary": [self summaryForValue:value],
             }];
         }
         free(ivarList);
@@ -1098,6 +1156,36 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         [findMySearchPartyAccessorSnapshots addObject:[snapshot copy]];
         if (findMySearchPartyAccessorSnapshots.count > 40) {
             [findMySearchPartyAccessorSnapshots removeObjectsInRange:NSMakeRange(0, findMySearchPartyAccessorSnapshots.count - 40)];
+        }
+    }
+}
+
+- (void)captureFindMySearchPartyLocationInvocationForTarget:(id)target selector:(SEL)selector context:(id)context result:(id)result phase:(NSString *)phase {
+    NSMutableDictionary *snapshot = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"selector": selector == nil ? @"<nil>" : NSStringFromSelector(selector),
+        @"source_class": [self classNameForObject:target],
+        @"source_id": target == nil ? @"<nil>" : [NSString stringWithFormat:@"%p", target],
+        @"phase": phase ?: @"<nil>",
+        @"timestamp": @([[NSDate date] timeIntervalSince1970]),
+    }];
+
+    if (context != nil) {
+        snapshot[@"context"] = [self searchPartyLocationProbeResultForSelector:@"SPLocationFetchContext" result:context];
+    }
+    if (result != nil) {
+        snapshot[@"result"] = [self searchPartyLocationProbeResultForSelector:@"SPLocationFetchResult" result:result];
+    }
+
+    DLog("BLUEBUBBLESHELPER: SearchParty location invocation selector=%{public}@ source=%{public}@ phase=%{public}@ context=%{public}@ result=%{public}@",
+         snapshot[@"selector"], snapshot[@"source_class"], snapshot[@"phase"], snapshot[@"context"] ?: @"<nil>", snapshot[@"result"] ?: @"<nil>");
+
+    @synchronized ([BlueBubblesHelper class]) {
+        if (findMySearchPartyAccessorSnapshots == nil) {
+            findMySearchPartyAccessorSnapshots = [[NSMutableArray alloc] init];
+        }
+        [findMySearchPartyAccessorSnapshots addObject:[snapshot copy]];
+        if (findMySearchPartyAccessorSnapshots.count > 60) {
+            [findMySearchPartyAccessorSnapshots removeObjectsInRange:NSMakeRange(0, findMySearchPartyAccessorSnapshots.count - 60)];
         }
     }
 }
