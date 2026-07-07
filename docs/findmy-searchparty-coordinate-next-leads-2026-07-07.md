@@ -891,3 +891,79 @@ still returns an empty dictionary, and feeding its `identifier` into
 This suggests the remaining coordinate gap is not just "wrong local beacon
 object"; it is likely in the location fetch context, service-side eligibility,
 or a different result/callback path used by Find My after it obtains the beacon.
+
+## Live try: single identifier context fetch
+
+Helper build copied into the server for this run:
+`09c6b407636e5eb8b0896415fe79a6fb`.
+
+Route added:
+
+- `POST /api/v1/icloud/findmy/searchparty/locations/context-single-identifier`
+
+Probe shape:
+
+1. Start from the same real SearchParty context shape captured from Find My.
+2. Copy context fields where available:
+   - `bundleIdentifier`
+   - `cachePolicy`
+   - `subscribe`
+   - `reportDeviceEvents`
+   - `searchTypes`
+   - `searchLocationSources`
+   - `lastOnlineLocationInfo`
+3. Replace `searchIdentifiers` with a one-element UUID array.
+4. Set `_primaryIndexRange` to `{ location: 0, length: 1 }`.
+5. Call:
+   - `SPOwnerSessionLocationFetch locationForContext:completion:`
+   - `SPOwnerSessionLocationFetch subscribeAndFetchLocationForContext:completion:`
+   - `SPOwnerSessionXPCProtocol locationForContext:completion:`
+
+The constructed single-identifier context looked correct:
+
+- argument class: `__NSConcreteUUID`
+- argument variant: `generatedSearchIdentifiers`
+- `searchIdentifiers` final count: `1`
+- `searchLocationSources` final count: `12`
+- `_primaryIndexRange` ivar write: `true`
+- original generated context identifier count: `53`
+
+Observed method availability:
+
+- `locationFetch.locationForContext`: present
+- `locationFetch.subscribeAndFetchLocationForContext`: present
+- `proxy.locationForContext`: present
+
+Result after 75 seconds, unchanged after a later read:
+
+```text
+status: timed_out
+pending_completion_count: 3
+completion count: 2
+
+SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.singleIdentifierContext
+  result class: <nil>
+
+SPOwnerSession.locationsForBeacons:completion:
+  result class: __NSDictionary0
+  count: 0
+```
+
+The missing completions were:
+
+```text
+SPOwnerSessionLocationFetch.locationForContext:completion:.singleIdentifierContext
+SPOwnerSessionXPCProtocol.locationForContext:completion:.singleIdentifierContext
+SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:
+```
+
+Interpretation:
+
+The one-identifier context is accepted enough for
+`subscribeAndFetchLocationForContext:` to return, but it returns `nil`. The two
+direct `locationForContext:` variants did not call back. This makes the
+remaining likely gap more specific: the context object shape alone is not
+sufficient, even when narrowed cleanly to one UUID. The next useful work should
+inspect what Find My does after a context fetch is subscribed, especially
+delegate/block callbacks such as `receivedUpdatedLocation` and
+`latestLocationsUpdatedBlock`, rather than only completion-returning methods.
