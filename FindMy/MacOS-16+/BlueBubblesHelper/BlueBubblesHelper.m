@@ -2353,7 +2353,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 
     Class objectClass = [object class];
-    NSArray *matchedMethods = [self compactSelectorDiagnosticsForClass:objectClass includeClassMethods:NO matchingTerms:terms limit:12];
+    NSArray *matchedMethods = [self compactSelectorDiagnosticsForClass:objectClass includeClassMethods:NO matchingTerms:terms limit:60];
     if (matchedMethods.count > 0) {
         summary[@"matched_instance_methods"] = matchedMethods;
     }

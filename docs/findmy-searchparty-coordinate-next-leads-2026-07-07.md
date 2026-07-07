@@ -1429,3 +1429,106 @@ This reinforces the prior conclusion that the generic
 coordinates we need. The next SearchParty lead should inspect the owner XPC
 proxy methods and provider objects around device-specific events rather than
 continuing to vary the same location-fetch context.
+
+## Live Try: Wider Owner Proxy Selector Capture
+
+Commit context:
+
+- helper dylib hash: `25d3f1194e3be7b40d39f1b221c8068c`
+- route used:
+  `POST /api/v1/icloud/findmy/searchparty/locations/device-event-watch`
+- code change: raised `compactRelatedSearchPartyObject` matched selector limit
+  from 12 to 60.
+
+Important safety note:
+
+Before settling on the selector-limit increase, a broader custom
+`method_surfaces` probe was tried. That version attempted a richer method
+surface capture and caused Find My to disconnect / be force-quit immediately
+after the request. The server then timed out the transaction. That approach was
+backed out and should not be repeated as-is. The retained approach only expands
+the already-used related-object `class_copyMethodList` selector capture.
+
+Result:
+
+The widened related-object selector capture completed successfully and returned
+a 200 response. It did not crash Find My.
+
+Owner session XPC proxy selectors now visible:
+
+```text
+beaconForIdentifier:completion:
+acceptUTForBeaconUUID:
+addSafeLocation:completion:
+allBeaconsWithCompletion:
+allObservationsForBeacon:completion:
+assignSafeLocation:to:completion:
+beaconForUUID:completion:
+beaconGroupForIdentifier:completion:
+beaconGroupsForUUIDs:completion:
+beaconStoreStatusWithCompletion:
+beaconingIdentifierForMACAddress:completion:
+beaconsToMaintainPersistentConnection:
+beaconsToMaintainWithCompletion:
+beaconsToMonitorForSeparation:
+delegatedLocationForContext:completion:
+disableSeparationMonitoringForBeacons:completion:
+enableSeparationMonitoringForBeacons:completion:
+fetchFindMyNetworkStatusForMACAddress:completion:
+fetchSeparationMonitoringStatus:
+fetchUnauthorizedEncryptedPayload:completion:
+forceLOIBasedSafeLocationRefresh:
+ignoreBeaconByUUID:untilDate:completion:
+latestLocationsForIdentifiers:fetchLimit:sources:completion:
+locationForContext:completion:
+ownerSessionStateWithCompletion:
+playUnauthorizedSoundOnBeaconUUID:completion:
+removeBeacon:completion:
+removeBeaconFromGroup:completion:
+removeSafeLocation:completion:
+requestLiveLocationForFriend:completion:
+requestLiveLocationForUUID:completion:
+safeLocationsWithCompletion:
+standaloneBeaconsForUUIDs:completion:
+stopFetchingUnauthorizedEncryptedPayloadWithCompletion:
+tagSeparationStateChanged:beaconUUID:location:completion:
+unacceptedBeaconsWithCompletion:
+unassignSafeLocation:from:completion:
+unknownBeaconsForUUIDs:completion:
+updateBeaconObservations:completion:
+updateSafeLocation:completion:
+waitForBeaconStoreAvailableWithCompletion:
+```
+
+Beacon manager XPC proxy selectors now visible:
+
+```text
+allBeaconsWithCompletion:
+beaconForUUID:completion:
+beaconingKeysForUUID:dateInterval:completion:
+beaconingStateWithCompletion:
+createOwnedDeviceKeyRecordForUUID:completion:
+fetchAllKeyMapFileDescriptorsWithCompletion:
+fetchFirmwareVersionForBeacon:completion:
+fetchUserStatsForBeacon:completion:
+firmwareUpdateCandidateBeaconsWithCompletion:
+firmwareUpdateStateForBeaconUUID:completion:
+getMacBeaconConfigWithCompletion:
+initiateFirmwareUpdateForAllEligibleBeaconsWithCompletion:
+notificationBeaconForSubscriptionId:completion:
+ownedDeviceKeyRecordsForUUID:completion:
+poisonBeaconIdentifier:completion:
+purgeOwnedDeviceKeyRecordsForUUID:completion:
+removeDuplicateBeaconsWithCompletion:
+startUpdatingSimpleBeaconsWithContext:completion:
+unacceptedBeaconsWithCompletion:
+updateBeacon:updates:completion:
+```
+
+Interpretation:
+
+`delegatedLocationForContext:completion:` is the next best method to test. It
+accepts the same kind of context shape as `locationForContext:completion:` but
+is a distinct owner XPC method, and the name suggests it may be closer to a
+shared/delegated device or item location path than the generic location-fetch
+subscription path.
