@@ -1595,3 +1595,73 @@ Next safer direction:
 Inspect passive calls or swizzle around the delegated-location selector instead
 of invoking it directly with our generated context. The key missing detail is
 the context shape and call timing that Find My expects for delegated location.
+
+## Live Try: Delegated Watch Inspection
+
+Commit context:
+
+- helper dylib hash for the final stable build:
+  `f31f06ebf453057e791321c87f97b258`
+- helper focused step: `15`
+- helper action: `debug-findmy-searchparty-locations-delegated-watch`
+- server route:
+  `POST /api/v1/icloud/findmy/searchparty/locations/delegated-watch`
+
+What was tried:
+
+1. Added delegated selector hooks for
+   `delegatedLocationForContext:completion:` and
+   `subscribeDelegatedLocationUpdatesForContext:completion:` using the existing
+   context/completion swizzle shape.
+2. Tried installing those hooks on `SPOwnerSession`,
+   `SPOwnerSessionLocationFetch`, and then the dynamic owner XPC proxy class.
+3. Removed XPC proxy swizzling after the route crashed Find My immediately.
+4. Removed all delegated selector swizzling after static-class delegated
+   swizzling also crashed Find My before probe state could be stored.
+5. Removed `startRefreshing` from this route after non-mutating delegated
+   signature inspection still crashed before state was stored.
+6. Landed a minimal route that only confirms a captured `SPOwnerSession` exists
+   and returns before refresh, method-surface enumeration, proxy inspection,
+   delegated selector swizzling, or delegated invocation.
+
+Observed crash pattern:
+
+```text
+Request to /api/v1/icloud/findmy/searchparty/locations/delegated-watch
+Private API Helper (com.apple.findmy) disconnected
+FindMy Process was force quit
+FindMyDylibPlugin Detected DYLIB crash for App FindMy
+compact status after relaunch: {"status":"not_started"}
+```
+
+This happened for the fuller delegated-watch attempts before any probe state
+could be stored. The crash therefore occurred very early in the shared location
+probe setup or delegated inspection path, not in a completion callback.
+
+Stable final result:
+
+```json
+{
+  "status": "completed",
+  "captured_owner_session_count": 2,
+  "focused_probe_step": 15,
+  "called_start_refreshing": false,
+  "pending_completion_count": 0
+}
+```
+
+Server log for the final route:
+
+```text
+Find My SearchParty delegated watch location probe start: ... "status":"completed" ...
+Request to /api/v1/icloud/findmy/searchparty/locations/delegated-watch took 9 ms
+```
+
+Interpretation:
+
+The safe boundary for this route is currently minimal session-presence
+inspection. Direct delegated invocation is unsafe, and delegated selector
+swizzling appears unsafe even before a completion result is available. The next
+delegated-location investigation should use a smaller purpose-built helper entry
+point that stores probe state before each individual operation and enables only
+one operation per run, starting with non-XPC, non-swizzling reads.

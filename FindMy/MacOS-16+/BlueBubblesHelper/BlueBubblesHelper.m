@@ -588,6 +588,11 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         return;
     }
 
+    if ([event isEqualToString:@"debug-findmy-searchparty-locations-delegated-watch"]) {
+        [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:15];
+        return;
+    }
+
     if ([event isEqualToString:@"debug-findmy-searchparty-locations"]) {
         [self handleFindMySearchPartyLocationProbeStatusWithTransaction:transaction];
         return;
@@ -1592,13 +1597,22 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     if (result != nil) {
         snapshot[@"result"] = [self compactSearchPartyLocationProbeResultForSelector:@"SPLocationFetchResult" result:result];
     }
-    if (([phase rangeOfString:@"receivedUpdated" options:NSCaseInsensitiveSearch].location != NSNotFound ||
-         [phase rangeOfString:@"Block" options:NSCaseInsensitiveSearch].location != NSNotFound) &&
-        result != nil) {
+    NSString *selectorName = NSStringFromSelector(selector);
+    BOOL isDelegatedSelector = [selectorName rangeOfString:@"delegated" options:NSCaseInsensitiveSearch].location != NSNotFound;
+    BOOL shouldAppendPassiveEvent = [phase rangeOfString:@"receivedUpdated" options:NSCaseInsensitiveSearch].location != NSNotFound ||
+                                    [phase rangeOfString:@"Block" options:NSCaseInsensitiveSearch].location != NSNotFound ||
+                                    isDelegatedSelector;
+    if (shouldAppendPassiveEvent && result != nil) {
         [self appendFindMySearchPartyLocationProbePassiveEventWithSelectorName:snapshot[@"selector"]
                                                                          phase:phase
                                                                        context:context
                                                                         result:result
+                                                                        source:target];
+    } else if (shouldAppendPassiveEvent && isDelegatedSelector && context != nil) {
+        [self appendFindMySearchPartyLocationProbePassiveEventWithSelectorName:snapshot[@"selector"]
+                                                                         phase:phase
+                                                                       context:context
+                                                                        result:nil
                                                                         source:target];
     }
 
@@ -2992,13 +3006,32 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         return;
     }
 
-    if ([targetSession respondsToSelector:NSSelectorFromString(@"startRefreshing")]) {
+    if (requestedFocusedStep == 15) {
+        startedProbe[@"dedicated_probe"] = @YES;
+        startedProbe[@"focused_probe_step"] = @15;
+        startedProbe[@"status"] = @"completed";
+        startedProbe[@"pending_completion_count"] = @0;
+        startedProbe[@"called_start_refreshing"] = @NO;
+        startedProbe[@"completed_at"] = @([[NSDate date] timeIntervalSince1970]);
+        startedProbe[@"delegated_watch_note"] = @"Minimal delegated inspection only: confirms a captured SPOwnerSession is available without startRefreshing, method-surface enumeration, selector swizzling, proxy inspection, or delegated invocation. The fuller delegated-watch setup crashed Find My before probe state could be stored.";
+        [self storeFindMySearchPartyLocationProbe:startedProbe];
+        [[NetworkController sharedInstance] sendMessage:@{
+            @"transactionId": transaction ?: [NSNull null],
+            @"location_probe": [self findMySearchPartyLocationProbeStatus],
+        }];
+        return;
+    }
+
+    if (requestedFocusedStep != 15 && [targetSession respondsToSelector:NSSelectorFromString(@"startRefreshing")]) {
         [self objectValueFromObject:targetSession selector:NSSelectorFromString(@"startRefreshing")];
         startedProbe[@"called_start_refreshing"] = @YES;
+    } else if (requestedFocusedStep == 15) {
+        startedProbe[@"called_start_refreshing"] = @NO;
+        startedProbe[@"start_refreshing_note"] = @"Skipped for delegated-watch inspection because the route should not trigger SearchParty refresh behavior before storing diagnostics.";
     }
 
     NSUInteger focusedProbeStep = 0;
-    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 14) {
+    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 15) {
         focusedProbeStep = requestedFocusedStep;
         startedProbe[@"dedicated_probe"] = @YES;
     } else {
@@ -3037,6 +3070,8 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         focusedProbeSelector = @"SPOwnerSessionLocationFetch.deviceEventCallbackWatch";
     } else if (focusedProbeStep == 14) {
         focusedProbeSelector = @"SPOwnerSessionXPCProtocol.delegatedLocationForContext";
+    } else if (focusedProbeStep == 15) {
+        focusedProbeSelector = @"SPOwnerSessionXPCProtocol.delegatedLocationPassiveWatch";
     }
 
     NSArray *methods = [self searchPartyLocationMethodDiagnosticsForObject:targetSession];
@@ -3082,7 +3117,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         @"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:",
         focusedProbeSelector,
     ];
-    startedProbe[@"pending_completion_count"] = (focusedProbeStep == 9 || focusedProbeStep == 10) ? @5 : ((focusedProbeStep == 11 || focusedProbeStep == 12 || focusedProbeStep == 13) ? @3 : ((focusedProbeStep == 5 || focusedProbeStep == 6) ? @6 : (focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3))));
+    startedProbe[@"pending_completion_count"] = focusedProbeStep == 15 ? @0 : ((focusedProbeStep == 9 || focusedProbeStep == 10) ? @5 : ((focusedProbeStep == 11 || focusedProbeStep == 12 || focusedProbeStep == 13) ? @3 : ((focusedProbeStep == 5 || focusedProbeStep == 6) ? @6 : (focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3)))));
     [self storeFindMySearchPartyLocationProbe:startedProbe];
 
     id capturedLocationFetch = nil;
@@ -3097,6 +3132,44 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     if (capturedLocationContext != nil) {
         startedProbe[@"captured_location_context_summary"] = [self compactSearchPartyLocationProbeResultForSelector:@"SPLocationFetchContext" result:capturedLocationContext];
     }
+
+    if (focusedProbeStep == 15) {
+        id ownerProxy = [self safeObjectValueFromObject:targetSession selectorName:@"proxy"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"_proxy"];
+        id locationFetch = capturedLocationFetch ?: [self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"];
+        NSMutableDictionary *delegatedWatchAvailability = [[NSMutableDictionary alloc] init];
+        NSMutableDictionary *delegatedWatchSignatures = [[NSMutableDictionary alloc] init];
+
+        for (NSString *selectorName in @[
+            @"delegatedLocationForContext:completion:",
+            @"subscribeDelegatedLocationUpdatesForContext:completion:",
+        ]) {
+            SEL selector = NSSelectorFromString(selectorName);
+            delegatedWatchAvailability[[NSString stringWithFormat:@"ownerSession.%@", selectorName]] = @([targetSession respondsToSelector:selector]);
+            delegatedWatchAvailability[[NSString stringWithFormat:@"locationFetch.%@", selectorName]] = @([locationFetch respondsToSelector:selector]);
+            delegatedWatchAvailability[[NSString stringWithFormat:@"ownerProxy.%@", selectorName]] = @([ownerProxy respondsToSelector:selector]);
+
+            NSMethodSignature *ownerSignature = [targetSession methodSignatureForSelector:selector];
+            NSMethodSignature *locationFetchSignature = [locationFetch methodSignatureForSelector:selector];
+            NSMethodSignature *proxySignature = [ownerProxy methodSignatureForSelector:selector];
+            delegatedWatchSignatures[[NSString stringWithFormat:@"ownerSession.%@", selectorName]] = ownerSignature == nil ? @"<nil>" : [NSString stringWithFormat:@"args=%lu return=%s", (unsigned long)ownerSignature.numberOfArguments, ownerSignature.methodReturnType];
+            delegatedWatchSignatures[[NSString stringWithFormat:@"locationFetch.%@", selectorName]] = locationFetchSignature == nil ? @"<nil>" : [NSString stringWithFormat:@"args=%lu return=%s", (unsigned long)locationFetchSignature.numberOfArguments, locationFetchSignature.methodReturnType];
+            delegatedWatchSignatures[[NSString stringWithFormat:@"ownerProxy.%@", selectorName]] = proxySignature == nil ? @"<nil>" : [NSString stringWithFormat:@"args=%lu return=%s", (unsigned long)proxySignature.numberOfArguments, proxySignature.methodReturnType];
+        }
+
+        startedProbe[@"delegated_watch_method_availability"] = delegatedWatchAvailability;
+        startedProbe[@"delegated_watch_method_signatures"] = delegatedWatchSignatures;
+        startedProbe[@"delegated_watch_proxy_class"] = [self classNameForObject:ownerProxy] ?: @"<nil>";
+        startedProbe[@"delegated_watch_location_fetch_class"] = [self classNameForObject:locationFetch] ?: @"<nil>";
+        startedProbe[@"delegated_watch_note"] = @"Non-mutating delegated inspection: records delegated-location availability/signatures and calls startRefreshing, but does not swizzle or invoke delegatedLocationForContext:completion:. Swizzling delegated selectors crashed Find My before probe state could be stored.";
+        startedProbe[@"status"] = @"observing";
+        [self storeFindMySearchPartyLocationProbe:startedProbe];
+        [[NetworkController sharedInstance] sendMessage:@{
+            @"transactionId": transaction ?: [NSNull null],
+            @"location_probe": [self findMySearchPartyLocationProbeStatus],
+        }];
+        return;
+    }
+
     [self storeFindMySearchPartyLocationProbe:startedProbe];
 
     if (![targetSession respondsToSelector:NSSelectorFromString(@"allBeaconsWithCompletion:")] ||
