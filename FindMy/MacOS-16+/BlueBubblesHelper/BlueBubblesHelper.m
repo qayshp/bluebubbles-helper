@@ -61,6 +61,7 @@
 - (NSDictionary *)findMySwizzleDiagnostics;
 - (NSDictionary *)compactRuntimeDiagnosticsForClassNames:(NSArray<NSString *> *)classNames matchingTerms:(NSArray<NSString *> *)terms methodLimit:(NSUInteger)methodLimit ivarLimit:(NSUInteger)ivarLimit;
 - (NSDictionary *)compactSearchPartyLocationProbeResultForSelector:(NSString *)selectorName result:(id)result;
+- (NSDictionary *)compactRelatedSearchPartyObject:(id)object matchingTerms:(NSArray<NSString *> *)terms;
 @end
 
 @implementation BlueBubblesHelper
@@ -2163,6 +2164,20 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         entry[@"last_online_location_info_count"] = @([(NSDictionary *)lastOnlineLocationInfo count]);
     }
 
+    NSMutableDictionary *relatedObjects = [[NSMutableDictionary alloc] init];
+    for (NSString *relatedSelector in @[@"proxy", @"_proxy", @"session", @"connection", @"serviceDescription", @"locationFetch", @"simpleBeaconUpdateInterface", @"context"]) {
+        id relatedObject = [self safeObjectValueFromObject:result selectorName:relatedSelector];
+        if (relatedObject != nil && relatedObject != [NSNull null]) {
+            relatedObjects[relatedSelector] = [self compactRelatedSearchPartyObject:relatedObject matchingTerms:@[
+                @"proxy", @"session", @"connection", @"service", @"location", @"beacon",
+                @"device", @"event", @"cache", @"fetch", @"xpc", @"received", @"updated"
+            ]];
+        }
+    }
+    if (relatedObjects.count > 0) {
+        entry[@"related_objects"] = relatedObjects;
+    }
+
     NSDictionary *fields = [self directFindMyFieldsForObject:result];
     if (fields.count > 0) {
         entry[@"fields"] = fields;
@@ -2173,6 +2188,50 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         entry[@"result_description"] = description.length > 180 ? [description substringToIndex:180] : description;
     }
     return [entry copy];
+}
+
+- (NSDictionary *)compactRelatedSearchPartyObject:(id)object matchingTerms:(NSArray<NSString *> *)terms {
+    if (object == nil || object == [NSNull null]) {
+        return @{@"class": @"<nil>"};
+    }
+
+    NSString *objectClassName = [self classNameForObject:object];
+    NSMutableDictionary *summary = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"class": objectClassName ?: @"<nil>",
+        @"summary": [self summaryForValue:object],
+        @"object_id": [NSString stringWithFormat:@"%p", object],
+    }];
+
+    NSString *description = [object description];
+    if (description.length > 0) {
+        summary[@"description"] = description.length > 180 ? [description substringToIndex:180] : description;
+    }
+
+    Class objectClass = [object class];
+    NSArray *matchedMethods = [self compactSelectorDiagnosticsForClass:objectClass includeClassMethods:NO matchingTerms:terms limit:30];
+    if (matchedMethods.count > 0) {
+        summary[@"matched_instance_methods"] = matchedMethods;
+    }
+
+    NSMutableArray *ivars = [[NSMutableArray alloc] init];
+    unsigned int ivarCount = 0;
+    Ivar *ivarList = class_copyIvarList(objectClass, &ivarCount);
+    for (unsigned int i = 0; i < ivarCount && ivars.count < 16; i++) {
+        Ivar ivar = ivarList[i];
+        const char *name = ivar_getName(ivar);
+        const char *type = ivar_getTypeEncoding(ivar);
+        [ivars addObject:@{
+            @"name": name == NULL ? @"<nil>" : [NSString stringWithUTF8String:name],
+            @"type": type == NULL ? @"<nil>" : [NSString stringWithUTF8String:type],
+        }];
+    }
+    free(ivarList);
+    summary[@"ivar_count"] = @(ivarCount);
+    if (ivars.count > 0) {
+        summary[@"ivars"] = ivars;
+    }
+
+    return [summary copy];
 }
 
 - (NSDictionary *)findMySearchPartyLocationProbeStatus {
@@ -2563,8 +2622,9 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         @"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:",
         @"SPOwnerSession.locationsForBeacons:completion:",
         @"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:",
+        @"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers:fetchLimit:sources:completion:",
     ];
-    startedProbe[@"pending_completion_count"] = @4;
+    startedProbe[@"pending_completion_count"] = @5;
     [self storeFindMySearchPartyLocationProbe:startedProbe];
 
     id capturedLocationFetch = nil;
@@ -2619,6 +2679,14 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
                                                                   selectorName:@"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:"
+                                                                        result:result];
+            });
+        };
+
+        void (^latestLocationsCompletion)(id) = ^(id result) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
+                                                                  selectorName:@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers:fetchLimit:sources:completion:"
                                                                         result:result];
             });
         };
@@ -2770,6 +2838,38 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
                     } else {
                         [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
                                                                           selectorName:@"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:"
+                                                                                result:nil];
+                    }
+
+                    id ownerProxy = [self safeObjectValueFromObject:locationFetch selectorName:@"proxy"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"proxy"];
+                    SEL latestLocationsSelector = NSSelectorFromString(@"latestLocationsForIdentifiers:fetchLimit:sources:completion:");
+                    NSMethodSignature *latestLocationsSignature = [ownerProxy methodSignatureForSelector:latestLocationsSelector];
+                    if (ownerProxy != nil &&
+                        latestLocationsSignature != nil &&
+                        latestLocationsSignature.numberOfArguments == 6 &&
+                        searchIdentifiers.count > 0) {
+                        NSArray *identifierArray = [searchIdentifiers allObjects];
+                        id fetchLimit = @(identifierArray.count);
+                        id sources = realSearchLocationSources ?: [searchLocationSources allObjects];
+                        NSInvocation *latestLocationsInvocation = [NSInvocation invocationWithMethodSignature:latestLocationsSignature];
+                        [latestLocationsInvocation setTarget:ownerProxy];
+                        [latestLocationsInvocation setSelector:latestLocationsSelector];
+                        [latestLocationsInvocation setArgument:&identifierArray atIndex:2];
+                        [latestLocationsInvocation setArgument:&fetchLimit atIndex:3];
+                        [latestLocationsInvocation setArgument:&sources atIndex:4];
+                        [latestLocationsInvocation setArgument:&latestLocationsCompletion atIndex:5];
+                        [latestLocationsInvocation retainArguments];
+                        [latestLocationsInvocation invoke];
+                        @synchronized ([BlueBubblesHelper class]) {
+                            findMySearchPartyLocationProbe[@"latest_locations_proxy_summary"] = [self compactRelatedSearchPartyObject:ownerProxy matchingTerms:@[
+                                @"location", @"locations", @"beacon", @"device", @"event", @"fetch", @"source"
+                            ]];
+                            findMySearchPartyLocationProbe[@"latest_locations_identifier_count"] = @(identifierArray.count);
+                            findMySearchPartyLocationProbe[@"latest_locations_source_count"] = @([[self objectChildrenForValue:sources] count]);
+                        }
+                    } else {
+                        [self appendFindMySearchPartyLocationProbeCompletionForProbeId:probeId
+                                                                          selectorName:@"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers:fetchLimit:sources:completion:"
                                                                                 result:nil];
                     }
                 } @catch (NSException *exception) {

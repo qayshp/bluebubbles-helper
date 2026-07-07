@@ -87,8 +87,24 @@ This note tracks the remaining places where Find My item/device location data ma
      - `SPDeviceEventFetchResult` only exposes `_beaconEventByBeaconIdentifier`, but no instance was delivered in this run.
      - `SPSimpleBeaconContext` exposes `deviceManagerContext` and `fmipItemContextForBeaconUUIDs:` as class methods.
    - I also compacted the active probe and passive SearchParty captures after the first lower-layer attempt exceeded the helper socket payload limit at about 65 KB and caused a JSON decode failure.
+   - 2026-07-07 follow-up: I added compact related-object summaries for live `proxy`, `_proxy`, `session`, `connection`, `serviceDescription`, `locationFetch`, `simpleBeaconUpdateInterface`, and `context` objects.
+   - The live `SPOwnerSessionLocationFetch.proxy` class is `__NSXPCInterfaceProxy_SPOwnerSessionXPCProtocol`.
+   - That proxy exposes several useful SearchParty XPC methods, including:
+     - `latestLocationsForIdentifiers:fetchLimit:sources:completion:`
+     - `locationForContext:completion:`
+     - `delegatedLocationForContext:completion:`
+     - `fetchFindMyNetworkStatusForMACAddress:completion:`
+     - `beaconsToMaintainWithCompletion:`
+     - `allBeaconsWithCompletion:`
+   - I invoked `latestLocationsForIdentifiers:fetchLimit:sources:completion:` through the live proxy with:
+     - `latest_locations_identifier_count`: `53`
+     - `latest_locations_source_count`: `12`
+     - `fetchLimit`: `53`
+   - That invocation did not call its completion within 25 seconds on this Mac. The probe remained `timed_out` with three pending completions. The two observed completions were still:
+     - `SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:` -> `nil`
+     - `SPOwnerSession.locationsForBeacons:completion:` -> empty `NSDictionary`, count `0`
 
-   Current conclusion: the lower object path is confirmed as `SPOwnerSessionLocationFetch -> FMXPCSession/proxy` and `SPBeaconManagerSimpleBeaconUpdateInterface -> FMXPCSession/proxy`. The next useful instrumentation should capture the concrete runtime class and compact method surface of the live `_proxy` objects, not just the `FMXPCSession` wrapper class.
+   Current conclusion: the lower object path is confirmed as `SPOwnerSessionLocationFetch -> FMXPCSession -> __NSXPCInterfaceProxy_SPOwnerSessionXPCProtocol`. The proxy method `latestLocationsForIdentifiers:fetchLimit:sources:completion:` is the most promising coordinate-bearing candidate found so far, but the naive invocation with all beacon identifiers and all sources did not complete. Next attempts should narrow the identifier/source set or mirror the exact argument classes used by Find My.
 
 4. `CLLocation` / `_cachedLocation` owners
 
@@ -143,3 +159,13 @@ The current lead order remains:
 3. If the proxy path still only returns empty location/event dictionaries, pivot to the older `FMFSession`/`FindMyLocateSession` cached-location stack only for device records that can be joined to a handle-like identifier.
 
 Coordinates have not surfaced yet in SearchParty results on this Mac. The best new fact is that `FMXPCSession` is only a wrapper; the live proxy object is probably the next layer that knows which XPC method returns `SPLocationFetchResult` or `SPDeviceEventFetchResult`.
+
+## Next proxy-specific step
+
+The next best attempt is to retry `latestLocationsForIdentifiers:fetchLimit:sources:completion:` with a smaller, more Find-My-like payload:
+
+- one known-good device/beacon identifier at a time
+- the real source collection object copied from `SPLocationFetchContext.searchLocationSources`, not a normalized array when avoidable
+- a small `fetchLimit` such as `1`
+
+If that still does not complete, inspect the proxy method `locationForContext:completion:` directly at the XPC proxy layer and compare it with the `SPOwnerSessionLocationFetch locationForContext:completion:` wrapper.
