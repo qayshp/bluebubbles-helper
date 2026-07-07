@@ -754,3 +754,75 @@ Next useful probe:
   `searchIdentifiers` array rather than a local beacon property; and
 - inspect unified logs around the XPC call for service-side rejection or
   authorization errors.
+
+## Live try: split identifier resolution
+
+Helper build copied into the server for this run:
+`3e1b33b4fa1ed55b8245c9e3b3acb367`.
+
+Important runtime note: when running from `packages/server/dist/main.js`, the
+injected helper is loaded from `packages/server/dist/appResources/...`, not the
+source `packages/server/appResources/...` path. The first attempt hit the old
+helper until the dylib was also copied into `dist/appResources` and Find My was
+restarted.
+
+Routes added:
+
+- `POST /api/v1/icloud/findmy/searchparty/locations/resolve-context-uuid`
+- `POST /api/v1/icloud/findmy/searchparty/locations/resolve-stable-identifier`
+
+### `beaconForUUID:` with one context UUID
+
+Result: successful.
+
+The route used one UUID candidate from the SearchParty location context shape:
+
+- argument variant: `generatedSearchIdentifiers`
+- argument class: `__NSConcreteUUID`
+- context search identifier count: `53`
+- selector availability: `beaconForUUID:completion:` present
+
+Completions:
+
+```text
+SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:
+  result class: <nil>
+
+SPOwnerSessionXPCProtocol.beaconForUUID.contextIdentifier.single:
+  result class: SPBeacon
+
+SPOwnerSession.locationsForBeacons:completion:
+  result class: __NSDictionary0
+  count: 0
+```
+
+The returned `SPBeacon` exposed the expected beacon fields. Anonymized field
+formats:
+
+- `serialNumber`: string
+- `role`: `SPBeaconRole`
+- `batteryLevel`: numeric string
+- `identifier`: `__NSConcreteUUID`
+- `name`: string
+- `stableIdentifier`: `PRODUCT~#PAIRING_OR_GROUP_ID~#SERIAL`
+
+This is the first internal probe that resolves a context identifier back into
+a service-owned beacon object.
+
+### `beaconForIdentifier:` with one stable string
+
+Result: unsafe for the current route shape.
+
+The request to start the route timed out. The server log showed Find My force
+quit immediately after the route request, then the dylib plugin relaunched
+Find My and the helper reconnected. The status route afterwards returned
+`not_started`, so the crash happened before a probe result could be stored.
+
+Interpretation:
+
+- `beaconForUUID:` with one UUID is viable and returns an `SPBeacon`.
+- `beaconForIdentifier:` with the local stable string shape is not a good next
+  coordinate path and may crash the injected process.
+- The next coordinate-focused lead is to chain from the returned `SPBeacon`:
+  call location fetch methods with `@[resolvedBeacon]`, and separately try the
+  returned beacon's own `identifier` through `latestLocationsForIdentifiers`.
