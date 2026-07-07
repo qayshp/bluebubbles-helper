@@ -32,6 +32,7 @@
 - (void)handleFindMySearchPartyLocationProbeStartWithTransaction:(NSString *)transaction focusedStep:(NSUInteger)focusedStep;
 - (void)handleFindMySearchPartyLocationProbeStatusWithTransaction:(NSString *)transaction;
 - (void)appendFindMySearchPartyLocationProbeCompletionForProbeId:(NSString *)probeId selectorName:(NSString *)selectorName result:(id)result;
+- (void)appendFindMySearchPartyLocationProbePassiveEventWithSelectorName:(NSString *)selectorName phase:(NSString *)phase context:(id)context result:(id)result source:(id)source;
 - (NSDictionary *)serializeFMLFriend:(id)friend handle:(id)handle location:(id)location;
 - (NSDictionary *)serializeFMLDevice:(id)device;
 - (NSDictionary *)serializeOwnerBeacon:(id)beacon;
@@ -287,6 +288,11 @@ static void BBFindMyLocationUpdateBlockSetter(id self, SEL _cmd, id value) {
     if (value != nil && (isLocationResultBlock || isDeviceEventResultBlock)) {
         void (^originalBlock)(id) = [value copy];
         valueForOriginal = [^(id result) {
+            [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyLocationInvocationForTarget:self
+                                                                                           selector:_cmd
+                                                                                            context:nil
+                                                                                             result:result
+                                                                                              phase:@"locationUpdateBlock"];
             [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:result source:self selector:_cmd];
             if ([result respondsToSelector:NSSelectorFromString(@"locationsByBeaconIdentifier")]) {
                 id locations = [[BlueBubblesHelper sharedInstance] safeObjectValueFromObject:result selectorName:@"locationsByBeaconIdentifier"];
@@ -544,6 +550,11 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
 
     if ([event isEqualToString:@"debug-findmy-searchparty-locations-context-single-identifier"]) {
         [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:10];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-searchparty-locations-callback-watch"]) {
+        [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:11];
         return;
     }
 
@@ -1055,7 +1066,10 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         @"setOwnerSessionStateUpdatedBlock:",
         @"setTagSeparationBeaconsChangedBlock:",
     ]) {
-        IMP replacement = [selectorName isEqualToString:@"setLocationUpdateBlock:"]
+        IMP replacement = ([selectorName isEqualToString:@"setLocationUpdateBlock:"] ||
+                           [selectorName isEqualToString:@"setLatestLocationsUpdatedBlock:"] ||
+                           [selectorName isEqualToString:@"setDelegatedLocationUpdateBlock:"] ||
+                           [selectorName isEqualToString:@"setDeviceEventUpdateBlock:"])
             ? (IMP)BBFindMyLocationUpdateBlockSetter
             : (IMP)BBFindMyInterestingObjectSetter;
         [self swizzleInstanceMethodForClass:ownerSessionClass
@@ -1542,6 +1556,15 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
     if (result != nil) {
         snapshot[@"result"] = [self compactSearchPartyLocationProbeResultForSelector:@"SPLocationFetchResult" result:result];
+    }
+    if (([phase rangeOfString:@"receivedUpdated" options:NSCaseInsensitiveSearch].location != NSNotFound ||
+         [phase rangeOfString:@"Block" options:NSCaseInsensitiveSearch].location != NSNotFound) &&
+        result != nil) {
+        [self appendFindMySearchPartyLocationProbePassiveEventWithSelectorName:snapshot[@"selector"]
+                                                                         phase:phase
+                                                                       context:context
+                                                                        result:result
+                                                                        source:target];
     }
 
     DLog("BLUEBUBBLESHELPER: SearchParty location invocation selector=%{public}@ source=%{public}@ phase=%{public}@ context=%{public}@ result=%{public}@",
@@ -2367,6 +2390,45 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 }
 
+- (void)appendFindMySearchPartyLocationProbePassiveEventWithSelectorName:(NSString *)selectorName phase:(NSString *)phase context:(id)context result:(id)result source:(id)source {
+    @synchronized ([BlueBubblesHelper class]) {
+        if (findMySearchPartyLocationProbe == nil || [findMySearchPartyLocationProbe[@"status"] isEqualToString:@"not_started"]) {
+            return;
+        }
+
+        NSMutableArray *passiveEvents = nil;
+        id existingEvents = findMySearchPartyLocationProbe[@"passive_location_events"];
+        if ([existingEvents isKindOfClass:[NSArray class]]) {
+            passiveEvents = [[NSMutableArray alloc] initWithArray:existingEvents];
+        } else {
+            passiveEvents = [[NSMutableArray alloc] init];
+        }
+
+        NSMutableDictionary *event = [[NSMutableDictionary alloc] initWithDictionary:@{
+            @"selector": selectorName ?: @"<nil>",
+            @"phase": phase ?: @"<nil>",
+            @"timestamp": @([[NSDate date] timeIntervalSince1970]),
+            @"source_class": [self classNameForObject:source],
+            @"source_id": source == nil ? @"<nil>" : [NSString stringWithFormat:@"%p", source],
+            @"result_class": [self classNameForObject:result],
+        }];
+        if (context != nil) {
+            event[@"context"] = [self compactSearchPartyLocationProbeResultForSelector:@"SPLocationFetchContext" result:context];
+        }
+        if (result != nil) {
+            event[@"result"] = [self compactSearchPartyLocationProbeResultForSelector:selectorName result:result];
+        }
+
+        [passiveEvents addObject:event];
+        if (passiveEvents.count > 40) {
+            [passiveEvents removeObjectsInRange:NSMakeRange(0, passiveEvents.count - 40)];
+        }
+        findMySearchPartyLocationProbe[@"passive_location_events"] = passiveEvents;
+        findMySearchPartyLocationProbe[@"passive_location_event_count"] = @(passiveEvents.count);
+        findMySearchPartyLocationProbe[@"last_passive_location_event_at"] = event[@"timestamp"];
+    }
+}
+
 - (NSString *)normalizedSearchPartyIdentifierString:(id)value {
     if (value == nil || value == [NSNull null]) {
         return nil;
@@ -2808,7 +2870,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 
     NSUInteger focusedProbeStep = 0;
-    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 10) {
+    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 11) {
         focusedProbeStep = requestedFocusedStep;
         startedProbe[@"dedicated_probe"] = @YES;
     } else {
@@ -2839,6 +2901,8 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         focusedProbeSelector = @"SPOwnerSessionXPCProtocol.beaconForUUID.resolvedBeaconLocation";
     } else if (focusedProbeStep == 10) {
         focusedProbeSelector = @"SPOwnerSessionLocationFetch.contextSingleIdentifier";
+    } else if (focusedProbeStep == 11) {
+        focusedProbeSelector = @"SPOwnerSessionLocationFetch.singleIdentifierCallbackWatch";
     }
 
     NSArray *methods = [self searchPartyLocationMethodDiagnosticsForObject:targetSession];
@@ -2884,7 +2948,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         @"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:",
         focusedProbeSelector,
     ];
-    startedProbe[@"pending_completion_count"] = (focusedProbeStep == 9 || focusedProbeStep == 10) ? @5 : ((focusedProbeStep == 5 || focusedProbeStep == 6) ? @6 : (focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3)));
+    startedProbe[@"pending_completion_count"] = (focusedProbeStep == 9 || focusedProbeStep == 10) ? @5 : (focusedProbeStep == 11 ? @3 : ((focusedProbeStep == 5 || focusedProbeStep == 6) ? @6 : (focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3))));
     [self storeFindMySearchPartyLocationProbe:startedProbe];
 
     id capturedLocationFetch = nil;
@@ -3486,6 +3550,37 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                             [singleProxyLocationForContextInvocation invoke];
                         } else {
                             appendProbeCompletion(@"SPOwnerSessionXPCProtocol.locationForContext:completion:.singleIdentifierContext", nil);
+                        }
+                    }
+
+                    if (focusedProbeStep == 11) {
+                        id singleContextTarget = locationFetch ?: [self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"];
+                        SEL subscribeForContextSelector = NSSelectorFromString(@"subscribeAndFetchLocationForContext:completion:");
+                        NSMethodSignature *subscribeForContextSignature = [singleContextTarget methodSignatureForSelector:subscribeForContextSelector];
+
+                        @synchronized ([BlueBubblesHelper class]) {
+                            findMySearchPartyLocationProbe[@"callback_watch_method_availability"] = @{
+                                @"locationFetch.subscribeAndFetchLocationForContext": @(singleContextTarget != nil && subscribeForContextSignature != nil && subscribeForContextSignature.numberOfArguments == 4),
+                            };
+                            findMySearchPartyLocationProbe[@"callback_watch_note"] = @"Poll this probe after the subscription completion to inspect passive_location_events from setLocationUpdateBlock:, setLatestLocationsUpdatedBlock:, and receivedUpdatedLocation:.";
+                        }
+
+                        if (singleContextTarget != nil &&
+                            singleIdentifierContext != nil &&
+                            subscribeForContextSignature != nil &&
+                            subscribeForContextSignature.numberOfArguments == 4) {
+                            void (^callbackWatchSubscribeCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.callbackWatch", result);
+                            };
+                            NSInvocation *callbackWatchInvocation = [NSInvocation invocationWithMethodSignature:subscribeForContextSignature];
+                            [callbackWatchInvocation setTarget:singleContextTarget];
+                            [callbackWatchInvocation setSelector:subscribeForContextSelector];
+                            [callbackWatchInvocation setArgument:&singleIdentifierContext atIndex:2];
+                            [callbackWatchInvocation setArgument:&callbackWatchSubscribeCompletion atIndex:3];
+                            [callbackWatchInvocation retainArguments];
+                            [callbackWatchInvocation invoke];
+                        } else {
+                            appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.callbackWatch", nil);
                         }
                     }
 

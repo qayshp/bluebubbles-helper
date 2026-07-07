@@ -967,3 +967,119 @@ sufficient, even when narrowed cleanly to one UUID. The next useful work should
 inspect what Find My does after a context fetch is subscribed, especially
 delegate/block callbacks such as `receivedUpdatedLocation` and
 `latestLocationsUpdatedBlock`, rather than only completion-returning methods.
+
+## Live try: passive callback watch after subscription
+
+Helper build copied into the server for this run:
+`2aea4ad4a2524e8b5d320c669cf54c89`.
+
+Route added:
+
+- `POST /api/v1/icloud/findmy/searchparty/locations/callback-watch`
+
+Instrumentation added:
+
+- Wrapped `setLocationUpdateBlock:` result blocks into the active location
+  probe.
+- Also route `setLatestLocationsUpdatedBlock:`,
+  `setDelegatedLocationUpdateBlock:`, and `setDeviceEventUpdateBlock:` through
+  the same SearchParty result block wrapper when their block signatures match
+  `SPLocationFetchResult` or `SPDeviceEventFetchResult`.
+- Added `passive_location_events` to the active probe state. This is separate
+  from `completion_results`, so passive callbacks do not decrement
+  `pending_completion_count`.
+- Existing `receivedUpdatedLocation:` swizzling now stores matching results in
+  the active probe-local passive event list.
+
+Probe shape:
+
+1. Build the same single-identifier `SPLocationFetchContext` from the previous
+   focused probe.
+2. Call only
+   `SPOwnerSessionLocationFetch subscribeAndFetchLocationForContext:completion:`
+   for the focused step.
+3. Poll the normal
+   `POST /api/v1/icloud/findmy/searchparty/locations` status route and inspect
+   `passive_location_events`.
+
+Observed route startup:
+
+- HTTP status: `200`
+- focused step: `11`
+- callback-watch method availability:
+  - `locationFetch.subscribeAndFetchLocationForContext`: present
+- route registered in the built server as:
+  - `/api/v1/icloud/findmy/searchparty/locations/callback-watch`
+
+Observed after about 80 seconds:
+
+```text
+status: timed_out
+focused_probe_step: 11
+pending_completion_count: 1
+completion_results_count: 2
+passive_location_event_count: 4
+
+completion 0:
+  selector: SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.callbackWatch
+  result class: <nil>
+
+completion 1:
+  selector: SPOwnerSession.locationsForBeacons:completion:
+  result class: __NSDictionary0
+
+passive 0:
+  phase: receivedUpdatedLocation
+  selector: receivedUpdatedLocation:
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+
+passive 1:
+  phase: locationUpdateBlock
+  selector: setLocationUpdateBlock:
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+
+passive 2:
+  phase: receivedUpdatedLocation
+  selector: receivedUpdatedLocation:
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+
+passive 3:
+  phase: locationUpdateBlock
+  selector: setLocationUpdateBlock:
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+```
+
+Interpretation:
+
+The passive callback path is real and reachable. Find My invokes both
+`receivedUpdatedLocation:` and the installed location update block with
+`SPLocationFetchResult` objects after the subscription attempt. However, on this
+Mac, the captured `SPLocationFetchResult locationsByBeaconIdentifier`
+dictionaries are still empty for this single-identifier context.
+
+This narrows the coordinate gap again: the issue is no longer only that we were
+watching completion-returning APIs. We are now watching the asynchronous update
+channel too, and the update channel is delivering empty location result
+objects.
+
+Late-poll note:
+
+A later status poll after another observation window did not return cleanly to
+the HTTP caller. The server log showed:
+
+```text
+Failed to decode BlueBubblesHelper data!
+SyntaxError: Unterminated string in JSON at position 65510
+SyntaxError: Unexpected non-whitespace character after JSON at position 3
+```
+
+The log also showed that the helper had reached `passive_location_event_count:
+6` before the decode failure. The likely cause is that the full probe status
+payload, including large context/accessor snapshots, grew too large or was
+truncated over the private API socket response. The next instrumentation step
+should add a compact status mode or trim repeated large fields for long-running
+callback-watch probes before relying on late polling.
