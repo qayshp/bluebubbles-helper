@@ -359,6 +359,19 @@ static void BBFindMySearchPartyLocationObjectArgument(id self, SEL _cmd, id valu
                                                                                         context:value
                                                                                          result:nil
                                                                                           phase:@"setter"];
+    } else if ([selectorName isEqualToString:@"receivedUpdatedLocation:"]) {
+        [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyLocationInvocationForTarget:self
+                                                                                       selector:_cmd
+                                                                                        context:nil
+                                                                                         result:value
+                                                                                          phase:@"receivedUpdatedLocation"];
+        [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:value source:self selector:_cmd];
+        if ([value respondsToSelector:NSSelectorFromString(@"locationsByBeaconIdentifier")]) {
+            id locations = [[BlueBubblesHelper sharedInstance] safeObjectValueFromObject:value selectorName:@"locationsByBeaconIdentifier"];
+            [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:locations
+                                                                                source:value
+                                                                              selector:NSSelectorFromString(@"locationsByBeaconIdentifier")];
+        }
     } else {
         [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:value source:self selector:_cmd];
         if ([value respondsToSelector:NSSelectorFromString(@"locationsByBeaconIdentifier")]) {

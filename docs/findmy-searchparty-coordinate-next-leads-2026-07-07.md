@@ -36,3 +36,48 @@ from SearchParty internals.
 Start with `receivedUpdatedLocation:`. This avoids guessing the right XPC
 argument shape and instead listens where Find My's own SearchParty pipeline
 appears to receive location updates.
+
+## Static inspection: `receivedUpdatedLocation:`
+
+Runtime method diagnostics for `SPOwnerSessionLocationFetch` show:
+
+```text
+receivedUpdatedLocation:
+type encoding: v24@0:8@16
+```
+
+The signature is a void instance method with one object argument. This makes it
+a good passive hook target because the app's own SearchParty flow supplies the
+payload object.
+
+Related `SPOwnerSessionLocationFetch` methods and ivars seen during prior
+inspection:
+
+- `locationForContext:completion:`
+- `subscribeAndFetchLocationForContext:completion:`
+- `receivedUpdatedDeviceEvents:`
+- `setLocationUpdates:`
+- `setLocationUpdateBlock:`
+- `_locationUpdates`
+- `_deviceEventUpdates`
+- `_lastContext`
+- `_proxy`
+- `_session`
+
+The helper was already swizzling `receivedUpdatedLocation:` through the generic
+SearchParty object-argument capture path. The instrumentation has now been made
+more explicit:
+
+- The hook records selector `receivedUpdatedLocation:`.
+- The hook records phase `receivedUpdatedLocation`.
+- The argument is serialized through the `SPLocationFetchResult` compaction
+  path.
+- If the argument responds to `locationsByBeaconIdentifier`, that dictionary is
+  captured as a separate accessor snapshot.
+
+Expected useful evidence:
+
+- A `result_class` of `SPLocationFetchResult` or another location-bearing class.
+- A non-zero `locations_by_beacon_identifier_count`.
+- Entries whose values serialize through the existing location serializer with
+  latitude/longitude fields.
