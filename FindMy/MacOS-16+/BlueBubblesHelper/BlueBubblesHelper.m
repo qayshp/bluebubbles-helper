@@ -2336,6 +2336,12 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     if ([[self classNameForObject:result] isEqualToString:@"SPLocationFetchContext"]) {
         entry[@"context_detail"] = [self searchPartyFetchContextDiagnosticsForContext:result];
     }
+    if ([[self classNameForObject:result] isEqualToString:@"SPLocationFetchResult"]) {
+        NSDictionary *deepResultDiagnostics = [self searchPartyResultDeepDiagnosticsForObject:result];
+        if (deepResultDiagnostics.count > 0) {
+            entry[@"result_detail"] = deepResultDiagnostics;
+        }
+    }
 
     NSMutableDictionary *relatedObjects = [[NSMutableDictionary alloc] init];
     for (NSString *relatedSelector in @[@"proxy", @"_proxy", @"session", @"connection", @"serviceDescription", @"locationFetch", @"simpleBeaconUpdateInterface", @"context"]) {
@@ -2455,6 +2461,19 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         id eventEntries = result[@"beacon_event_by_beacon_identifier_entries"];
         if ([eventEntries isKindOfClass:[NSArray class]] && [(NSArray *)eventEntries count] > 0) {
             compactEntry[@"beacon_event_by_beacon_identifier_entries"] = eventEntries;
+        }
+        NSDictionary *resultDetail = [result[@"result_detail"] isKindOfClass:[NSDictionary class]] ? result[@"result_detail"] : nil;
+        if (resultDetail != nil) {
+            NSDictionary *candidateKeyValues = [resultDetail[@"candidate_key_values"] isKindOfClass:[NSDictionary class]] ? resultDetail[@"candidate_key_values"] : @{};
+            NSDictionary *accessorValues = [resultDetail[@"accessor_values"] isKindOfClass:[NSDictionary class]] ? resultDetail[@"accessor_values"] : @{};
+            NSArray *methods = [resultDetail[@"methods"] isKindOfClass:[NSArray class]] ? resultDetail[@"methods"] : @[];
+            NSArray *ivars = [resultDetail[@"ivars"] isKindOfClass:[NSArray class]] ? resultDetail[@"ivars"] : @[];
+            compactEntry[@"result_detail_summary"] = @{
+                @"candidate_key_names": [[candidateKeyValues allKeys] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)],
+                @"accessor_names": [[accessorValues allKeys] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)],
+                @"method_count": @(methods.count),
+                @"ivars": ivars.count > 12 ? [ivars subarrayWithRange:NSMakeRange(0, 12)] : ivars,
+            };
         }
 
         [compactEntries addObject:compactEntry];

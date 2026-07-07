@@ -588,6 +588,62 @@ itself during passive callbacks: ivars, related result accessors, and any
 non-`locationsByBeaconIdentifier` collections should be sampled while the
 callback object is still live.
 
+### Live try: deep compact diagnostics for SPLocationFetchResult
+
+Instrumentation was added so compact passive callback entries include a bounded
+`result_detail_summary` for live `SPLocationFetchResult` objects:
+
+```text
+result_detail_summary:
+  candidate_key_names
+  accessor_names
+  method_count
+  ivars
+```
+
+The same `context-single-identifier` probe was rerun after rebuilding and
+reinjecting the helper.
+
+Observed result:
+
+```text
+status: timed_out
+focused_probe_step: 10
+pending_completion_count: 3
+completion_results: 2
+passive_location_event_count: 8
+```
+
+Every passive `receivedUpdatedLocation:` and `setLocationUpdateBlock:` event had
+the same `SPLocationFetchResult` shape:
+
+```text
+result_class: SPLocationFetchResult
+locations_by_beacon_identifier_count: 0
+candidate_key_names:
+  locationsByBeaconIdentifier
+accessor_names: []
+method_count: 1
+ivars:
+  name: _locationsByBeaconIdentifier
+  type: @"NSDictionary"
+  class: __NSDictionary0
+  summary:
+    class: __NSDictionary0
+    count: 0
+    keys: []
+```
+
+Interpretation:
+
+For this callback path, the current-location payload is not hiding behind
+another obvious `SPLocationFetchResult` accessor or ivar. The live result object
+only exposes `locationsByBeaconIdentifier`, and its backing ivar is empty. The
+next useful lead is upstream of `SPLocationFetchResult`: either the context
+identifier/source combination is not the one Find My uses for the visible
+current coordinate, or the coordinate is populated in another object before a
+non-empty `SPLocationFetchResult` is constructed.
+
 ## Static inspection: fetch context detail
 
 `SPLocationFetchContext` exposes the fields most likely to explain why the
