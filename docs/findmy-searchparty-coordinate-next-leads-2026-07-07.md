@@ -826,3 +826,68 @@ Interpretation:
 - The next coordinate-focused lead is to chain from the returned `SPBeacon`:
   call location fetch methods with `@[resolvedBeacon]`, and separately try the
   returned beacon's own `identifier` through `latestLocationsForIdentifiers`.
+
+## Live try: resolved beacon location chain
+
+Helper build copied into the server for this run:
+`910e59d647b4c02ef7631ca4e0c476f7`.
+
+Route added:
+
+- `POST /api/v1/icloud/findmy/searchparty/locations/resolved-beacon-location`
+
+Probe shape:
+
+1. Resolve one context/search identifier UUID with
+   `SPOwnerSessionXPCProtocol beaconForUUID:completion:`.
+2. If that returns an `SPBeacon`, call
+   `SPOwnerSession locationsForBeacons:completion:` with an array containing
+   only that returned beacon.
+3. Also call
+   `SPOwnerSessionXPCProtocol latestLocationsForIdentifiers:fetchLimit:sources:completion:`
+   with the returned beacon's own `identifier`.
+
+Observed method availability:
+
+- `beaconForUUID:completion:` present
+- `locationsForBeacons:completion:` present
+- `latestLocationsForIdentifiers:fetchLimit:sources:completion:` present
+
+Result after 60 seconds, and unchanged after a later read:
+
+```text
+status: timed_out
+pending_completion_count: 1
+completion count: 4
+
+SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:
+  result class: <nil>
+
+SPOwnerSessionXPCProtocol.beaconForUUID.resolvedBeaconLocation:
+  result class: SPBeacon
+
+SPOwnerSession.locationsForBeacons:completion:.resolvedBeacon
+  result class: __NSDictionary0
+  count: 0
+
+SPOwnerSession.locationsForBeacons:completion:
+  result class: __NSDictionary0
+  count: 0
+```
+
+The missing fifth completion is:
+
+```text
+SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.resolvedBeaconIdentifier
+```
+
+Interpretation:
+
+Resolving a SearchParty UUID to a service-owned `SPBeacon` is now confirmed and
+repeatable. However, feeding that returned object into `locationsForBeacons:`
+still returns an empty dictionary, and feeding its `identifier` into
+`latestLocationsForIdentifiers` does not call back in the observed window.
+
+This suggests the remaining coordinate gap is not just "wrong local beacon
+object"; it is likely in the location fetch context, service-side eligibility,
+or a different result/callback path used by Find My after it obtains the beacon.
