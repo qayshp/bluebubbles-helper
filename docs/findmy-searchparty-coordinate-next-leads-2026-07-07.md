@@ -416,6 +416,102 @@ Next better lead:
   clone the real context and set `_searchIdentifiers` / `_primaryIndexRange`
   with KVC or ivar writes before invoking the fetch method.
 
+## Live try: controlled fetch context
+
+Tested locally on 2026-07-07 with helper dylib md5
+`37ea2f55f305ba1a976d48c813aa1154`.
+
+Implementation changes:
+
+- The focused `locations/proxy-context` probe now builds a controlled
+  `SPLocationFetchContext` with a generated `NSArray` of beacon identifiers
+  instead of an `NSSet`.
+- It records whether KVC actually populated context fields.
+- It directly writes `_primaryIndexRange` to `{0, identifierCount}` because
+  there is no setter exposed in the observed runtime method list.
+- It invokes the local `SPOwnerSessionLocationFetch` methods with the
+  controlled context:
+  - `locationForContext:completion:`
+  - `subscribeAndFetchLocationForContext:completion:`
+- It still invokes the XPC proxy `locationForContext:completion:` path as a
+  comparison.
+- The location-probe status payload was trimmed below the helper socket decode
+  limit by replacing the full lower-layer class dump with a class-name list and
+  reducing related-object method/ivar summaries.
+
+Route sequence:
+
+```text
+POST /api/v1/icloud/findmy/searchparty/locations/proxy-context
+POST /api/v1/icloud/findmy/searchparty/locations
+```
+
+The controlled context was successfully populated:
+
+```text
+controlled_context_assignment:
+  identifier_array_class: __NSArrayI_Transfer
+  identifier_array_count: 53
+  search_identifiers_after_kvc_count: 53
+  search_identifiers_final_count: 53
+  source_argument_class: Swift.__SwiftDeferredNSArray
+  source_count: 12
+  search_location_sources_after_kvc_count: 12
+  search_location_sources_final_count: 12
+  primary_index_range_ivar_write: true
+
+context_detail:
+  searchIdentifiers_count: 53
+  searchLocationSources_count: 12
+  primaryIndexRange: { location: 0, length: 53 }
+  subscribe: true
+  reportDeviceEvents: true
+```
+
+The probe still did not return coordinates:
+
+```text
+probe_status: timed_out
+pending_completion_count: 3
+completion_count: 2
+
+SPOwnerSession.locationsForBeacons:completion:
+  result_class: __NSDictionary0
+  count: 0
+
+SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.controlledContext
+  result_class: <nil>
+```
+
+A late status read 45 seconds later was unchanged:
+
+```text
+probe_status: timed_out
+pending_completion_count: 3
+completion_count: 2
+```
+
+Interpretation:
+
+The previous blocker, an empty `searchIdentifiers` array and zero-length
+`primaryIndexRange`, was removed for the controlled context. SearchParty still
+did not return item/device coordinates on this machine. The local subscribe
+method completed with `nil`, while `locationsForBeacons:` completed with an
+empty dictionary. The remaining pending calls are consistent with
+`startUpdatingSimpleBeaconsWithContext:completion:`, local
+`locationForContext:completion:`, and proxy `locationForContext:completion:`
+not calling their completions within the observed window.
+
+This suggests the next coordinate-bearing lead is no longer context population
+alone. The likely missing requirement is either:
+
+- a different context construction initializer or service-owned context token,
+- a required authorization/session state inside the SearchParty XPC service,
+- a different identifier namespace for `locationForContext:` than the beacon
+  UUIDs collected from `allBeaconsWithCompletion:`, or
+- a device-event / live-location request path that must be triggered before
+  location results are materialized.
+
 ## Static inspection: fetch context detail
 
 The next instrumentation pass focuses on the context object passed into

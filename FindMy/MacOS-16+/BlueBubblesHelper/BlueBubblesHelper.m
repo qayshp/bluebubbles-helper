@@ -64,6 +64,8 @@
 - (NSDictionary *)compactRuntimeDiagnosticsForClassNames:(NSArray<NSString *> *)classNames matchingTerms:(NSArray<NSString *> *)terms methodLimit:(NSUInteger)methodLimit ivarLimit:(NSUInteger)ivarLimit;
 - (NSDictionary *)compactSearchPartyLocationProbeResultForSelector:(NSString *)selectorName result:(id)result;
 - (NSDictionary *)compactRelatedSearchPartyObject:(id)object matchingTerms:(NSArray<NSString *> *)terms;
+- (BOOL)setSafeIvarObjectValue:(id)value ivarName:(NSString *)ivarName object:(id)object;
+- (BOOL)setSafeIvarRangeValue:(NSRange)value ivarName:(NSString *)ivarName object:(id)object;
 @end
 
 @implementation BlueBubblesHelper
@@ -2267,7 +2269,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 
     Class objectClass = [object class];
-    NSArray *matchedMethods = [self compactSelectorDiagnosticsForClass:objectClass includeClassMethods:NO matchingTerms:terms limit:30];
+    NSArray *matchedMethods = [self compactSelectorDiagnosticsForClass:objectClass includeClassMethods:NO matchingTerms:terms limit:12];
     if (matchedMethods.count > 0) {
         summary[@"matched_instance_methods"] = matchedMethods;
     }
@@ -2275,7 +2277,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     NSMutableArray *ivars = [[NSMutableArray alloc] init];
     unsigned int ivarCount = 0;
     Ivar *ivarList = class_copyIvarList(objectClass, &ivarCount);
-    for (unsigned int i = 0; i < ivarCount && ivars.count < 16; i++) {
+    for (unsigned int i = 0; i < ivarCount && ivars.count < 8; i++) {
         Ivar ivar = ivarList[i];
         const char *name = ivar_getName(ivar);
         const char *type = ivar_getTypeEncoding(ivar);
@@ -2779,14 +2781,14 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     if (focusedProbeStep == 2) {
         focusedProbeSelector = @"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.exactContextArguments";
     } else if (focusedProbeStep == 3) {
-        focusedProbeSelector = @"SPOwnerSessionXPCProtocol.locationForContext:completion:";
+        focusedProbeSelector = @"SPOwnerSessionLocationFetch.controlledContext";
     } else if (focusedProbeStep == 4) {
         focusedProbeSelector = @"SPOwnerSessionXPCProtocol.latestLocationsForIdentifiers.sourceSubsets";
     }
 
     NSArray *methods = [self searchPartyLocationMethodDiagnosticsForObject:targetSession];
     startedProbe[@"method_count"] = @(methods.count);
-    startedProbe[@"lower_layer_class_diagnostics"] = [self compactRuntimeDiagnosticsForClassNames:@[
+    startedProbe[@"lower_layer_classes_checked"] = @[
         @"SPLocationFetchContext",
         @"SPLocationFetchResult",
         @"SPOwnerSessionLocationFetch",
@@ -2796,10 +2798,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         @"SPSimpleBeaconContext",
         @"FindMyLocateSession",
         @"FMFSession",
-    ] matchingTerms:@[
-        @"proxy", @"session", @"connection", @"service", @"location", @"beacon",
-        @"device", @"event", @"cache", @"fetch", @"xpc", @"received", @"updated"
-    ] methodLimit:40 ivarLimit:24];
+    ];
 
     NSMutableArray *accessorResults = [[NSMutableArray alloc] init];
     NSMutableArray *candidateCompletionSelectors = [[NSMutableArray alloc] init];
@@ -2830,7 +2829,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         @"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:",
         focusedProbeSelector,
     ];
-    startedProbe[@"pending_completion_count"] = focusedProbeStep == 4 ? @6 : @3;
+    startedProbe[@"pending_completion_count"] = focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3);
     [self storeFindMySearchPartyLocationProbe:startedProbe];
 
     id capturedLocationFetch = nil;
@@ -2930,14 +2929,18 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                 id realLastOnlineInfo = [self safeObjectValueFromObject:realLastContext selectorName:@"lastOnlineLocationInfo"];
                 NSDictionary *lastOnlineSummary = [self searchPartyLastOnlineInfoSummaryForBeacons:beacons context:realLastContext];
 
+                NSArray *identifierArray = [searchIdentifiers allObjects];
+                id generatedSearchLocationSources = realSearchLocationSources ?: [searchLocationSources allObjects];
+                NSArray *sourceArray = [self objectChildrenForValue:generatedSearchLocationSources];
+
                 Class contextClass = NSClassFromString(@"SPLocationFetchContext");
                 id context = contextClass == nil ? nil : [[contextClass alloc] init];
                 [self setSafeValue:@"com.apple.findmy" forKey:@"bundleIdentifier" object:context];
                 [self setSafeValue:realLastContext == nil ? @0 : @"foregroundRefresh" forKey:@"cachePolicy" object:context];
                 [self setSafeValue:@YES forKey:@"subscribe" object:context];
                 [self setSafeValue:@YES forKey:@"reportDeviceEvents" object:context];
-                if (searchIdentifiers.count > 0) {
-                    [self setSafeValue:searchIdentifiers forKey:@"searchIdentifiers" object:context];
+                if (identifierArray.count > 0) {
+                    [self setSafeValue:identifierArray forKey:@"searchIdentifiers" object:context];
                 }
                 if (realSearchTypes != nil && realSearchTypes != [NSNull null]) {
                     [self setSafeValue:realSearchTypes forKey:@"searchTypes" object:context];
@@ -2945,11 +2948,32 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                 if (realSearchLocationSources != nil && realSearchLocationSources != [NSNull null]) {
                     [self setSafeValue:realSearchLocationSources forKey:@"searchLocationSources" object:context];
                 } else if (searchLocationSources.count > 0) {
-                    [self setSafeValue:searchLocationSources forKey:@"searchLocationSources" object:context];
+                    [self setSafeValue:[searchLocationSources allObjects] forKey:@"searchLocationSources" object:context];
                 }
                 if (realLastOnlineInfo != nil && realLastOnlineInfo != [NSNull null]) {
                     [self setSafeValue:realLastOnlineInfo forKey:@"lastOnlineLocationInfo" object:context];
                 }
+                id contextSearchIdentifiersAfterKVC = [self safeObjectValueFromObject:context selectorName:@"searchIdentifiers"];
+                id contextSearchLocationSourcesAfterKVC = [self safeObjectValueFromObject:context selectorName:@"searchLocationSources"];
+                NSMutableDictionary *controlledContextAssignment = [[NSMutableDictionary alloc] initWithDictionary:@{
+                    @"identifier_array_class": [self classNameForObject:identifierArray],
+                    @"identifier_array_count": @(identifierArray.count),
+                    @"source_argument_class": [self classNameForObject:generatedSearchLocationSources],
+                    @"source_count": @(sourceArray.count),
+                    @"search_identifiers_after_kvc_count": @([[self objectChildrenForValue:contextSearchIdentifiersAfterKVC] count]),
+                    @"search_location_sources_after_kvc_count": @([[self objectChildrenForValue:contextSearchLocationSourcesAfterKVC] count]),
+                }];
+                if ([[self objectChildrenForValue:contextSearchIdentifiersAfterKVC] count] == 0 && identifierArray.count > 0) {
+                    controlledContextAssignment[@"search_identifiers_ivar_write"] = @([self setSafeIvarObjectValue:identifierArray ivarName:@"_searchIdentifiers" object:context]);
+                }
+                if ([[self objectChildrenForValue:contextSearchLocationSourcesAfterKVC] count] == 0 && generatedSearchLocationSources != nil && generatedSearchLocationSources != [NSNull null]) {
+                    controlledContextAssignment[@"search_location_sources_ivar_write"] = @([self setSafeIvarObjectValue:generatedSearchLocationSources ivarName:@"_searchLocationSources" object:context]);
+                }
+                if (identifierArray.count > 0) {
+                    controlledContextAssignment[@"primary_index_range_ivar_write"] = @([self setSafeIvarRangeValue:NSMakeRange(0, identifierArray.count) ivarName:@"_primaryIndexRange" object:context]);
+                }
+                controlledContextAssignment[@"search_identifiers_final_count"] = @([[self objectChildrenForValue:[self safeObjectValueFromObject:context selectorName:@"searchIdentifiers"]] count]);
+                controlledContextAssignment[@"search_location_sources_final_count"] = @([[self objectChildrenForValue:[self safeObjectValueFromObject:context selectorName:@"searchLocationSources"]] count]);
 
                 @synchronized ([BlueBubblesHelper class]) {
                     findMySearchPartyLocationProbe[@"real_last_context_summary"] = [self compactSearchPartyLocationProbeResultForSelector:@"SPLocationFetchContext.lastContext" result:realLastContext];
@@ -2958,6 +2982,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                     findMySearchPartyLocationProbe[@"context_search_identifier_count"] = @(searchIdentifiers.count);
                     findMySearchPartyLocationProbe[@"context_search_location_source_count"] = realSearchLocationSources != nil ? @([[self objectChildrenForValue:realSearchLocationSources] count]) : @(searchLocationSources.count);
                     findMySearchPartyLocationProbe[@"context_report_device_events"] = @YES;
+                    findMySearchPartyLocationProbe[@"controlled_context_assignment"] = controlledContextAssignment;
                 }
 
                 id invocationTarget = locationFetch ?: targetSession;
@@ -3006,9 +3031,6 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                     id ownerProxy = [self safeObjectValueFromObject:locationFetch selectorName:@"proxy"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"proxy"];
                     SEL latestLocationsSelector = NSSelectorFromString(@"latestLocationsForIdentifiers:fetchLimit:sources:completion:");
                     NSMethodSignature *latestLocationsSignature = [ownerProxy methodSignatureForSelector:latestLocationsSelector];
-                    NSArray *identifierArray = [searchIdentifiers allObjects];
-                    id sources = realSearchLocationSources ?: [searchLocationSources allObjects];
-                    NSArray *sourceArray = [self objectChildrenForValue:sources];
                     if (ownerProxy != nil &&
                         latestLocationsSignature != nil &&
                         latestLocationsSignature.numberOfArguments == 6 &&
@@ -3026,7 +3048,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                                 @"generated_identifier_set_class": [self classNameForObject:searchIdentifiers],
                                 @"real_search_identifiers_class": [self classNameForObject:realSearchIdentifiers],
                                 @"real_search_identifiers_count": @([[self objectChildrenForValue:realSearchIdentifiers] count]),
-                                @"sources_argument_class": [self classNameForObject:sources],
+                                @"sources_argument_class": [self classNameForObject:generatedSearchLocationSources],
                                 @"source_element_class": sourceArray.count > 0 ? [self classNameForObject:sourceArray[0]] : @"<nil>",
                                 @"real_search_location_sources_class": [self classNameForObject:realSearchLocationSources],
                                 @"fetch_limit_class": [self classNameForObject:generatedFetchLimit],
@@ -3045,7 +3067,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                             [singleIdentifierInvocation setSelector:latestLocationsSelector];
                             [singleIdentifierInvocation setArgument:&singleIdentifierArray atIndex:2];
                             [singleIdentifierInvocation setArgument:&singleFetchLimit atIndex:3];
-                            [singleIdentifierInvocation setArgument:&sources atIndex:4];
+                            [singleIdentifierInvocation setArgument:&generatedSearchLocationSources atIndex:4];
                             [singleIdentifierInvocation setArgument:&singleIdentifierCompletion atIndex:5];
                             [singleIdentifierInvocation retainArguments];
                             [singleIdentifierInvocation invoke];
@@ -3064,7 +3086,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                             [exactContextArgumentsInvocation setSelector:latestLocationsSelector];
                             [exactContextArgumentsInvocation setArgument:&exactIdentifiers atIndex:2];
                             [exactContextArgumentsInvocation setArgument:&exactFetchLimit atIndex:3];
-                            [exactContextArgumentsInvocation setArgument:&sources atIndex:4];
+                            [exactContextArgumentsInvocation setArgument:&generatedSearchLocationSources atIndex:4];
                             [exactContextArgumentsInvocation setArgument:&exactContextArgumentsCompletion atIndex:5];
                             [exactContextArgumentsInvocation retainArguments];
                             [exactContextArgumentsInvocation invoke];
@@ -3126,6 +3148,45 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                     }
 
                     if (focusedProbeStep == 3) {
+                        id controlledContextTarget = locationFetch ?: [self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"];
+                        SEL locationForContextSelector = NSSelectorFromString(@"locationForContext:completion:");
+                        NSMethodSignature *locationForContextSignature = [controlledContextTarget methodSignatureForSelector:locationForContextSelector];
+                        if (controlledContextTarget != nil &&
+                            locationForContextSignature != nil &&
+                            locationForContextSignature.numberOfArguments == 4) {
+                            void (^controlledLocationForContextCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(@"SPOwnerSessionLocationFetch.locationForContext:completion:.controlledContext", result);
+                            };
+                            NSInvocation *controlledLocationForContextInvocation = [NSInvocation invocationWithMethodSignature:locationForContextSignature];
+                            [controlledLocationForContextInvocation setTarget:controlledContextTarget];
+                            [controlledLocationForContextInvocation setSelector:locationForContextSelector];
+                            [controlledLocationForContextInvocation setArgument:&context atIndex:2];
+                            [controlledLocationForContextInvocation setArgument:&controlledLocationForContextCompletion atIndex:3];
+                            [controlledLocationForContextInvocation retainArguments];
+                            [controlledLocationForContextInvocation invoke];
+                        } else {
+                            appendProbeCompletion(@"SPOwnerSessionLocationFetch.locationForContext:completion:.controlledContext", nil);
+                        }
+
+                        SEL subscribeForContextSelector = NSSelectorFromString(@"subscribeAndFetchLocationForContext:completion:");
+                        NSMethodSignature *subscribeForContextSignature = [controlledContextTarget methodSignatureForSelector:subscribeForContextSelector];
+                        if (controlledContextTarget != nil &&
+                            subscribeForContextSignature != nil &&
+                            subscribeForContextSignature.numberOfArguments == 4) {
+                            void (^controlledSubscribeForContextCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.controlledContext", result);
+                            };
+                            NSInvocation *controlledSubscribeForContextInvocation = [NSInvocation invocationWithMethodSignature:subscribeForContextSignature];
+                            [controlledSubscribeForContextInvocation setTarget:controlledContextTarget];
+                            [controlledSubscribeForContextInvocation setSelector:subscribeForContextSelector];
+                            [controlledSubscribeForContextInvocation setArgument:&context atIndex:2];
+                            [controlledSubscribeForContextInvocation setArgument:&controlledSubscribeForContextCompletion atIndex:3];
+                            [controlledSubscribeForContextInvocation retainArguments];
+                            [controlledSubscribeForContextInvocation invoke];
+                        } else {
+                            appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.controlledContext", nil);
+                        }
+
                         SEL proxyLocationForContextSelector = NSSelectorFromString(@"locationForContext:completion:");
                         NSMethodSignature *proxyLocationForContextSignature = [ownerProxy methodSignatureForSelector:proxyLocationForContextSelector];
                         if (ownerProxy != nil &&
@@ -3294,6 +3355,42 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     @try {
         [object setValue:value forKey:key];
     } @catch (NSException *exception) {
+    }
+}
+
+- (BOOL)setSafeIvarObjectValue:(id)value ivarName:(NSString *)ivarName object:(id)object {
+    if (object == nil || value == nil || ivarName.length == 0) {
+        return NO;
+    }
+
+    @try {
+        Ivar ivar = class_getInstanceVariable([object class], [ivarName UTF8String]);
+        if (ivar == NULL) {
+            return NO;
+        }
+        object_setIvar(object, ivar, value);
+        return YES;
+    } @catch (NSException *exception) {
+        return NO;
+    }
+}
+
+- (BOOL)setSafeIvarRangeValue:(NSRange)value ivarName:(NSString *)ivarName object:(id)object {
+    if (object == nil || ivarName.length == 0) {
+        return NO;
+    }
+
+    @try {
+        Ivar ivar = class_getInstanceVariable([object class], [ivarName UTF8String]);
+        if (ivar == NULL) {
+            return NO;
+        }
+        ptrdiff_t offset = ivar_getOffset(ivar);
+        NSRange *slot = (NSRange *)((uint8_t *)(__bridge void *)object + offset);
+        *slot = value;
+        return YES;
+    } @catch (NSException *exception) {
+        return NO;
     }
 }
 
