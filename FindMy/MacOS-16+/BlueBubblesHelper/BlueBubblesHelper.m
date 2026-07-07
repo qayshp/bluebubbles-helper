@@ -384,6 +384,19 @@ static void BBFindMySearchPartyLocationObjectArgument(id self, SEL _cmd, id valu
                                                                                 source:value
                                                                               selector:NSSelectorFromString(@"locationsByBeaconIdentifier")];
         }
+    } else if ([selectorName isEqualToString:@"receivedUpdatedDeviceEvents:"]) {
+        [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyLocationInvocationForTarget:self
+                                                                                       selector:_cmd
+                                                                                        context:nil
+                                                                                         result:value
+                                                                                          phase:@"receivedUpdatedDeviceEvents"];
+        [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:value source:self selector:_cmd];
+        if ([value respondsToSelector:NSSelectorFromString(@"beaconEventByBeaconIdentifier")]) {
+            id events = [[BlueBubblesHelper sharedInstance] safeObjectValueFromObject:value selectorName:@"beaconEventByBeaconIdentifier"];
+            [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:events
+                                                                                source:value
+                                                                              selector:NSSelectorFromString(@"beaconEventByBeaconIdentifier")];
+        }
     } else {
         [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:value source:self selector:_cmd];
         if ([value respondsToSelector:NSSelectorFromString(@"locationsByBeaconIdentifier")]) {
@@ -562,6 +575,11 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
 
     if ([event isEqualToString:@"debug-findmy-searchparty-locations-callback-watch-full-context"]) {
         [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:12];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-searchparty-locations-device-event-watch"]) {
+        [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:13];
         return;
     }
 
@@ -2973,7 +2991,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 
     NSUInteger focusedProbeStep = 0;
-    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 12) {
+    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 13) {
         focusedProbeStep = requestedFocusedStep;
         startedProbe[@"dedicated_probe"] = @YES;
     } else {
@@ -3008,6 +3026,8 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         focusedProbeSelector = @"SPOwnerSessionLocationFetch.singleIdentifierCallbackWatch";
     } else if (focusedProbeStep == 12) {
         focusedProbeSelector = @"SPOwnerSessionLocationFetch.fullContextCallbackWatch";
+    } else if (focusedProbeStep == 13) {
+        focusedProbeSelector = @"SPOwnerSessionLocationFetch.deviceEventCallbackWatch";
     }
 
     NSArray *methods = [self searchPartyLocationMethodDiagnosticsForObject:targetSession];
@@ -3053,7 +3073,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         @"SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:",
         focusedProbeSelector,
     ];
-    startedProbe[@"pending_completion_count"] = (focusedProbeStep == 9 || focusedProbeStep == 10) ? @5 : ((focusedProbeStep == 11 || focusedProbeStep == 12) ? @3 : ((focusedProbeStep == 5 || focusedProbeStep == 6) ? @6 : (focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3))));
+    startedProbe[@"pending_completion_count"] = (focusedProbeStep == 9 || focusedProbeStep == 10) ? @5 : ((focusedProbeStep == 11 || focusedProbeStep == 12 || focusedProbeStep == 13) ? @3 : ((focusedProbeStep == 5 || focusedProbeStep == 6) ? @6 : (focusedProbeStep == 3 ? @5 : (focusedProbeStep == 4 ? @6 : @3))));
     [self storeFindMySearchPartyLocationProbe:startedProbe];
 
     id capturedLocationFetch = nil;
@@ -3718,6 +3738,38 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                             [fullContextWatchInvocation invoke];
                         } else {
                             appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.fullContextCallbackWatch", nil);
+                        }
+                    }
+
+                    if (focusedProbeStep == 13) {
+                        id deviceEventTarget = locationFetch ?: [self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"];
+                        SEL subscribeForContextSelector = NSSelectorFromString(@"subscribeAndFetchLocationForContext:completion:");
+                        NSMethodSignature *subscribeForContextSignature = [deviceEventTarget methodSignatureForSelector:subscribeForContextSelector];
+
+                        @synchronized ([BlueBubblesHelper class]) {
+                            findMySearchPartyLocationProbe[@"callback_watch_method_availability"] = @{
+                                @"locationFetch.subscribeAndFetchLocationForContext": @(deviceEventTarget != nil && subscribeForContextSignature != nil && subscribeForContextSignature.numberOfArguments == 4),
+                            };
+                            findMySearchPartyLocationProbe[@"callback_watch_context"] = @"deviceEventsFull";
+                            findMySearchPartyLocationProbe[@"callback_watch_note"] = @"Device-event callback watch uses the full generated context with reportDeviceEvents enabled and captures receivedUpdatedDeviceEvents: into passive_location_events.";
+                        }
+
+                        if (deviceEventTarget != nil &&
+                            context != nil &&
+                            subscribeForContextSignature != nil &&
+                            subscribeForContextSignature.numberOfArguments == 4) {
+                            void (^deviceEventSubscribeCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.deviceEventCallbackWatch", result);
+                            };
+                            NSInvocation *deviceEventWatchInvocation = [NSInvocation invocationWithMethodSignature:subscribeForContextSignature];
+                            [deviceEventWatchInvocation setTarget:deviceEventTarget];
+                            [deviceEventWatchInvocation setSelector:subscribeForContextSelector];
+                            [deviceEventWatchInvocation setArgument:&context atIndex:2];
+                            [deviceEventWatchInvocation setArgument:&deviceEventSubscribeCompletion atIndex:3];
+                            [deviceEventWatchInvocation retainArguments];
+                            [deviceEventWatchInvocation invoke];
+                        } else {
+                            appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.deviceEventCallbackWatch", nil);
                         }
                     }
 

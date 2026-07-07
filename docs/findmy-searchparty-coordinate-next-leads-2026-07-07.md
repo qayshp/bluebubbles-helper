@@ -1315,3 +1315,117 @@ device rows with known local locations, especially the methods around
 device-specific provider/session classes. The current evidence points away from
 "we missed the callback" and toward "this is not the callback path that carries
 device/item coordinates on this host."
+
+## Live Try: Device-Event Callback Watch
+
+Commit context:
+
+- helper dylib hash: `acb4fec3d208704428ecbd0b8563318d`
+- helper focused step: `13`
+- helper action: `debug-findmy-searchparty-locations-device-event-watch`
+- server route:
+  `POST /api/v1/icloud/findmy/searchparty/locations/device-event-watch`
+
+Why this was tried:
+
+The generated `SPLocationFetchContext` already had `reportDeviceEvents = true`.
+The helper also had swizzles for `setDeviceEventUpdateBlock:`,
+`setDeviceEventUpdates:`, and `receivedUpdatedDeviceEvents:`. This run made
+`receivedUpdatedDeviceEvents:` feed probe-local `passive_location_events` and
+then subscribed using the full generated context, so a real device-event result
+would show up in the compact status.
+
+Probe shape:
+
+1. Build the generated full `SPLocationFetchContext`.
+2. Preserve all generated identifiers and all generated location sources.
+3. Preserve `reportDeviceEvents = true`.
+4. Call:
+   - `SPOwnerSessionLocationFetch subscribeAndFetchLocationForContext:completion:`
+5. Capture these passive channels:
+   - `receivedUpdatedLocation:`
+   - `setLocationUpdateBlock:`
+   - `receivedUpdatedDeviceEvents:`
+   - `setDeviceEventUpdateBlock:`
+
+Start result:
+
+```text
+HTTP status: 200
+focused_probe_step: 13
+probe status: started
+context searchIdentifiers count: 53
+context searchLocationSources count: 12
+context searchLocationSources includes: ownedDeviceLocation
+context reportDeviceEvents: true
+```
+
+Compact status after about 80 seconds:
+
+```text
+HTTP status: 200
+probe status: timed_out
+focused_probe_step: 13
+callback_watch_context: deviceEventsFull
+pending_completion_count: 1
+context_search_identifier_count: 53
+context_search_location_source_count: 12
+passive_location_event_count: 4
+locationFetch.subscribeAndFetchLocationForContext: present
+```
+
+Compact status after a longer tail:
+
+```text
+HTTP status: 200
+probe status: timed_out
+focused_probe_step: 13
+callback_watch_context: deviceEventsFull
+pending_completion_count: 1
+context_search_identifier_count: 53
+context_search_location_source_count: 12
+passive_location_event_count: 8
+last passive event timestamp: 1783449872.077241 / 1783449872.082479
+```
+
+Completion results from the longer-tail status:
+
+```text
+SPOwnerSession.locationsForBeacons:completion:
+  result class: __NSDictionary0
+
+SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.deviceEventCallbackWatch
+  result class: <nil>
+```
+
+Passive callback results:
+
+```text
+receivedUpdatedLocation:
+  source class: SPOwnerSessionLocationFetch
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+
+setLocationUpdateBlock:
+  source class: SPOwnerSession
+  result class: SPLocationFetchResult
+  locationsByBeaconIdentifier count: 0
+
+The same pair repeated four times during the longer-tail watch.
+```
+
+Important negative result:
+
+No `receivedUpdatedDeviceEvents:` or `setDeviceEventUpdateBlock:` passive event
+appeared during this run, and no `SPDeviceEventFetchResult` was observed in the
+compact payload. Setting `reportDeviceEvents = true` on this full location fetch
+context is not enough to make the location subscription deliver device-event
+payloads on this Mac.
+
+Interpretation:
+
+This reinforces the prior conclusion that the generic
+`SPOwnerSessionLocationFetch` subscription path is live but not carrying the
+coordinates we need. The next SearchParty lead should inspect the owner XPC
+proxy methods and provider objects around device-specific events rather than
+continuing to vary the same location-fetch context.
