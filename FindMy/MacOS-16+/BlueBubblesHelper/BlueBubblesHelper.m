@@ -415,6 +415,20 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
     return result;
 }
 
+static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
+    [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:value source:self selector:_cmd];
+
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        void (*original)(id, SEL, id) = (void (*)(id, SEL, id))[originalValue pointerValue];
+        original(self, _cmd, value);
+    }
+}
+
 + (instancetype)sharedInstance {
     static BlueBubblesHelper *plugin = nil;
     @synchronized(self) {
@@ -1073,6 +1087,17 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
                                     replacement:(IMP)BBFindMySearchPartyResultAccessor];
         }
     }
+    NSDictionary<NSString *, NSArray<NSString *> *> *searchPartyResultSetters = @{
+        @"SPLocationFetchResult": @[@"setLocationsByBeaconIdentifier:"],
+        @"SPDeviceEventFetchResult": @[@"setBeaconEventByBeaconIdentifier:"],
+    };
+    for (NSString *className in searchPartyResultSetters) {
+        for (NSString *selectorName in searchPartyResultSetters[className]) {
+            [self swizzleInstanceMethodForClass:NSClassFromString(className)
+                                       selector:NSSelectorFromString(selectorName)
+                                    replacement:(IMP)BBFindMySearchPartyResultSetter];
+        }
+    }
     Class simpleBeaconInterfaceClass = NSClassFromString(@"SPBeaconManagerSimpleBeaconUpdateInterface");
     [self swizzleInstanceMethodForClass:simpleBeaconInterfaceClass
                                selector:NSSelectorFromString(@"simpleBeacons")
@@ -1463,8 +1488,8 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
             findMySearchPartyAccessorSnapshots = [[NSMutableArray alloc] init];
         }
         [findMySearchPartyAccessorSnapshots addObject:[snapshot copy]];
-        if (findMySearchPartyAccessorSnapshots.count > 40) {
-            [findMySearchPartyAccessorSnapshots removeObjectsInRange:NSMakeRange(0, findMySearchPartyAccessorSnapshots.count - 40)];
+        if (findMySearchPartyAccessorSnapshots.count > 80) {
+            [findMySearchPartyAccessorSnapshots removeObjectsInRange:NSMakeRange(0, findMySearchPartyAccessorSnapshots.count - 80)];
         }
     }
 }
@@ -1511,7 +1536,7 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         NSUInteger start = snapshots.count > 20 ? snapshots.count - 20 : 0;
         NSArray *recent = snapshots.count > 0 ? [snapshots subarrayWithRange:NSMakeRange(start, snapshots.count - start)] : @[];
         NSArray *accessorSnapshots = [findMySearchPartyAccessorSnapshots copy] ?: @[];
-        NSUInteger accessorStart = accessorSnapshots.count > 12 ? accessorSnapshots.count - 12 : 0;
+        NSUInteger accessorStart = accessorSnapshots.count > 24 ? accessorSnapshots.count - 24 : 0;
         NSArray *recentAccessors = accessorSnapshots.count > 0 ? [accessorSnapshots subarrayWithRange:NSMakeRange(accessorStart, accessorSnapshots.count - accessorStart)] : @[];
         return @{
             @"snapshot_count": @(snapshots.count),
