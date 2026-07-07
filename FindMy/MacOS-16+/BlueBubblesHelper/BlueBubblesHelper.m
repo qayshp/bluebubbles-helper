@@ -262,6 +262,36 @@ static void BBFindMyInterestingObjectSetter(id self, SEL _cmd, id value) {
     [[BlueBubblesHelper sharedInstance] captureFindMyInterestingSetterObject:self value:value selector:_cmd];
 }
 
+static void BBFindMyLocationUpdateBlockSetter(id self, SEL _cmd, id value) {
+    id valueForOriginal = value;
+    NSString *signature = BBFindMyBlockSignature(value);
+    if (value != nil && [signature rangeOfString:@"SPLocationFetchResult"].location != NSNotFound) {
+        void (^originalBlock)(id) = [value copy];
+        valueForOriginal = [^(id result) {
+            [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:result source:self selector:_cmd];
+            if ([result respondsToSelector:NSSelectorFromString(@"locationsByBeaconIdentifier")]) {
+                id locations = [[BlueBubblesHelper sharedInstance] safeObjectValueFromObject:result selectorName:@"locationsByBeaconIdentifier"];
+                [[BlueBubblesHelper sharedInstance] captureFindMySearchPartyAccessorResult:locations source:result selector:NSSelectorFromString(@"locationsByBeaconIdentifier")];
+            }
+            if (originalBlock != nil) {
+                originalBlock(result);
+            }
+        } copy];
+    }
+
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        void (*original)(id, SEL, id) = (void (*)(id, SEL, id))[originalValue pointerValue];
+        original(self, _cmd, valueForOriginal);
+    }
+
+    [[BlueBubblesHelper sharedInstance] captureFindMyInterestingSetterObject:self value:value selector:_cmd];
+}
+
 static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
     id result = nil;
     NSString *key = BBFindMySwizzleKey([self class], _cmd);
@@ -646,6 +676,7 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         @"FindMyUICore.ItemsLocationsProvider",
         @"FindMyUICore.Repository",
         @"FindMyUICore.SessionLive",
+        @"SPOwnerSessionLocationFetch",
     ];
     for (NSString *className in interestingClassNames) {
         [self swizzleInstanceMethodForClass:NSClassFromString(className)
@@ -670,19 +701,43 @@ static id BBFindMySearchPartyResultAccessor(id self, SEL _cmd) {
         @"setOwnerSessionStateUpdatedBlock:",
         @"setTagSeparationBeaconsChangedBlock:",
     ]) {
+        IMP replacement = [selectorName isEqualToString:@"setLocationUpdateBlock:"]
+            ? (IMP)BBFindMyLocationUpdateBlockSetter
+            : (IMP)BBFindMyInterestingObjectSetter;
         [self swizzleInstanceMethodForClass:ownerSessionClass
                                    selector:NSSelectorFromString(selectorName)
-                                replacement:(IMP)BBFindMyInterestingObjectSetter];
+                                replacement:replacement];
     }
 
-    NSDictionary<NSString *, NSString *> *searchPartyResultAccessors = @{
-        @"SPLocationFetchResult": @"locationsByBeaconIdentifier",
-        @"SPDeviceEventFetchResult": @"beaconEventByBeaconIdentifier",
+    Class ownerSessionLocationFetchClass = NSClassFromString(@"SPOwnerSessionLocationFetch");
+    for (NSString *selectorName in @[
+        @"setLastContext:",
+        @"setLocationUpdates:",
+        @"setLocationUpdateBlock:",
+        @"setDeviceEventUpdates:",
+        @"setDeviceEventUpdateBlock:",
+        @"setLocationFetchSessionInvalidationBlock:",
+        @"setProxy:",
+        @"setSession:",
+    ]) {
+        IMP replacement = ([selectorName isEqualToString:@"setLocationUpdates:"] || [selectorName isEqualToString:@"setLocationUpdateBlock:"])
+            ? (IMP)BBFindMyLocationUpdateBlockSetter
+            : (IMP)BBFindMyInterestingObjectSetter;
+        [self swizzleInstanceMethodForClass:ownerSessionLocationFetchClass
+                                   selector:NSSelectorFromString(selectorName)
+                                replacement:replacement];
+    }
+
+    NSDictionary<NSString *, NSArray<NSString *> *> *searchPartyResultAccessors = @{
+        @"SPLocationFetchResult": @[@"locationsByBeaconIdentifier"],
+        @"SPDeviceEventFetchResult": @[@"beaconEventByBeaconIdentifier"],
     };
     for (NSString *className in searchPartyResultAccessors) {
-        [self swizzleInstanceMethodForClass:NSClassFromString(className)
-                                   selector:NSSelectorFromString(searchPartyResultAccessors[className])
-                                replacement:(IMP)BBFindMySearchPartyResultAccessor];
+        for (NSString *selectorName in searchPartyResultAccessors[className]) {
+            [self swizzleInstanceMethodForClass:NSClassFromString(className)
+                                       selector:NSSelectorFromString(selectorName)
+                                    replacement:(IMP)BBFindMySearchPartyResultAccessor];
+        }
     }
 }
 
