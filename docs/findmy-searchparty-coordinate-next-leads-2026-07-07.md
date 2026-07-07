@@ -1532,3 +1532,66 @@ accepts the same kind of context shape as `locationForContext:completion:` but
 is a distinct owner XPC method, and the name suggests it may be closer to a
 shared/delegated device or item location path than the generic location-fetch
 subscription path.
+
+## Live Try: Delegated Location Context
+
+Commit context:
+
+- helper dylib hash: `10dd4ee4824eb963a176c6364a086f45`
+- helper focused step: `14`
+- helper action: `debug-findmy-searchparty-locations-delegated-context`
+- server route:
+  `POST /api/v1/icloud/findmy/searchparty/locations/delegated-context`
+
+Probe shape:
+
+1. Build the same generated full `SPLocationFetchContext`.
+2. Preserve all generated identifiers and all generated location sources.
+3. Select the first available target:
+   - `SPOwnerSession delegatedLocationForContext:completion:`
+   - owner session XPC proxy `delegatedLocationForContext:completion:`
+4. Invoke the selected target with the generated context and a completion block.
+5. Poll compact status.
+
+Start result:
+
+```text
+HTTP status: 200
+message: Successfully started Find My SearchParty delegated context probe
+focused_probe_step: 14
+probe status: started
+pending_completion_count: 3
+```
+
+Runtime result:
+
+The start call returned successfully, but about eight seconds later the Find My
+helper disconnected and the server logged:
+
+```text
+Private API Helper (com.apple.findmy) disconnected
+FindMy Process was force quit
+FindMyDylibPlugin Detected DYLIB crash for App FindMy
+```
+
+After Find My relaunched and the helper reconnected, compact status returned:
+
+```text
+status: not_started
+```
+
+That means the in-memory probe state was lost during the Find My process
+restart, before a delegated-location completion could be captured.
+
+Interpretation:
+
+`delegatedLocationForContext:completion:` is unsafe with the generated full
+`SPLocationFetchContext` used by the current probe. It should be treated as a
+crash-producing lead unless we first learn the exact context shape Find My uses
+when calling delegated location internally.
+
+Next safer direction:
+
+Inspect passive calls or swizzle around the delegated-location selector instead
+of invoking it directly with our generated context. The key missing detail is
+the context shape and call timing that Find My expects for delegated location.

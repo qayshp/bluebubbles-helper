@@ -583,6 +583,11 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         return;
     }
 
+    if ([event isEqualToString:@"debug-findmy-searchparty-locations-delegated-context"]) {
+        [self handleFindMySearchPartyLocationProbeStartWithTransaction:transaction focusedStep:14];
+        return;
+    }
+
     if ([event isEqualToString:@"debug-findmy-searchparty-locations"]) {
         [self handleFindMySearchPartyLocationProbeStatusWithTransaction:transaction];
         return;
@@ -2461,7 +2466,9 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
             @"callback_watch_method_availability",
             @"callback_watch_context",
             @"single_identifier_context_method_availability",
+            @"delegated_context_method_availability",
             @"callback_watch_note",
+            @"delegated_context_note",
             @"single_identifier_context_assignment",
             @"controlled_context_assignment",
         ]) {
@@ -2991,7 +2998,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 
     NSUInteger focusedProbeStep = 0;
-    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 13) {
+    if (requestedFocusedStep >= 1 && requestedFocusedStep <= 14) {
         focusedProbeStep = requestedFocusedStep;
         startedProbe[@"dedicated_probe"] = @YES;
     } else {
@@ -3028,6 +3035,8 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         focusedProbeSelector = @"SPOwnerSessionLocationFetch.fullContextCallbackWatch";
     } else if (focusedProbeStep == 13) {
         focusedProbeSelector = @"SPOwnerSessionLocationFetch.deviceEventCallbackWatch";
+    } else if (focusedProbeStep == 14) {
+        focusedProbeSelector = @"SPOwnerSessionXPCProtocol.delegatedLocationForContext";
     }
 
     NSArray *methods = [self searchPartyLocationMethodDiagnosticsForObject:targetSession];
@@ -3770,6 +3779,40 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                             [deviceEventWatchInvocation invoke];
                         } else {
                             appendProbeCompletion(@"SPOwnerSessionLocationFetch.subscribeAndFetchLocationForContext:completion:.deviceEventCallbackWatch", nil);
+                        }
+                    }
+
+                    if (focusedProbeStep == 14) {
+                        SEL delegatedLocationSelector = NSSelectorFromString(@"delegatedLocationForContext:completion:");
+                        id ownerProxy = [self safeObjectValueFromObject:targetSession selectorName:@"proxy"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"_proxy"];
+                        id delegatedLocationTarget = [targetSession respondsToSelector:delegatedLocationSelector] ? targetSession : ownerProxy;
+                        NSMethodSignature *delegatedLocationSignature = [delegatedLocationTarget methodSignatureForSelector:delegatedLocationSelector];
+
+                        @synchronized ([BlueBubblesHelper class]) {
+                            findMySearchPartyLocationProbe[@"delegated_context_method_availability"] = @{
+                                @"ownerSession.delegatedLocationForContext": @([targetSession respondsToSelector:delegatedLocationSelector]),
+                                @"ownerProxy.delegatedLocationForContext": @(ownerProxy != nil && [ownerProxy respondsToSelector:delegatedLocationSelector]),
+                                @"selectedTargetClass": [self classNameForObject:delegatedLocationTarget] ?: @"<nil>",
+                            };
+                            findMySearchPartyLocationProbe[@"delegated_context_note"] = @"Delegated-context probe uses the full generated SPLocationFetchContext and calls delegatedLocationForContext:completion: on SPOwnerSession or its XPC proxy.";
+                        }
+
+                        if (delegatedLocationTarget != nil &&
+                            context != nil &&
+                            delegatedLocationSignature != nil &&
+                            delegatedLocationSignature.numberOfArguments == 4) {
+                            void (^delegatedLocationCompletion)(id) = ^(id result) {
+                                appendProbeCompletion(@"SPOwnerSessionXPCProtocol.delegatedLocationForContext:completion:", result);
+                            };
+                            NSInvocation *delegatedLocationInvocation = [NSInvocation invocationWithMethodSignature:delegatedLocationSignature];
+                            [delegatedLocationInvocation setTarget:delegatedLocationTarget];
+                            [delegatedLocationInvocation setSelector:delegatedLocationSelector];
+                            [delegatedLocationInvocation setArgument:&context atIndex:2];
+                            [delegatedLocationInvocation setArgument:&delegatedLocationCompletion atIndex:3];
+                            [delegatedLocationInvocation retainArguments];
+                            [delegatedLocationInvocation invoke];
+                        } else {
+                            appendProbeCompletion(@"SPOwnerSessionXPCProtocol.delegatedLocationForContext:completion:", nil);
                         }
                     }
 
