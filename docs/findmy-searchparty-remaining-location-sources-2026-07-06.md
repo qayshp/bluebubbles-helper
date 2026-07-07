@@ -43,8 +43,21 @@ This note tracks the remaining places where Find My item/device location data ma
    - The block signature remained `v16@?0@"SPDeviceEventFetchResult"8`.
    - No `beaconEventByBeaconIdentifier` accessor snapshot appeared.
    - No delivered `SPDeviceEventFetchResult` payload was captured.
+   - 2026-07-07 update: I added direct hooks for `SPOwnerSessionLocationFetch receivedUpdatedDeviceEvents:` and wrapped both `setDeviceEventUpdates:` and `setDeviceEventUpdateBlock:` when the block signature mentions `SPDeviceEventFetchResult`.
+   - I then changed the explicit generated `SPLocationFetchContext` from `reportDeviceEvents = NO` to `reportDeviceEvents = YES` and reran `/api/v1/icloud/findmy/searchparty/locations/start` followed by `/api/v1/icloud/findmy/searchparty/locations`.
+   - The report-device-events probe returned:
+     - `context_report_device_events`: `true`
+     - `search_identifier_count`: `53`
+     - `search_location_source_count`: `12`
+     - `last_online_location_info_count`: `10`
+     - `completion_count`: `2`
+     - `pending_completion_count`: `2`
+   - The two completions were:
+     - `SPBeaconManagerSimpleBeaconUpdateInterface.startUpdatingSimpleBeaconsWithContext:completion:` -> `nil`
+     - `SPOwnerSession.locationsForBeacons:completion:` -> empty `NSDictionary`, count `0`
+   - No passive snapshot or completion delivered `SPDeviceEventFetchResult`, and no `beaconEventByBeaconIdentifier` dictionary was observed.
 
-   Current conclusion: the device-event result class is real, but normal refresh and the explicit location probe did not trigger it. We need either a more specific device-event trigger or a lower-level hook on `receivedUpdatedDeviceEvents:`.
+   Current conclusion: the device-event result class is real, and the helper is now positioned to capture it if delivered. Normal refresh, the explicit location probe, and an explicit `reportDeviceEvents = YES` context did not trigger a delivered event result on this Mac.
 
 3. SearchParty daemon/session objects below `SPOwnerSession`
 
@@ -64,8 +77,18 @@ This note tracks the remaining places where Find My item/device location data ma
    - The explicit simple-beacon completion either returned nil/empty or did not produce coordinate-bearing data.
    - I added class-level diagnostics for `FMXPCSession`, `SPBeaconManagerSimpleBeaconUpdateInterface`, `SPSimpleBeaconContext`, `FindMyLocateSession`, and `FMFSession`. The helper built successfully with Xcode 26.3 after disabling Xcode user script sandboxing for the CocoaPods manifest phase.
    - Returning the broad expanded class diagnostics through the existing location probe made the client call hang, likely because the payload became too large. The server stayed healthy afterward.
+   - 2026-07-07 update: I replaced the broad diagnostics with `lower_layer_class_diagnostics`, a bounded selector/ivar report filtered to XPC, proxy, session, location, beacon, device, event, cache, and fetch terms.
+   - The bounded probe returned normally through the HTTP route. It showed:
+     - `FMXPCSession` exists and has `_identifier`, `__proxy`, `_serialQueue`, `_serviceDescription`, and `_connection`.
+     - `FMXPCSession` exposes `proxy`, `_proxy`, `syncProxyWithErrorHandler:`, `connection`, `serviceDescription`, and `destroyXPCConnection`.
+     - `SPOwnerSessionLocationFetch` has `_session: FMXPCSession`, `_proxy: <SPOwnerSessionXPCProtocol>`, `_locationUpdates`, `_deviceEventUpdates`, `_lastContext`, and exposes `receivedUpdatedDeviceEvents:`.
+     - `SPBeaconManagerSimpleBeaconUpdateInterface` has `_session: FMXPCSession`, `_proxy: <SPBeaconManagerXPCProtocol>`, `_simpleBeacons`, `_context: SPSimpleBeaconContext`, and exposes `receivedSimpleBeaconUpdates:` plus `startUpdatingSimpleBeaconsWithContext:completion:`.
+     - `SPLocationFetchResult` only exposes `_locationsByBeaconIdentifier`, and it remained empty in this run.
+     - `SPDeviceEventFetchResult` only exposes `_beaconEventByBeaconIdentifier`, but no instance was delivered in this run.
+     - `SPSimpleBeaconContext` exposes `deviceManagerContext` and `fmipItemContextForBeaconUUIDs:` as class methods.
+   - I also compacted the active probe and passive SearchParty captures after the first lower-layer attempt exceeded the helper socket payload limit at about 65 KB and caused a JSON decode failure.
 
-   Current conclusion: the lower object path is `SPOwnerSessionLocationFetch -> FMXPCSession/proxy` and `SPBeaconManagerSimpleBeaconUpdateInterface -> FMXPCSession/proxy`. The next instrumentation should return a deliberately tiny allowlist for `FMXPCSession` and proxy-related selectors instead of dumping full method lists.
+   Current conclusion: the lower object path is confirmed as `SPOwnerSessionLocationFetch -> FMXPCSession/proxy` and `SPBeaconManagerSimpleBeaconUpdateInterface -> FMXPCSession/proxy`. The next useful instrumentation should capture the concrete runtime class and compact method surface of the live `_proxy` objects, not just the `FMXPCSession` wrapper class.
 
 4. `CLLocation` / `_cachedLocation` owners
 
@@ -110,3 +133,13 @@ Replace the broad class-diagnostics payload with a small lower-layer probe that 
 - the concrete runtime class of `_proxy` when it is non-nil
 - whether `receivedUpdatedDeviceEvents:` is ever called, with a bounded summary of its argument
 - whether `FindMyLocateSession` or `FMFSession` runtime classes are available, without dumping their full method lists
+
+## 2026-07-07 status
+
+The current lead order remains:
+
+1. Inspect live `_proxy` objects under `SPOwnerSessionLocationFetch` and `SPBeaconManagerSimpleBeaconUpdateInterface`.
+2. Look for a specific proxy method that returns location or event payloads for beacon UUIDs.
+3. If the proxy path still only returns empty location/event dictionaries, pivot to the older `FMFSession`/`FindMyLocateSession` cached-location stack only for device records that can be joined to a handle-like identifier.
+
+Coordinates have not surfaced yet in SearchParty results on this Mac. The best new fact is that `FMXPCSession` is only a wrapper; the live proxy object is probably the next layer that knows which XPC method returns `SPLocationFetchResult` or `SPDeviceEventFetchResult`.
