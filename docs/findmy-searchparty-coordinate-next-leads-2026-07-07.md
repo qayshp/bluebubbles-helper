@@ -259,6 +259,95 @@ Next better leads:
   produced, especially `searchLocationSources`, `searchTypes`,
   `searchPriority`, `cachePolicy`, and `primaryIndexRange`.
 
+## Live try: delegated owner-context checkpoints
+
+Tested locally on 2026-07-07 with helper dylib md5
+`c2ec414d629c99d8db06510469dc7dda`.
+
+Route shape:
+
+```text
+POST /api/v1/icloud/findmy/searchparty/locations/delegated-checkpoint/:checkpoint
+```
+
+The route was extended with owner-only checkpoints that avoid reading the
+`SPOwnerSession` proxy. This matters because prior `proxy`, `responds-proxy`,
+and `signature-proxy` checkpoints timed out and crashed Find My by touching the
+XPC proxy path. These checkpoints instead read the already captured context or
+the `SPOwnerSessionLocationFetch` object.
+
+Checkpoint results:
+
+| Checkpoint | Result |
+| --- | --- |
+| `captured-context` | Completed. `captured_context_class = SPLocationFetchContext`; context pointer `0x60000366eee0`; owner session count `2`. |
+| `captured-context-detail` | Completed. The captured context includes `searchTypes_count = 6`, `searchLocationSources_count = 12`, `searchIdentifiers_count = 0`, `lastOnlineLocationInfo_count = 10`, `cachePolicy = foregroundRefresh`, `subscribe = true`, `reportDeviceEvents = true`. |
+| `owner-last-context` | Completed. `SPOwnerSession.lastContext` is nil. |
+| `location-fetch-last-context` | Completed. `location_fetch_class = SPOwnerSessionLocationFetch`; `location_fetch_last_context_class = SPLocationFetchContext`; pointer matches the captured context `0x60000366eee0`. |
+
+The captured `SPLocationFetchContext` has these `searchTypes`:
+
+```text
+hele
+selfBeaconing
+accessory
+localFindable
+accessory
+durian
+```
+
+It has these `searchLocationSources`:
+
+```text
+connectionEvent
+connectionmaintenance
+disconnection
+harvesterNetwork
+harvesterOnDiskNearOwner
+harvesterOnDiskWild
+intentLocationUpdate
+intentResponse
+localReductiveFilter
+pairingLocationManager
+selfPublish
+ownedDeviceLocation
+```
+
+The `lastOnlineLocationInfo` dictionary is a Swift deferred dictionary keyed by
+`NSUUID` values. It contained 10 UUID keys in this run. Sample entries serialize
+as `SPLastOnlineLocationInfo` with timestamp fields such as:
+
+```text
+key 243A7F6E-B4ED-481F-A2E0-54EF9AD6EDB6
+timestamp 2026-07-07 20:35:26 +0000
+updatedOn 2026-07-07 20:35:29 +0000
+
+key 127D90D3-0E42-436B-8BFB-564EF996A8E6
+timestamp 2026-07-04 21:36:59 +0000
+updatedOn 2026-07-07 20:35:23 +0000
+```
+
+Server logs for these four requests showed normal completion and did not show a
+Find My crash. The only unrelated warning still present was the existing System
+Events Automation denial from the old UI-hiding path.
+
+Interpretation:
+
+The useful context is not stored on `SPOwnerSession.lastContext`; it is stored
+on `SPOwnerSessionLocationFetch.lastContext`, and it is the same
+`SPLocationFetchContext` already captured by the hook. That context is
+configured broadly enough to include owned devices and item-like beacon types:
+`ownedDeviceLocation` appears in `searchLocationSources`, and `accessory`,
+`durian`, `localFindable`, and `selfBeaconing` appear in `searchTypes`.
+
+The current missing piece is still the coordinate-bearing result. This context
+does know about last-online metadata for 10 beacon UUIDs, but the local
+`SPLocationFetchResult.locationsByBeaconIdentifier` setter and getter have only
+seen empty dictionaries so far. The next productive inspection point is to
+correlate these 10 UUIDs against known beacons/devices, then invoke or observe a
+fetch path that uses one or more of those UUIDs as explicit
+`searchIdentifiers`, instead of relying on the broad zero-identifier context.
+
 ## Static inspection: fetch context detail
 
 `SPLocationFetchContext` exposes the fields most likely to explain why the

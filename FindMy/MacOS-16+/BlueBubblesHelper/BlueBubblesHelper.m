@@ -3071,6 +3071,33 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         id ownerProxy = [self safeObjectValueFromObject:targetSession selectorName:@"proxy"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"_proxy"];
         probe[@"proxy_class"] = [self classNameForObject:ownerProxy] ?: @"<nil>";
         appendSignatures(probe, @"proxy_signatures", ownerProxy);
+    } else if ([checkpoint isEqualToString:@"captured-context"]) {
+        id capturedContext = nil;
+        @synchronized ([BlueBubblesHelper class]) {
+            capturedContext = findMyCapturedSearchPartyLocationContext;
+        }
+        probe[@"captured_context_class"] = [self classNameForObject:capturedContext] ?: @"<nil>";
+        probe[@"captured_context_id"] = capturedContext == nil ? @"<nil>" : [NSString stringWithFormat:@"%p", capturedContext];
+        probe[@"captured_context_summary"] = [self summaryForValue:capturedContext];
+    } else if ([checkpoint isEqualToString:@"captured-context-detail"]) {
+        id capturedContext = nil;
+        @synchronized ([BlueBubblesHelper class]) {
+            capturedContext = findMyCapturedSearchPartyLocationContext;
+        }
+        probe[@"captured_context_class"] = [self classNameForObject:capturedContext] ?: @"<nil>";
+        probe[@"captured_context_detail"] = [self searchPartyFetchContextDiagnosticsForContext:capturedContext];
+    } else if ([checkpoint isEqualToString:@"owner-last-context"]) {
+        id ownerLastContext = [self safeObjectValueFromObject:targetSession selectorName:@"lastContext"];
+        probe[@"owner_last_context_class"] = [self classNameForObject:ownerLastContext] ?: @"<nil>";
+        probe[@"owner_last_context_id"] = ownerLastContext == nil ? @"<nil>" : [NSString stringWithFormat:@"%p", ownerLastContext];
+        probe[@"owner_last_context_summary"] = [self summaryForValue:ownerLastContext];
+    } else if ([checkpoint isEqualToString:@"location-fetch-last-context"]) {
+        id locationFetch = [self safeObjectValueFromObject:targetSession selectorName:@"locationFetch"];
+        id locationFetchLastContext = [self safeObjectValueFromObject:locationFetch selectorName:@"lastContext"];
+        probe[@"location_fetch_class"] = [self classNameForObject:locationFetch] ?: @"<nil>";
+        probe[@"location_fetch_last_context_class"] = [self classNameForObject:locationFetchLastContext] ?: @"<nil>";
+        probe[@"location_fetch_last_context_id"] = locationFetchLastContext == nil ? @"<nil>" : [NSString stringWithFormat:@"%p", locationFetchLastContext];
+        probe[@"location_fetch_last_context_detail"] = [self searchPartyFetchContextDiagnosticsForContext:locationFetchLastContext];
     } else {
         probe[@"error"] = [NSString stringWithFormat:@"Unknown delegated checkpoint: %@", checkpoint ?: @"<nil>"];
     }
