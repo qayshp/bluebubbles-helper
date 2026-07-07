@@ -21,6 +21,16 @@ This is still the best candidate. It sounds exactly like the map we need: beacon
 2. `SPOwnerSession.locationCache`
 This is the next best field. It was present on `SPOwnerSession`, but observed as an empty dictionary. If Find My populates device/item locations asynchronously, this may become useful after the right refresh/update path fires.
 
+   Follow-up investigation:
+
+   - Before the explicit SearchParty location probe, both captured `SPOwnerSession` instances had `locationCache` as `__NSDictionary0`, count `0`, keys `[]`.
+   - The explicit location probe called `startRefreshing`, populated one owner session's `allBeacons` / `allBeaconsCache` to 53 `SPBeacon` records, and built a context with 53 identifiers and 12 location sources.
+   - After the probe, both captured owner sessions still had `locationCache` as `__NSDictionary0`, count `0`, keys `[]`.
+   - Passive setter capture observed `SPOwnerSession setLocationCache:` fire, but the value passed to it was also `__NSDictionary0`.
+   - `locationSources` and `clientObservedBeacons` also stayed empty.
+
+   Current conclusion: `locationCache` is a real cache field and setter target, but in this run Find My explicitly set it to an empty dictionary. The cache did not populate even when `allBeacons` populated and `startRefreshing` ran, so it is not currently a source of item/device coordinates on this Mac.
+
 3. `SPOwnerSessionLocationFetch._locationUpdates`
 This is a block field, not an array, but it is very promising. The app installs location update blocks that receive `SPLocationFetchResult`. If coordinates are being delivered, they may be inside the result object passed through this path, not exposed by the single `locationsByBeaconIdentifier` accessor we tried.
 
