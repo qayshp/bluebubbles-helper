@@ -468,6 +468,59 @@ last-online beacon UUIDs to actual current/last-known coordinates. The matching
 for `qhp-mbp-14-6` gives a concrete target UUID:
 `243A7F6E-B4ED-481F-A2E0-54EF9AD6EDB6`.
 
+### Live try: owner location graph and shallow safe-location sampler
+
+After confirming the nested `SPSafeLocation -> CLLocation` shape, the next
+instrumentation pass tried a broader `owner-location-graph` checkpoint against
+owner session, captured context, and cached beacon roots.
+
+Result:
+
+- the recursive graph was too broad for the route;
+- the local API call timed out and the server transaction later hit its
+  120-second timeout;
+- the useful objects it found were repeated `SPSafeLocation` / `CLLocation`
+  safe-location objects, not a separate current-location cache.
+
+That implementation was replaced with a bounded sampler that only reads cached
+owner beacons from `allBeacons` / `allBeaconsCache`, then samples each
+`SPBeacon.safeLocations` collection without traversing proxy, XPC, session, or
+UI paths.
+
+Live result from the narrowed checkpoint:
+
+```text
+checkpoint: owner-location-graph
+mode: cached_beacon_safe_location_sample
+beacon_count: 53
+safe_location_sample_count: 24
+sample keys:
+  safe_locations_class
+  identifier_candidates
+  name
+  safe_locations_summary
+  safe_locations
+```
+
+The `CLLocation` payload shape remains:
+
+```text
+latitude: 0.0
+longitude: 0.0
+horizontalAccuracy: <double>
+timeStamp: <epoch milliseconds double>
+```
+
+Interpretation:
+
+This proves the helper can repeatedly extract nested Core Location coordinates
+from SearchParty owner beacons, but the specific sampled path is still
+safe-location/geofence data. It is not the current or last-known item/device
+coordinate shown by Find My. The next coordinate-bearing lead should stay on
+SearchParty internals, but should target current-location result/cache/update
+objects keyed by known beacon UUIDs instead of expanding UI paths or saved
+places.
+
 ## Static inspection: fetch context detail
 
 `SPLocationFetchContext` exposes the fields most likely to explain why the

@@ -3158,6 +3158,38 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         probe[@"last_online_keys"] = [lastOnlineKeys copy];
         probe[@"beacon_last_online_correlation"] = [self searchPartyLastOnlineInfoSummaryForBeacons:beacons context:capturedContext];
         probe[@"beacon_summaries_sample"] = [self compactBeaconSummariesForBeacons:beacons];
+    } else if ([checkpoint isEqualToString:@"owner-location-graph"]) {
+        id cachedBeacons = [self safeObjectValueFromObject:targetSession selectorName:@"allBeacons"] ?: [self safeObjectValueFromObject:targetSession selectorName:@"allBeaconsCache"];
+        NSArray *beacons = [self objectChildrenForValue:cachedBeacons];
+        NSMutableArray *samples = [[NSMutableArray alloc] init];
+        for (id beacon in beacons) {
+            if (samples.count >= 24) {
+                break;
+            }
+            id safeLocations = [self safeObjectValueFromObject:beacon selectorName:@"safeLocations"] ?: [self safeValueForKey:@"safeLocations" object:beacon];
+            NSArray *safeLocationSnapshots = [self searchPartyLocationBearingChildSnapshotsForValue:safeLocations];
+            if (safeLocationSnapshots.count == 0) {
+                continue;
+            }
+            NSString *name = [[self firstObjectValueFromObject:beacon
+                                                          keys:@[@"name", @"displayName", @"accessoryName"]
+                                                     selectors:@[@"name", @"displayName", @"accessoryName"]] description];
+            [samples addObject:@{
+                @"name": name.length > 0 ? name : @"<nil>",
+                @"identifier_candidates": [self searchPartyIdentifierCandidatesForBeacon:beacon] ?: @[],
+                @"safe_locations_class": [self classNameForObject:safeLocations] ?: @"<nil>",
+                @"safe_locations_summary": [self summaryForValue:safeLocations],
+                @"safe_locations": safeLocationSnapshots,
+            }];
+        }
+        probe[@"owner_location_graph"] = @{
+            @"mode": @"cached_beacon_safe_location_sample",
+            @"beacon_cache_class": [self classNameForObject:cachedBeacons] ?: @"<nil>",
+            @"beacon_count": @(beacons.count),
+            @"safe_location_sample_count": @(samples.count),
+            @"safe_location_samples": samples,
+            @"note": @"The original recursive owner-location graph scan timed out. This checkpoint is intentionally shallow and only samples cached SPBeacon.safeLocations without touching proxy/XPC paths.",
+        };
     } else {
         probe[@"error"] = [NSString stringWithFormat:@"Unknown delegated checkpoint: %@", checkpoint ?: @"<nil>"];
     }
@@ -4724,11 +4756,6 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         NSDictionary *fields = [self directFindMyFieldsForObject:child];
         if (fields.count > 0) {
             snapshot[@"fields"] = fields;
-        }
-
-        NSDictionary *ivars = [self searchPartyLocationInfoIvarValuesForObject:child];
-        if (ivars.count > 0) {
-            snapshot[@"ivars"] = ivars;
         }
 
         [snapshots addObject:[snapshot copy]];
