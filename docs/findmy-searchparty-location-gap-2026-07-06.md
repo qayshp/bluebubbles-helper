@@ -112,3 +112,11 @@ The next instrumentation should inspect:
 `SPBeacon` is the stable inventory model. `SPLocationFetchResult` is the location result model. `allBeaconsWithCompletion:` gets the former, not the latter.
 
 The missing piece is not an absent identifier; it is an untriggered or uncaptured location fetch path.
+
+## Host-Specific Update - 2026-07-07
+
+The development Mac used for this work does not show locations for any Items in the Find My app, while other Macs on the same Apple ID and iPhone do show at least some Item locations.
+
+That means empty Item location results on this host may reflect true local Find My/SearchParty state rather than only an instrumentation gap. The helper can see Item identity and freshness state, but the local app itself is not materializing Item coordinates.
+
+See `findmy-local-item-location-gap-2026-07-07.md` for the focused note.
