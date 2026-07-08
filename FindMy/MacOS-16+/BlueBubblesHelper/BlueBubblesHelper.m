@@ -3495,12 +3495,15 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         return;
     }
 
-    if (requestedFocusedStep != 15 && [targetSession respondsToSelector:NSSelectorFromString(@"startRefreshing")]) {
+    BOOL shouldSkipStartRefreshing = requestedFocusedStep == 15 || requestedFocusedStep == 16;
+    if (!shouldSkipStartRefreshing && [targetSession respondsToSelector:NSSelectorFromString(@"startRefreshing")]) {
         [self objectValueFromObject:targetSession selector:NSSelectorFromString(@"startRefreshing")];
         startedProbe[@"called_start_refreshing"] = @YES;
-    } else if (requestedFocusedStep == 15) {
+    } else if (shouldSkipStartRefreshing) {
         startedProbe[@"called_start_refreshing"] = @NO;
-        startedProbe[@"start_refreshing_note"] = @"Skipped for delegated-watch inspection because the route should not trigger SearchParty refresh behavior before storing diagnostics.";
+        startedProbe[@"start_refreshing_note"] = requestedFocusedStep == 16
+            ? @"Skipped for last-online identifier inspection because repeated startRefreshing calls crashed Find My before probe state could be stored."
+            : @"Skipped for delegated-watch inspection because the route should not trigger SearchParty refresh behavior before storing diagnostics.";
     }
 
     NSUInteger focusedProbeStep = 0;

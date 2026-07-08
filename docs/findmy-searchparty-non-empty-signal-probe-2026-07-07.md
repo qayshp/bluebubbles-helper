@@ -39,6 +39,21 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild \
 
 The rebuilt dylib was copied into the BlueBubbles server resource path and the dev Electron server was relaunched. The Find My helper connected successfully.
 
+## Crash guard
+
+A repeated call to the `last-online-identifiers` route crashed the injected Find My process on the `SPOwnerSession.startRefreshing` call before new probe state could be stored. The crash report pointed at:
+
+```text
+BlueBubblesHelper.m:637 objectValueFromObject:selector:
+BlueBubblesHelper.m:3499 handleFindMySearchPartyLocationProbeStartWithTransaction:focusedStep:
+```
+
+That path was the existing `startRefreshing` invocation for focused step 16. The signal scanner had already completed successfully on the previous call and was not present in the crash stack.
+
+The route now skips `startRefreshing` for focused step 16, matching the existing caution used for the delegated-watch focused step. This keeps the route focused on inspecting the captured `SPLocationFetchContext` and avoids re-entering the fragile refresh call.
+
+After rebuilding with this guard and reinjecting the helper, two consecutive `last-online-identifiers` calls returned status `200` quickly. Both reported `called_start_refreshing: false`, `last_online_location_info_count: 10`, and `search_location_source_count: 12`. The second call also showed `searchIdentifiers` populated with 10 UUIDs, matching the `lastOnlineLocationInfo` key set.
+
 ## Observed non-empty SearchParty state
 
 Calling:
@@ -69,6 +84,16 @@ produced a `captured_location_context_summary.signal` object:
 ```
 
 That confirms this route has live SearchParty state even when no coordinates are returned.
+
+On a later guarded repeat call, `searchIdentifiers` was also non-empty:
+
+```json
+{
+  "path": "SPLocationFetchContext.searchIdentifiers",
+  "class": "__NSFrozenArrayM",
+  "count": 10
+}
+```
 
 The same context also reported:
 
