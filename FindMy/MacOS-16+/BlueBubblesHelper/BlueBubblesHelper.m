@@ -61,6 +61,7 @@
 - (NSArray *)searchPartyLocationBearingChildSnapshotsForValue:(id)value;
 - (NSDictionary *)searchPartyIdentifierCandidateMapForBeacon:(id)beacon;
 - (NSDictionary *)searchPartyResultDeepDiagnosticsForObject:(id)object;
+- (NSDictionary *)searchPartySignalSnapshotForValue:(id)value path:(NSString *)path;
 - (NSDictionary *)directFindMyFieldsForObject:(id)object;
 - (NSArray *)findMyListRowsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (NSDictionary *)activeFindMyListDiagnosticsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
@@ -2058,6 +2059,189 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     return [methods copy];
 }
 
+- (BOOL)isLikelyLatitude:(double)value {
+    return value >= -90.0 && value <= 90.0;
+}
+
+- (BOOL)isLikelyLongitude:(double)value {
+    return value >= -180.0 && value <= 180.0;
+}
+
+- (NSDictionary *)searchPartyCoordinateHitForValue:(id)value path:(NSString *)path {
+    NSDictionary *location = [self serializeLocationObject:value];
+    if (location != (NSDictionary *)[NSNull null]) {
+        NSMutableDictionary *hit = [[NSMutableDictionary alloc] initWithDictionary:location];
+        hit[@"path"] = path ?: @"<root>";
+        hit[@"source_class"] = [self classNameForObject:value];
+        return [hit copy];
+    }
+
+    if (![value isKindOfClass:[NSDictionary class]]) {
+        return @{};
+    }
+
+    NSDictionary *dictionary = (NSDictionary *)value;
+    id latitudeValue = dictionary[@"latitude"] ?: dictionary[@"lat"];
+    id longitudeValue = dictionary[@"longitude"] ?: dictionary[@"lon"] ?: dictionary[@"lng"];
+    if (![latitudeValue respondsToSelector:@selector(doubleValue)] ||
+        ![longitudeValue respondsToSelector:@selector(doubleValue)]) {
+        return @{};
+    }
+
+    double latitude = [latitudeValue doubleValue];
+    double longitude = [longitudeValue doubleValue];
+    if (![self isLikelyLatitude:latitude] || ![self isLikelyLongitude:longitude]) {
+        return @{};
+    }
+
+    return @{
+        @"path": path ?: @"<root>",
+        @"source_class": [self classNameForObject:value],
+        @"latitude": @(latitude),
+        @"longitude": @(longitude),
+    };
+}
+
+- (void)collectSearchPartySignalsForValue:(id)value
+                                     path:(NSString *)path
+                                    depth:(NSUInteger)depth
+                                  visited:(NSMutableSet<NSString *> *)visited
+                            nonEmptyPaths:(NSMutableArray<NSDictionary *> *)nonEmptyPaths
+                           coordinateHits:(NSMutableArray<NSDictionary *> *)coordinateHits {
+    if (value == nil || value == [NSNull null] || depth > 3 ||
+        nonEmptyPaths.count >= 80 || coordinateHits.count >= 40) {
+        return;
+    }
+
+    NSString *objectId = [NSString stringWithFormat:@"%p", value];
+    if ([visited containsObject:objectId]) {
+        return;
+    }
+    [visited addObject:objectId];
+
+    NSString *currentPath = path.length > 0 ? path : @"<root>";
+    NSDictionary *coordinateHit = [self searchPartyCoordinateHitForValue:value path:currentPath];
+    if (coordinateHit.count > 0) {
+        [coordinateHits addObject:coordinateHit];
+    }
+
+    if ([value isKindOfClass:[NSDictionary class]]) {
+        NSDictionary *dictionary = (NSDictionary *)value;
+        if (dictionary.count > 0) {
+            [nonEmptyPaths addObject:@{
+                @"path": currentPath,
+                @"class": [self classNameForObject:value],
+                @"count": @(dictionary.count),
+            }];
+        }
+        NSUInteger index = 0;
+        for (id key in dictionary.allKeys) {
+            if (index >= 16) {
+                break;
+            }
+            id child = dictionary[key];
+            NSString *childPath = [NSString stringWithFormat:@"%@[%@]", currentPath, [key description] ?: @"<nil>"];
+            [self collectSearchPartySignalsForValue:child
+                                               path:childPath
+                                              depth:depth + 1
+                                            visited:visited
+                                      nonEmptyPaths:nonEmptyPaths
+                                     coordinateHits:coordinateHits];
+            index++;
+        }
+        return;
+    }
+
+    NSArray *children = @[];
+    if ([value isKindOfClass:[NSArray class]] || [value isKindOfClass:[NSSet class]]) {
+        children = [self objectChildrenForValue:value];
+    }
+    if (children.count > 0) {
+        [nonEmptyPaths addObject:@{
+            @"path": currentPath,
+            @"class": [self classNameForObject:value],
+            @"count": @(children.count),
+        }];
+        NSUInteger index = 0;
+        for (id child in children) {
+            if (index >= 16) {
+                break;
+            }
+            NSString *childPath = [NSString stringWithFormat:@"%@[%lu]", currentPath, (unsigned long)index];
+            [self collectSearchPartySignalsForValue:child
+                                               path:childPath
+                                              depth:depth + 1
+                                            visited:visited
+                                      nonEmptyPaths:nonEmptyPaths
+                                     coordinateHits:coordinateHits];
+            index++;
+        }
+    }
+
+    NSArray *selectorNames = @[
+        @"locationsByBeaconIdentifier",
+        @"beaconEventByBeaconIdentifier",
+        @"simpleBeacons",
+        @"lastOnlineLocationInfo",
+        @"location",
+        @"clLocation",
+        @"locationCache",
+        @"searchIdentifiers",
+        @"searchLocationSources",
+        @"deviceEvents",
+        @"events",
+        @"items",
+        @"devices",
+        @"beacons",
+    ];
+    for (NSString *selectorName in selectorNames) {
+        id child = [self safeObjectValueFromObject:value selectorName:selectorName];
+        if (child == nil || child == [NSNull null]) {
+            continue;
+        }
+        NSString *childPath = [NSString stringWithFormat:@"%@.%@", currentPath, selectorName];
+        [self collectSearchPartySignalsForValue:child
+                                           path:childPath
+                                          depth:depth + 1
+                                        visited:visited
+                                  nonEmptyPaths:nonEmptyPaths
+                                 coordinateHits:coordinateHits];
+    }
+}
+
+- (NSDictionary *)searchPartySignalSnapshotForValue:(id)value path:(NSString *)path {
+    if (value == nil || value == [NSNull null]) {
+        return @{};
+    }
+
+    NSMutableArray *nonEmptyPaths = [[NSMutableArray alloc] init];
+    NSMutableArray *coordinateHits = [[NSMutableArray alloc] init];
+    NSMutableSet *visited = [[NSMutableSet alloc] init];
+    [self collectSearchPartySignalsForValue:value
+                                       path:path ?: @"<root>"
+                                      depth:0
+                                    visited:visited
+                              nonEmptyPaths:nonEmptyPaths
+                             coordinateHits:coordinateHits];
+
+    if (nonEmptyPaths.count == 0 && coordinateHits.count == 0) {
+        return @{};
+    }
+
+    NSMutableDictionary *snapshot = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"root_class": [self classNameForObject:value],
+    }];
+    if (nonEmptyPaths.count > 0) {
+        snapshot[@"non_empty_paths"] = nonEmptyPaths.count > 30 ? [nonEmptyPaths subarrayWithRange:NSMakeRange(0, 30)] : nonEmptyPaths;
+        snapshot[@"non_empty_path_count"] = @(nonEmptyPaths.count);
+    }
+    if (coordinateHits.count > 0) {
+        snapshot[@"coordinate_hits"] = coordinateHits.count > 20 ? [coordinateHits subarrayWithRange:NSMakeRange(0, 20)] : coordinateHits;
+        snapshot[@"coordinate_hit_count"] = @(coordinateHits.count);
+    }
+    return [snapshot copy];
+}
+
 - (NSArray *)compactLocationDictionaryEntries:(NSDictionary *)dictionary {
     if (![dictionary isKindOfClass:[NSDictionary class]]) {
         return @[];
@@ -2079,6 +2263,10 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         NSDictionary *location = [self serializeLocationObject:value];
         if (location != (NSDictionary *)[NSNull null]) {
             entry[@"location"] = location;
+        }
+        NSDictionary *signal = [self searchPartySignalSnapshotForValue:value path:[NSString stringWithFormat:@"entry[%@]", [key description] ?: @"<nil>"]];
+        if (signal.count > 0) {
+            entry[@"signal"] = signal;
         }
         NSDictionary *fields = [self directFindMyFieldsForObject:value];
         if (fields.count > 0) {
@@ -2153,6 +2341,10 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         NSMutableDictionary *valueEntry = [[NSMutableDictionary alloc] initWithDictionary:@{
             @"summary": [self summaryForValue:value],
         }];
+        NSDictionary *signal = [self searchPartySignalSnapshotForValue:value path:key];
+        if (signal.count > 0) {
+            valueEntry[@"signal"] = signal;
+        }
         NSDictionary *location = [self serializeLocationObject:value];
         if (location != (NSDictionary *)[NSNull null]) {
             valueEntry[@"location"] = location;
@@ -2211,6 +2403,10 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                         NSMutableDictionary *valueEntry = [[NSMutableDictionary alloc] initWithDictionary:@{
                             @"summary": [self summaryForValue:value],
                         }];
+                        NSDictionary *signal = [self searchPartySignalSnapshotForValue:value path:selectorName];
+                        if (signal.count > 0) {
+                            valueEntry[@"signal"] = signal;
+                        }
                         NSDictionary *location = [self serializeLocationObject:value];
                         if (location != (NSDictionary *)[NSNull null]) {
                             valueEntry[@"location"] = location;
@@ -2259,6 +2455,10 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     if (location != (NSDictionary *)[NSNull null]) {
         entry[@"location"] = location;
     }
+    NSDictionary *signal = [self searchPartySignalSnapshotForValue:result path:selectorName ?: @"result"];
+    if (signal.count > 0) {
+        entry[@"signal"] = signal;
+    }
     if ([result isKindOfClass:[NSDictionary class]]) {
         NSDictionary *dictionary = (NSDictionary *)result;
         entry[@"result_count"] = @(dictionary.count);
@@ -2306,6 +2506,10 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     NSDictionary *location = [self serializeLocationObject:result];
     if (location != (NSDictionary *)[NSNull null]) {
         entry[@"location"] = location;
+    }
+    NSDictionary *signal = [self searchPartySignalSnapshotForValue:result path:selectorName ?: @"result"];
+    if (signal.count > 0) {
+        entry[@"signal"] = signal;
     }
 
     id locationsByBeaconIdentifier = [self safeObjectValueFromObject:result selectorName:@"locationsByBeaconIdentifier"];
@@ -2454,6 +2658,10 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
             if (value != nil && value != [NSNull null] && compactEntry[key] == nil) {
                 compactEntry[key] = value;
             }
+        }
+        id signal = result[@"signal"];
+        if ([signal isKindOfClass:[NSDictionary class]]) {
+            compactEntry[@"signal"] = signal;
         }
         id location = result[@"location"];
         if (location != nil && location != [NSNull null]) {
