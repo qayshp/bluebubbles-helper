@@ -461,6 +461,31 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     }
 }
 
+static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        void (*original)(id, SEL, id) = (void (*)(id, SEL, id))[originalValue pointerValue];
+        original(self, _cmd, value);
+    }
+
+    NSDictionary *valueLocation = [[BlueBubblesHelper sharedInstance] serializeLocationObject:value];
+    NSDictionary *targetFields = [[BlueBubblesHelper sharedInstance] findMyDeviceLocationFieldsForObject:self];
+    BBFindMyRecordSwizzleEvent(@{
+        @"event": @"fmip_device_location_setter",
+        @"selector": NSStringFromSelector(_cmd) ?: @"<nil>",
+        @"target_class": NSStringFromClass([self class]) ?: @"<nil>",
+        @"target_description": [self description] ?: [NSNull null],
+        @"value_class": value == nil ? @"<nil>" : NSStringFromClass([value class]),
+        @"value_description": value == nil ? [NSNull null] : ([value description] ?: [NSNull null]),
+        @"value_location": valueLocation == (NSDictionary *)[NSNull null] ? [NSNull null] : valueLocation,
+        @"target_location_fields": targetFields ?: @{},
+    });
+}
+
 + (instancetype)sharedInstance {
     static BlueBubblesHelper *plugin = nil;
     @synchronized(self) {
@@ -1218,6 +1243,27 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     [self swizzleInstanceMethodForClass:simpleBeaconInterfaceClass
                                selector:NSSelectorFromString(@"startUpdatingSimpleBeaconsWithContext:completion:")
                             replacement:(IMP)BBFindMyLocationFetchContextCompletion];
+
+    NSArray *fmipDeviceClassNames = @[
+        @"FMIPCore.FMIPDevice",
+        @"FMIPDevice",
+    ];
+    NSArray *fmipDeviceLocationSetterNames = @[
+        @"setLocation:",
+        @"setCrowdSourcedLocation:",
+        @"setOwnedDeviceLocation:",
+        @"setPairedLocation:",
+        @"setSeparationLocation:",
+        @"setLastOnlineLocationInfo:",
+    ];
+    for (NSString *className in fmipDeviceClassNames) {
+        Class class = NSClassFromString(className);
+        for (NSString *selectorName in fmipDeviceLocationSetterNames) {
+            [self swizzleInstanceMethodForClass:class
+                                       selector:NSSelectorFromString(selectorName)
+                                    replacement:(IMP)BBFindMyFMIPDeviceLocationSetter];
+        }
+    }
 }
 
 - (NSDictionary *)findMySwizzleDiagnostics {
