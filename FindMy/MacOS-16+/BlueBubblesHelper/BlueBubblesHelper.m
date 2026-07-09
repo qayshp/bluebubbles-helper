@@ -24,6 +24,7 @@
 - (FindMyLocateSession *)findMyLocateSession;
 - (void)handleFindMyFriendsRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesRefreshWithTransaction:(NSString *)transaction;
+- (void)handleFindMyDevicesDelayedProbeWithTransaction:(NSString *)transaction;
 - (void)handleFindMyItemsRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyDebugWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyBeaconProbeStartWithTransaction:(NSString *)transaction;
@@ -527,6 +528,11 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
 
     if ([event isEqualToString:@"refresh-findmy-devices"]) {
         [self handleFindMyDevicesRefreshWithTransaction:transaction];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-devices-delayed"]) {
+        [self handleFindMyDevicesDelayedProbeWithTransaction:transaction];
         return;
     }
 
@@ -1757,7 +1763,7 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
     }
 
     NSMutableDictionary *compact = [[NSMutableDictionary alloc] init];
-    for (NSString *key in @[@"selected_devices_segment", @"selected_items_segment", @"ui_device_count", @"ui_item_count", @"owner_beacon_count", @"owner_beacon_timeout"]) {
+    for (NSString *key in @[@"selected_devices_segment", @"selected_items_segment", @"ui_device_count", @"ui_item_count", @"owner_beacon_count", @"owner_beacon_timeout", @"delay_seconds", @"fmip_manager_start", @"initial_fmip_manager_devices", @"delayed_fmip_manager_devices", @"initial_serialized_device_count", @"delayed_serialized_device_count"]) {
         id value = diagnostics[key];
         if (value != nil) {
             compact[key] = value;
@@ -6952,6 +6958,56 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
         }
 
         sendResponse();
+    });
+}
+
+- (void)handleFindMyDevicesDelayedProbeWithTransaction:(NSString *)transaction {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleFindMyDevicesDelayedProbeWithTransaction:transaction];
+        });
+        return;
+    }
+
+    [self installFindMySwizzles];
+    BOOL didSelectDevicesSegment = [self selectFindMySegmentIndex:1];
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] init];
+    diagnostics[@"selected_devices_segment"] = @(didSelectDevicesSegment);
+    diagnostics[@"delay_seconds"] = @3;
+
+    id ownerSession = [self findMyOwnerSession];
+    if (ownerSession != nil) {
+        void *fmipStartPointer = BlueBubblesFindMyStartFMIPManager((__bridge void *)ownerSession);
+        if (fmipStartPointer != NULL) {
+            NSDictionary *fmipStart = CFBridgingRelease(fmipStartPointer);
+            if ([fmipStart isKindOfClass:[NSDictionary class]]) {
+                diagnostics[@"fmip_manager_start"] = fmipStart;
+            }
+        }
+    } else {
+        diagnostics[@"fmip_manager_start"] = @{@"fmip_manager_started": @NO, @"error": @"missing owner session"};
+    }
+
+    NSMutableDictionary *initialDiagnostics = [[NSMutableDictionary alloc] init];
+    NSArray *initialDevices = [self serializedFMIPManagerDevicesWithDiagnostics:initialDiagnostics];
+    diagnostics[@"initial_fmip_manager_devices"] = initialDiagnostics[@"fmip_manager_devices"] ?: @{};
+    diagnostics[@"initial_serialized_device_count"] = @(initialDevices.count);
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        NSMutableDictionary *delayedDiagnostics = [[NSMutableDictionary alloc] init];
+        NSArray *delayedDevices = [self serializedFMIPManagerDevicesWithDiagnostics:delayedDiagnostics];
+        diagnostics[@"delayed_fmip_manager_devices"] = delayedDiagnostics[@"fmip_manager_devices"] ?: @{};
+        diagnostics[@"delayed_serialized_device_count"] = @(delayedDevices.count);
+        diagnostics[@"swizzle"] = [self findMySwizzleDiagnostics];
+        diagnostics[@"passive_captures"] = [self capturedFindMyPassiveDiagnostics];
+        diagnostics[@"active_devices_list"] = [self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"];
+
+        [[NetworkController sharedInstance] sendMessage:@{
+            @"transactionId": transaction ?: [NSNull null],
+            @"devices": delayedDevices ?: @[],
+            @"initialDevices": initialDevices ?: @[],
+            @"diagnostics": [self compactFindMyRefreshDiagnostics:diagnostics],
+        }];
     });
 }
 
