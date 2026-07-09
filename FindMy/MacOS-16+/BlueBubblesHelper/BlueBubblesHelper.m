@@ -25,6 +25,7 @@
 - (void)handleFindMyFriendsRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesDelayedProbeWithTransaction:(NSString *)transaction;
+- (void)handleFindMyDevicesFMIPCallbackWatchWithTransaction:(NSString *)transaction;
 - (void)handleFindMyItemsRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyDebugWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyBeaconProbeStartWithTransaction:(NSString *)transaction;
@@ -51,8 +52,10 @@
 - (void)captureFindMyInterestingSetterObject:(id)object value:(id)value selector:(SEL)selector;
 - (void)captureFindMySearchPartyAccessorResult:(id)result source:(id)source selector:(SEL)selector;
 - (void)captureFindMySearchPartyLocationInvocationForTarget:(id)target selector:(SEL)selector context:(id)context result:(id)result phase:(NSString *)phase;
+- (void)captureFindMyFMIPCallbackInvocationForTarget:(id)target selector:(SEL)selector arguments:(NSArray *)arguments phase:(NSString *)phase;
 - (NSDictionary *)capturedFindMyDataSourceDiagnostics;
 - (NSDictionary *)capturedFindMyPassiveDiagnostics;
+- (NSDictionary *)findMyFMIPCallbackDiagnostics;
 - (NSDictionary *)compactFindMyRefreshDiagnostics:(NSDictionary *)diagnostics;
 - (NSDictionary *)findMySearchPartyDebugSnapshot;
 - (NSDictionary *)findMySearchPartyBeaconProbeStatus;
@@ -71,6 +74,7 @@
 - (NSDictionary *)activeFindMyListDiagnosticsForDataSourceTerm:(NSString *)dataSourceTerm type:(NSString *)type;
 - (BOOL)selectFindMySegmentIndex:(NSInteger)index;
 - (void)installFindMySwizzles;
+- (void)installFindMyFMIPCallbackSwizzles;
 - (NSDictionary *)findMySwizzleDiagnostics;
 - (NSDictionary *)compactRuntimeDiagnosticsForClassNames:(NSArray<NSString *> *)classNames matchingTerms:(NSArray<NSString *> *)terms methodLimit:(NSUInteger)methodLimit ivarLimit:(NSUInteger)ivarLimit;
 - (NSDictionary *)compactSearchPartyLocationProbeResultForSelector:(NSString *)selectorName result:(id)result;
@@ -91,6 +95,7 @@ static NSMutableArray<NSString *> *findMySwizzledSelectors;
 static NSMutableDictionary<NSString *, NSDictionary *> *findMyCapturedDataSourceSnapshots;
 static NSMutableArray<NSDictionary *> *findMyCapturedObjectSnapshots;
 static NSMutableArray<NSDictionary *> *findMySearchPartyAccessorSnapshots;
+static NSMutableArray<NSDictionary *> *findMyFMIPCallbackSnapshots;
 static NSMutableDictionary<NSString *, id> *findMyCapturedObjectsByIdentifier;
 static NSMutableDictionary *findMySearchPartyBeaconProbe;
 static NSMutableDictionary *findMySearchPartyLocationProbe;
@@ -487,6 +492,74 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
     });
 }
 
+static void BBFindMyFMIPCallback0(id self, SEL _cmd) {
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        void (*original)(id, SEL) = (void (*)(id, SEL))[originalValue pointerValue];
+        original(self, _cmd);
+    }
+
+    [[BlueBubblesHelper sharedInstance] captureFindMyFMIPCallbackInvocationForTarget:self
+                                                                            selector:_cmd
+                                                                           arguments:@[]
+                                                                               phase:@"after"];
+}
+
+static void BBFindMyFMIPCallback1(id self, SEL _cmd, id arg1) {
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        void (*original)(id, SEL, id) = (void (*)(id, SEL, id))[originalValue pointerValue];
+        original(self, _cmd, arg1);
+    }
+
+    [[BlueBubblesHelper sharedInstance] captureFindMyFMIPCallbackInvocationForTarget:self
+                                                                            selector:_cmd
+                                                                           arguments:@[arg1 ?: [NSNull null]]
+                                                                               phase:@"after"];
+}
+
+static void BBFindMyFMIPCallback2(id self, SEL _cmd, id arg1, id arg2) {
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        void (*original)(id, SEL, id, id) = (void (*)(id, SEL, id, id))[originalValue pointerValue];
+        original(self, _cmd, arg1, arg2);
+    }
+
+    [[BlueBubblesHelper sharedInstance] captureFindMyFMIPCallbackInvocationForTarget:self
+                                                                            selector:_cmd
+                                                                           arguments:@[arg1 ?: [NSNull null], arg2 ?: [NSNull null]]
+                                                                               phase:@"after"];
+}
+
+static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) {
+    NSString *key = BBFindMySwizzleKey([self class], _cmd);
+    NSValue *originalValue = nil;
+    @synchronized ([BlueBubblesHelper class]) {
+        originalValue = findMyOriginalImps[key];
+    }
+    if (originalValue != nil) {
+        void (*original)(id, SEL, id, id, id) = (void (*)(id, SEL, id, id, id))[originalValue pointerValue];
+        original(self, _cmd, arg1, arg2, arg3);
+    }
+
+    [[BlueBubblesHelper sharedInstance] captureFindMyFMIPCallbackInvocationForTarget:self
+                                                                            selector:_cmd
+                                                                           arguments:@[arg1 ?: [NSNull null], arg2 ?: [NSNull null], arg3 ?: [NSNull null]]
+                                                                               phase:@"after"];
+}
+
 + (instancetype)sharedInstance {
     static BlueBubblesHelper *plugin = nil;
     @synchronized(self) {
@@ -533,6 +606,11 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
 
     if ([event isEqualToString:@"debug-findmy-devices-delayed"]) {
         [self handleFindMyDevicesDelayedProbeWithTransaction:transaction];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-devices-fmip-callbacks"]) {
+        [self handleFindMyDevicesFMIPCallbackWatchWithTransaction:transaction];
         return;
     }
 
@@ -1043,6 +1121,124 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
     return YES;
 }
 
+- (BOOL)methodHasOnlyObjectArguments:(Method)method {
+    if (method == nil) {
+        return NO;
+    }
+
+    unsigned int argumentCount = method_getNumberOfArguments(method);
+    if (argumentCount < 2 || argumentCount > 5) {
+        return NO;
+    }
+
+    for (unsigned int index = 2; index < argumentCount; index++) {
+        char *argumentType = method_copyArgumentType(method, index);
+        if (argumentType == NULL) {
+            return NO;
+        }
+
+        const char *cursor = argumentType;
+        while (*cursor == 'r' || *cursor == 'n' || *cursor == 'N' || *cursor == 'o' || *cursor == 'O' || *cursor == 'R' || *cursor == 'V') {
+            cursor++;
+        }
+        BOOL isObject = (*cursor == '@');
+        free(argumentType);
+        if (!isObject) {
+            return NO;
+        }
+    }
+
+    return YES;
+}
+
+- (BOOL)installFMIPCallbackSwizzleForClass:(Class)class selector:(SEL)selector {
+    Method method = class == nil || selector == nil ? nil : class_getInstanceMethod(class, selector);
+    if (method == nil || ![self methodHasOnlyObjectArguments:method]) {
+        return NO;
+    }
+
+    unsigned int argumentCount = method_getNumberOfArguments(method);
+    IMP replacement = NULL;
+    if (argumentCount == 2) {
+        replacement = (IMP)BBFindMyFMIPCallback0;
+    } else if (argumentCount == 3) {
+        replacement = (IMP)BBFindMyFMIPCallback1;
+    } else if (argumentCount == 4) {
+        replacement = (IMP)BBFindMyFMIPCallback2;
+    } else if (argumentCount == 5) {
+        replacement = (IMP)BBFindMyFMIPCallback3;
+    }
+
+    return [self swizzleInstanceMethodForClass:class selector:selector replacement:replacement];
+}
+
+- (void)installFindMyFMIPCallbackSwizzles {
+    NSArray *classNames = @[
+        @"FMIPCore.FMIPManager",
+        @"_TtC8FMIPCore11FMIPManager",
+        @"FMIPManager",
+        @"FMIPCore.FMIPDataManager",
+        @"_TtC8FMIPCore15FMIPDataManager",
+        @"FMIPDataManager",
+        @"FMIPCore.FMIPRefreshingController",
+        @"_TtC8FMIPCore24FMIPRefreshingController",
+        @"FMIPRefreshingController",
+        @"FMIPCore.FMIPLocationController",
+        @"_TtC8FMIPCore22FMIPLocationController",
+        @"FMIPLocationController",
+        @"SiriFindMy.FMIPCoreFindDeviceSession",
+        @"_TtC10SiriFindMy23FMIPCoreFindDeviceSession",
+        @"SiriFindMy.FMIPSyncDeviceProvider",
+        @"_TtC10SiriFindMy22FMIPSyncDeviceProvider",
+        @"SiriFindMy.FMIPManagerWrapperImpl",
+        @"_TtC10SiriFindMy22FMIPManagerWrapperImpl",
+    ];
+    NSArray *terms = @[
+        @"didReceiveDevices",
+        @"updateDevicesLocations",
+        @"updateDevices",
+        @"didRefresh",
+        @"refreshClientRequest",
+        @"initClientRequest",
+        @"devicesPublisher",
+        @"devicesSubject",
+        @"syncDevice",
+        @"findDevice",
+        @"location",
+    ];
+
+    for (NSString *className in classNames) {
+        Class class = NSClassFromString(className);
+        if (class == nil) {
+            continue;
+        }
+
+        unsigned int methodCount = 0;
+        Method *methods = class_copyMethodList(class, &methodCount);
+        for (unsigned int i = 0; i < methodCount; i++) {
+            SEL selector = method_getName(methods[i]);
+            NSString *selectorName = selector == nil ? nil : NSStringFromSelector(selector);
+            if (selectorName.length == 0) {
+                continue;
+            }
+
+            BOOL matched = NO;
+            for (NSString *term in terms) {
+                if ([selectorName rangeOfString:term options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                    matched = YES;
+                    break;
+                }
+            }
+            if (!matched) {
+                continue;
+            }
+
+            [self installFMIPCallbackSwizzleForClass:class selector:selector];
+        }
+        free(methods);
+    }
+}
+
 - (BOOL)installSetDataSourceOverrideForClass:(Class)class {
     if (class == nil) {
         return NO;
@@ -1270,6 +1466,8 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
                                     replacement:(IMP)BBFindMyFMIPDeviceLocationSetter];
         }
     }
+
+    [self installFindMyFMIPCallbackSwizzles];
 }
 
 - (NSDictionary *)findMySwizzleDiagnostics {
@@ -1704,6 +1902,77 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
         if (findMySearchPartyAccessorSnapshots.count > 60) {
             [findMySearchPartyAccessorSnapshots removeObjectsInRange:NSMakeRange(0, findMySearchPartyAccessorSnapshots.count - 60)];
         }
+    }
+}
+
+- (void)captureFindMyFMIPCallbackInvocationForTarget:(id)target selector:(SEL)selector arguments:(NSArray *)arguments phase:(NSString *)phase {
+    NSMutableArray *argumentSummaries = [[NSMutableArray alloc] init];
+    for (id argument in arguments ?: @[]) {
+        if (argument == [NSNull null]) {
+            [argumentSummaries addObject:@{@"class": @"<nil>"}];
+            continue;
+        }
+
+        NSMutableDictionary *summary = [[self summaryForValue:argument] mutableCopy];
+        NSDictionary *location = [self serializeLocationObject:argument];
+        if (location != (NSDictionary *)[NSNull null]) {
+            summary[@"location"] = location;
+        }
+        NSDictionary *locationFields = [self findMyDeviceLocationFieldsForObject:argument];
+        if (locationFields.count > 0) {
+            summary[@"location_fields"] = locationFields;
+        }
+        [argumentSummaries addObject:[summary copy]];
+    }
+
+    NSMutableDictionary *snapshot = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"selector": selector == nil ? @"<nil>" : NSStringFromSelector(selector),
+        @"source_class": [self classNameForObject:target],
+        @"source_id": target == nil ? @"<nil>" : [NSString stringWithFormat:@"%p", target],
+        @"phase": phase ?: @"<nil>",
+        @"argument_count": @(argumentSummaries.count),
+        @"arguments": argumentSummaries,
+        @"timestamp": @([[NSDate date] timeIntervalSince1970]),
+    }];
+
+    NSDictionary *targetLocationFields = [self findMyDeviceLocationFieldsForObject:target];
+    if (targetLocationFields.count > 0) {
+        snapshot[@"target_location_fields"] = targetLocationFields;
+    }
+
+    DLog("BLUEBUBBLESHELPER: FMIP callback selector=%{public}@ source=%{public}@ argc=%{public}@",
+         snapshot[@"selector"], snapshot[@"source_class"], snapshot[@"argument_count"]);
+
+    @synchronized ([BlueBubblesHelper class]) {
+        if (findMyFMIPCallbackSnapshots == nil) {
+            findMyFMIPCallbackSnapshots = [[NSMutableArray alloc] init];
+        }
+        [findMyFMIPCallbackSnapshots addObject:[snapshot copy]];
+        if (findMyFMIPCallbackSnapshots.count > 80) {
+            [findMyFMIPCallbackSnapshots removeObjectsInRange:NSMakeRange(0, findMyFMIPCallbackSnapshots.count - 80)];
+        }
+    }
+}
+
+- (NSDictionary *)findMyFMIPCallbackDiagnostics {
+    @synchronized ([BlueBubblesHelper class]) {
+        NSArray *snapshots = [findMyFMIPCallbackSnapshots copy] ?: @[];
+        NSUInteger start = snapshots.count > 24 ? snapshots.count - 24 : 0;
+        NSArray *recent = snapshots.count > 0 ? [snapshots subarrayWithRange:NSMakeRange(start, snapshots.count - start)] : @[];
+        NSArray *selectors = [findMySwizzledSelectors copy] ?: @[];
+        NSMutableArray *fmipSelectors = [[NSMutableArray alloc] init];
+        for (NSString *selector in selectors) {
+            if ([selector rangeOfString:@"FMIP" options:NSCaseInsensitiveSearch].location != NSNotFound ||
+                [selector rangeOfString:@"SiriFindMy" options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                [fmipSelectors addObject:selector];
+            }
+        }
+        return @{
+            @"callback_count": @(snapshots.count),
+            @"callbacks": recent,
+            @"swizzled_fmip_selector_count": @(fmipSelectors.count),
+            @"swizzled_fmip_selectors": fmipSelectors,
+        };
     }
 }
 
@@ -7021,6 +7290,73 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
             @"devices": delayedDevices ?: @[],
             @"initialDevices": initialDevices ?: @[],
             @"diagnostics": [self compactFindMyRefreshDiagnostics:diagnostics],
+        }];
+    });
+}
+
+- (void)handleFindMyDevicesFMIPCallbackWatchWithTransaction:(NSString *)transaction {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleFindMyDevicesFMIPCallbackWatchWithTransaction:transaction];
+        });
+        return;
+    }
+
+    [self installFindMySwizzles];
+    [self installFindMyFMIPCallbackSwizzles];
+    BOOL didSelectDevicesSegment = [self selectFindMySegmentIndex:1];
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] init];
+    diagnostics[@"selected_devices_segment"] = @(didSelectDevicesSegment);
+    diagnostics[@"delay_seconds"] = @8;
+    diagnostics[@"fmip_callbacks_initial"] = [self findMyFMIPCallbackDiagnostics];
+    diagnostics[@"runtime"] = [self compactRuntimeDiagnosticsForClassNames:@[
+        @"FMIPCore.FMIPManager",
+        @"_TtC8FMIPCore11FMIPManager",
+        @"FMIPCore.FMIPDataManager",
+        @"_TtC8FMIPCore15FMIPDataManager",
+        @"FMIPCore.FMIPRefreshingController",
+        @"_TtC8FMIPCore24FMIPRefreshingController",
+        @"FMIPCore.FMIPLocationController",
+        @"_TtC8FMIPCore22FMIPLocationController",
+        @"SiriFindMy.FMIPCoreFindDeviceSession",
+        @"_TtC10SiriFindMy23FMIPCoreFindDeviceSession",
+        @"SiriFindMy.FMIPSyncDeviceProvider",
+        @"_TtC10SiriFindMy22FMIPSyncDeviceProvider",
+        @"SiriFindMy.FMIPManagerWrapperImpl",
+        @"_TtC10SiriFindMy22FMIPManagerWrapperImpl",
+    ] matchingTerms:@[
+        @"device",
+        @"location",
+        @"refresh",
+        @"receive",
+        @"update",
+        @"publisher",
+        @"subject",
+        @"sync",
+    ] methodLimit:32 ivarLimit:20];
+
+    id ownerSession = [self findMyOwnerSession];
+    if (ownerSession != nil) {
+        void *fmipStartPointer = BlueBubblesFindMyStartFMIPManager((__bridge void *)ownerSession);
+        if (fmipStartPointer != NULL) {
+            NSDictionary *fmipStart = CFBridgingRelease(fmipStartPointer);
+            if ([fmipStart isKindOfClass:[NSDictionary class]]) {
+                diagnostics[@"fmip_manager_start"] = fmipStart;
+            }
+        }
+    } else {
+        diagnostics[@"fmip_manager_start"] = @{@"fmip_manager_started": @NO, @"error": @"missing owner session"};
+    }
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(8 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        diagnostics[@"fmip_callbacks"] = [self findMyFMIPCallbackDiagnostics];
+        diagnostics[@"swizzle"] = [self findMySwizzleDiagnostics];
+        diagnostics[@"passive_captures"] = [self capturedFindMyPassiveDiagnostics];
+        diagnostics[@"active_devices_list"] = [self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"];
+
+        [[NetworkController sharedInstance] sendMessage:@{
+            @"transactionId": transaction ?: [NSNull null],
+            @"diagnostics": diagnostics,
         }];
     });
 }
