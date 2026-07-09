@@ -34,6 +34,17 @@ The compact diagnostics now include:
 - `passive_captures`
 - `active_devices_list`
 
+## Crash Hardening
+
+The first live route test reached the delayed snapshot point, then the Find My helper disconnected and Find My relaunched. That timing strongly indicated a crash during FMIP device serialization once `FMIPManager.devices` was populated.
+
+`serializedFMIPManagerDevicesWithDiagnostics:` now catches exceptions per device and reports:
+
+- `serialization_error_count`
+- `serialization_errors`
+
+This keeps one unsafe accessor or KVC path from killing the Find My process, while preserving enough class/description/error information to choose the next specific field probe.
+
 ## Why This Helps
 
 If FMIPCore device coordinates are populated asynchronously after `FMIPManagerRefresh`, this route should show a difference between the immediate and delayed snapshots or capture `setLocation:` / related setter events. If both snapshots stay empty, the next target is the FMIPCore callback path around `FMIPManager: didReceiveDevices` and `FMIPDataManager: updateDevicesLocations`.

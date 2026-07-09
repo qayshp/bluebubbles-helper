@@ -6519,8 +6519,18 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
 
     NSArray *rawDevices = [snapshot[@"devices"] isKindOfClass:[NSArray class]] ? snapshot[@"devices"] : @[];
     NSMutableArray *serializedDevices = [[NSMutableArray alloc] init];
+    NSMutableArray *serializationErrors = [[NSMutableArray alloc] init];
     for (id device in rawDevices) {
-        [serializedDevices addObject:[self serializeFMIPDevice:device]];
+        @try {
+            [serializedDevices addObject:[self serializeFMIPDevice:device]];
+        } @catch (NSException *exception) {
+            [serializationErrors addObject:@{
+                @"device_class": [self classNameForObject:device] ?: @"<nil>",
+                @"device_description": [device description] ?: [NSNull null],
+                @"exception_name": exception.name ?: @"<nil>",
+                @"exception_reason": exception.reason ?: @"<nil>",
+            }];
+        }
     }
 
     diagnostics[@"fmip_manager_devices"] = @{
@@ -6529,6 +6539,8 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
         @"device_count": snapshot[@"device_count"] ?: @(rawDevices.count),
         @"device_classes": snapshot[@"device_classes"] ?: @[],
         @"serialized_device_count": @(serializedDevices.count),
+        @"serialization_error_count": @(serializationErrors.count),
+        @"serialization_errors": serializationErrors,
     };
 
     return [serializedDevices copy];
