@@ -55,3 +55,31 @@ The target classes include:
 ## Expected result
 
 If the route returns and `fmip_callbacks.callback_count` grows, we can inspect callback arguments and only then serialize exact known location fields. If it returns with no callbacks, the next step is SiriFindMy provider/runtime probing. If it crashes, the watcher is still too broad and should be reduced to runtime diagnostics only plus one selector at a time.
+
+## First run result
+
+Route:
+
+```text
+POST /api/v1/icloud/findmy/devices/debug/fmip-callbacks
+```
+
+Result on 2026-07-09:
+
+- The HTTP client timed out after 45 seconds with no response body.
+- The server logged the incoming request.
+- The Find My helper socket disconnected shortly after the request.
+- The server logged `Detected DYLIB crash for App FindMy. Error: Process was force quit`.
+- Find My was relaunched and the private helper reconnected.
+
+Interpretation:
+
+- The broad watcher is still too aggressive.
+- Even with the object-argument filter, one of the swizzled FMIPCore/SiriFindMy methods likely has a runtime-visible encoding that is not safe to trampoline this way, or the hook changes call timing enough to wedge Find My startup.
+- Do not use this broad watcher for normal debugging.
+
+Next step:
+
+- Reduce the callback watch to one target family at a time.
+- Start with `FMIPDataManager` and selectors containing `updateDevicesLocations`, because that is the most semantically direct lead and avoids touching `FMIPManager.devices`.
+- If that is still unstable, move to runtime-only diagnostics and provider-specific inspection without swizzling.
