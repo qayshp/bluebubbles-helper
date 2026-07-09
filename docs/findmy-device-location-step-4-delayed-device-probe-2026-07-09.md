@@ -99,6 +99,30 @@ It still calls the private `FMIPManager.devices` accessor, but after that it onl
 
 It intentionally leaves `device_classes`, `device_summaries`, and `devices` empty. If this survives, then the crash came from inspecting `FMIPDevice` elements. If it still crashes, the crash is probably caused by calling the `FMIPManager.devices` accessor itself after refresh, or by our Swift declaration not matching the real ABI closely enough.
 
+## Count-Only Test Result
+
+The count-only bridge still crashed:
+
+- Route request started at `2026-07-09 02:10:26`.
+- The Find My helper socket ended at `2026-07-09 02:10:29`.
+- The server marked Find My as force quit and relaunched it.
+- A 30 second curl call returned HTTP `000` with no response body.
+
+This strongly narrows the problem. The crash is not caused by:
+
+- Returning raw Swift `FMIPDevice` values through Objective-C.
+- Objective-C KVC or selector serialization.
+- Mapping element types.
+- Building descriptions or Mirror summaries.
+
+The remaining likely causes are:
+
+- The `FMIPManager.devices` accessor itself is unsafe to call from our injected helper after refresh.
+- The handwritten `_silgen_name` declaration does not match the real Swift ABI closely enough, especially because the accessor returns a Swift array of `FMIPDevice` values.
+- The populated device list must be consumed through an FMIPCore callback/provider path rather than directly pulling the `devices` property.
+
+The next step is to inspect FMIPCore's binary/module metadata for the real accessor signature and for callback/update symbols around `didReceiveDevices`, `updateDevicesLocations`, and device/provider delegates.
+
 ## Why This Helps
 
 If FMIPCore device coordinates are populated asynchronously after `FMIPManagerRefresh`, this route should show a difference between the immediate and delayed snapshots or capture `setLocation:` / related setter events. If both snapshots stay empty, the next target is the FMIPCore callback path around `FMIPManager: didReceiveDevices` and `FMIPDataManager: updateDevicesLocations`.
