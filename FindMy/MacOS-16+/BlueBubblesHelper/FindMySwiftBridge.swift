@@ -16,6 +16,9 @@ private func FMIPManagerStartRefreshing(_ manager: AnyObject)
 @_silgen_name("$s8FMIPCore11FMIPManagerC7refreshyyF")
 private func FMIPManagerRefresh(_ manager: AnyObject)
 
+@_silgen_name("$s8FMIPCore11FMIPManagerC7devicesSayAA10FMIPDeviceVGvg")
+private func FMIPManagerDevices(_ manager: AnyObject) -> [AnyObject]
+
 private var retainedFMIPManager: AnyObject?
 
 @_cdecl("BlueBubblesFindMySwiftProbe")
@@ -57,6 +60,27 @@ public func BlueBubblesFindMySwiftProbe() -> UnsafeMutableRawPointer? {
         "swift_bridge_loaded": true,
         "swift_runtime_class_availability": availability,
         "swift_symbol_availability": symbols,
+    ]
+
+    return Unmanaged.passRetained(result as NSDictionary).toOpaque()
+}
+
+@_cdecl("BlueBubblesFindMyCopyFMIPManagerDevices")
+public func BlueBubblesFindMyCopyFMIPManagerDevices() -> UnsafeMutableRawPointer? {
+    guard let manager = retainedFMIPManager else {
+        return Unmanaged.passRetained([
+            "fmip_manager_present": false,
+            "devices": [],
+        ] as NSDictionary).toOpaque()
+    }
+
+    let devices = FMIPManagerDevices(manager)
+    let result: [String: Any] = [
+        "fmip_manager_present": true,
+        "manager_class": NSStringFromClass(type(of: manager)),
+        "device_count": devices.count,
+        "device_classes": devices.map { NSStringFromClass(type(of: $0)) },
+        "devices": devices,
     ]
 
     return Unmanaged.passRetained(result as NSDictionary).toOpaque()

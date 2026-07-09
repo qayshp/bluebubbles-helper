@@ -37,6 +37,9 @@
 - (void)appendFindMySearchPartyLocationProbePassiveEventWithSelectorName:(NSString *)selectorName phase:(NSString *)phase context:(id)context result:(id)result source:(id)source;
 - (NSDictionary *)serializeFMLFriend:(id)friend handle:(id)handle location:(id)location;
 - (NSDictionary *)serializeFMLDevice:(id)device;
+- (NSDictionary *)serializeFMIPDevice:(id)device;
+- (NSDictionary *)findMyDeviceLocationFieldsForObject:(id)object;
+- (NSArray *)serializedFMIPManagerDevicesWithDiagnostics:(NSMutableDictionary *)diagnostics;
 - (NSDictionary *)serializeOwnerBeacon:(id)beacon;
 - (NSDictionary *)serializeFMLHandle:(id)handle;
 - (NSDictionary *)serializeFMLLocation:(id)location handle:(id)handle;
@@ -98,6 +101,7 @@ static id findMyCapturedItemsDataSource;
 static BOOL findMySwizzlesInstalled;
 extern void *BlueBubblesFindMySwiftProbe(void);
 extern void *BlueBubblesFindMyStartFMIPManager(void *ownerSession);
+extern void *BlueBubblesFindMyCopyFMIPManagerDevices(void);
 
 static NSString *BBFindMySwizzleKey(Class class, SEL selector) {
     return [NSString stringWithFormat:@"%@:%@", NSStringFromClass(class), NSStringFromSelector(selector)];
@@ -6308,7 +6312,7 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
     NSString *deviceName = [self objectValueFromObject:device selector:@selector(deviceName)];
     NSString *idsDeviceId = [self objectValueFromObject:device selector:@selector(idsDeviceId)];
 
-    return @{
+    NSMutableDictionary *serialized = [[NSMutableDictionary alloc] initWithDictionary:@{
         @"id": identifier ?: idsDeviceId ?: [device description],
         @"name": deviceName ?: [device description],
         @"deviceDisplayName": deviceName ?: [NSNull null],
@@ -6336,7 +6340,146 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
             @"isCompanion": [device respondsToSelector:@selector(isCompanion)] ? @([self boolValueFromObject:device selector:@selector(isCompanion)]) : [NSNull null],
             @"isAutoMeCapable": [device respondsToSelector:@selector(isAutoMeCapable)] ? @([self boolValueFromObject:device selector:@selector(isAutoMeCapable)]) : [NSNull null],
         },
+    }];
+
+    serialized[@"findmy_device_location_probe"] = [self findMyDeviceLocationFieldsForObject:device];
+    return [serialized copy];
+}
+
+- (NSDictionary *)serializeFMIPDevice:(id)device {
+    if (device == nil) {
+        return @{};
+    }
+
+    NSString *identifier = [[self firstObjectValueFromObject:device
+                                                       keys:@[@"identifier", @"id", @"deviceIdentifier", @"deviceId", @"idsDeviceId"]
+                                                  selectors:@[@"identifier", @"id", @"deviceIdentifier", @"deviceId", @"idsDeviceId"]] description];
+    NSString *name = [[self firstObjectValueFromObject:device
+                                                  keys:@[@"name", @"deviceName", @"deviceDisplayName", @"displayName"]
+                                             selectors:@[@"name", @"deviceName", @"deviceDisplayName", @"displayName"]] description];
+    NSString *model = [[self firstObjectValueFromObject:device
+                                                  keys:@[@"deviceModel", @"rawDeviceModel", @"modelName", @"modelDisplayName"]
+                                             selectors:@[@"deviceModel", @"rawDeviceModel", @"modelName", @"modelDisplayName"]] description];
+    NSDictionary *locationProbe = [self findMyDeviceLocationFieldsForObject:device];
+    NSDictionary *bestLocation = nil;
+    NSDictionary *candidateLocations = locationProbe[@"candidate_locations"];
+    for (NSString *key in @[@"location", @"crowdSourcedLocation", @"ownedDeviceLocation", @"pairedLocation", @"separationLocation", @"lastOnlineLocationInfo"]) {
+        id value = candidateLocations[key];
+        if ([value isKindOfClass:[NSDictionary class]]) {
+            bestLocation = value;
+            break;
+        }
+    }
+
+    NSMutableDictionary *serialized = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"id": identifier ?: [device description],
+        @"name": name.length > 0 ? name : (identifier ?: [device description]),
+        @"deviceDisplayName": name.length > 0 ? name : [NSNull null],
+        @"deviceModel": model.length > 0 ? model : @"FMIPDevice",
+        @"rawDeviceModel": model.length > 0 ? model : @"FMIPDevice",
+        @"modelDisplayName": @"Find My Device",
+        @"batteryStatus": @"Unknown",
+        @"audioChannels": @[],
+        @"locationEnabled": @YES,
+        @"isConsideredAccessory": @NO,
+        @"locationCapable": @YES,
+        @"fmlyShare": @NO,
+        @"thisDevice": @NO,
+        @"isMac": @NO,
+        @"lostModeEnabled": @NO,
+        @"deviceClass": @"FMIPDevice",
+        @"prsId": @"owner",
+        @"findmy_source": @"fmip_manager",
+        @"findmy_device": @{
+            @"class": [self classNameForObject:device],
+            @"description": [device description] ?: [NSNull null],
+            @"identifier": identifier ?: [NSNull null],
+            @"name": name.length > 0 ? name : [NSNull null],
+            @"model": model.length > 0 ? model : [NSNull null],
+        },
+        @"findmy_device_location_probe": locationProbe,
+    }];
+
+    if (bestLocation != nil) {
+        serialized[@"location"] = bestLocation;
+        serialized[@"crowdSourcedLocation"] = bestLocation;
+    }
+
+    return [serialized copy];
+}
+
+- (NSDictionary *)findMyDeviceLocationFieldsForObject:(id)object {
+    if (object == nil || object == [NSNull null]) {
+        return @{};
+    }
+
+    NSArray *locationKeys = @[
+        @"location",
+        @"crowdSourcedLocation",
+        @"ownedDeviceLocation",
+        @"pairedLocation",
+        @"separationLocation",
+        @"lastOnlineLocationInfo"
+    ];
+    NSMutableDictionary *candidateLocations = [[NSMutableDictionary alloc] init];
+    NSMutableDictionary *fieldClasses = [[NSMutableDictionary alloc] init];
+    NSMutableDictionary *fieldSummaries = [[NSMutableDictionary alloc] init];
+    NSMutableDictionary *fieldPresence = [[NSMutableDictionary alloc] init];
+
+    for (NSString *key in locationKeys) {
+        id value = [self firstObjectValueFromObject:object keys:@[key] selectors:@[key]];
+        fieldPresence[key] = @(value != nil && value != [NSNull null]);
+        if (value == nil || value == [NSNull null]) {
+            continue;
+        }
+
+        fieldClasses[key] = [self classNameForObject:value] ?: @"<nil>";
+        NSDictionary *serializedLocation = [self serializeLocationObject:value];
+        if (serializedLocation != (NSDictionary *)[NSNull null]) {
+            candidateLocations[key] = serializedLocation;
+        } else {
+            fieldSummaries[key] = [self summaryForValue:value];
+        }
+    }
+
+    return @{
+        @"object_class": [self classNameForObject:object] ?: @"<nil>",
+        @"object_description": [object description] ?: [NSNull null],
+        @"field_presence": fieldPresence,
+        @"field_classes": fieldClasses,
+        @"field_summaries": fieldSummaries,
+        @"candidate_locations": candidateLocations,
     };
+}
+
+- (NSArray *)serializedFMIPManagerDevicesWithDiagnostics:(NSMutableDictionary *)diagnostics {
+    void *devicesPointer = BlueBubblesFindMyCopyFMIPManagerDevices();
+    if (devicesPointer == NULL) {
+        diagnostics[@"fmip_manager_devices"] = @{@"error": @"snapshot returned NULL"};
+        return @[];
+    }
+
+    NSDictionary *snapshot = CFBridgingRelease(devicesPointer);
+    if (![snapshot isKindOfClass:[NSDictionary class]]) {
+        diagnostics[@"fmip_manager_devices"] = @{@"error": @"snapshot was not a dictionary"};
+        return @[];
+    }
+
+    NSArray *rawDevices = [snapshot[@"devices"] isKindOfClass:[NSArray class]] ? snapshot[@"devices"] : @[];
+    NSMutableArray *serializedDevices = [[NSMutableArray alloc] init];
+    for (id device in rawDevices) {
+        [serializedDevices addObject:[self serializeFMIPDevice:device]];
+    }
+
+    diagnostics[@"fmip_manager_devices"] = @{
+        @"fmip_manager_present": snapshot[@"fmip_manager_present"] ?: @NO,
+        @"manager_class": snapshot[@"manager_class"] ?: [NSNull null],
+        @"device_count": snapshot[@"device_count"] ?: @(rawDevices.count),
+        @"device_classes": snapshot[@"device_classes"] ?: @[],
+        @"serialized_device_count": @(serializedDevices.count),
+    };
+
+    return [serializedDevices copy];
 }
 
 - (id)firstObjectValueFromObject:(id)object keys:(NSArray<NSString *> *)keys selectors:(NSArray<NSString *> *)selectors {
@@ -6650,6 +6793,18 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
                 mutableDiagnostics[@"swift_probe"] = swiftProbe;
             }
         }
+        id ownerSession = [self findMyOwnerSession];
+        if (ownerSession != nil) {
+            void *fmipStartPointer = BlueBubblesFindMyStartFMIPManager((__bridge void *)ownerSession);
+            if (fmipStartPointer != NULL) {
+                NSDictionary *fmipStart = CFBridgingRelease(fmipStartPointer);
+                if ([fmipStart isKindOfClass:[NSDictionary class]]) {
+                    mutableDiagnostics[@"fmip_manager_start"] = fmipStart;
+                }
+            }
+        } else {
+            mutableDiagnostics[@"fmip_manager_start"] = @{@"fmip_manager_started": @NO, @"error": @"missing owner session"};
+        }
         mutableDiagnostics[@"runtime_class_matches"] = [self runtimeClassNamesMatchingTerms:@[
             @"FMDevice",
             @"FMItem",
@@ -6668,6 +6823,10 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
         NSArray *uiDevices = [self findMyListRowsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"];
         mutableDiagnostics[@"ui_device_count"] = @(uiDevices.count);
         [devices addObjectsFromArray:uiDevices];
+        NSArray *fmipManagerDevices = [self serializedFMIPManagerDevicesWithDiagnostics:mutableDiagnostics];
+        if (fmipManagerDevices.count > 0) {
+            [devices addObjectsFromArray:fmipManagerDevices];
+        }
 
         __block BOOL didSendResponse = NO;
         void (^sendResponse)(void) = ^{
@@ -6689,7 +6848,6 @@ static void BBFindMySearchPartyResultSetter(id self, SEL _cmd, id value) {
             return;
         }
 
-        id ownerSession = [self findMyOwnerSession];
         if (ownerSession != nil && [ownerSession respondsToSelector:@selector(allBeaconsWithCompletion:)]) {
             void (^completion)(NSArray *) = ^(NSArray *beacons) {
                 NSArray *beaconList = [beacons isKindOfClass:[NSArray class]] ? beacons : @[];
