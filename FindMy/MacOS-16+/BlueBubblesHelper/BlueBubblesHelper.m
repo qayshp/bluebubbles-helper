@@ -26,6 +26,7 @@
 - (void)handleFindMyDevicesRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesDelayedProbeWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesFMIPCallbackWatchWithTransaction:(NSString *)transaction;
+- (void)handleFindMyDevicesProviderRuntimeProbeWithTransaction:(NSString *)transaction;
 - (void)handleFindMyItemsRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyDebugWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyBeaconProbeStartWithTransaction:(NSString *)transaction;
@@ -612,6 +613,11 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
 
     if ([event isEqualToString:@"debug-findmy-devices-fmip-callbacks"]) {
         [self handleFindMyDevicesFMIPCallbackWatchWithTransaction:transaction];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-devices-provider-runtime"]) {
+        [self handleFindMyDevicesProviderRuntimeProbeWithTransaction:transaction];
         return;
     }
 
@@ -7373,6 +7379,57 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
             @"diagnostics": diagnostics,
         }];
     });
+}
+
+- (void)handleFindMyDevicesProviderRuntimeProbeWithTransaction:(NSString *)transaction {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleFindMyDevicesProviderRuntimeProbeWithTransaction:transaction];
+        });
+        return;
+    }
+
+    [self installFindMySwizzles];
+    BOOL didSelectDevicesSegment = [self selectFindMySegmentIndex:1];
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] init];
+    diagnostics[@"selected_devices_segment"] = @(didSelectDevicesSegment);
+    diagnostics[@"probe_mode"] = @"provider_runtime_no_fmip_callback_swizzle";
+    diagnostics[@"runtime"] = [self compactRuntimeDiagnosticsForClassNames:@[
+        @"SiriFindMy.FMIPCoreFindDeviceSession",
+        @"_TtC10SiriFindMy23FMIPCoreFindDeviceSession",
+        @"SiriFindMy.FMIPSyncDeviceProvider",
+        @"_TtC10SiriFindMy22FMIPSyncDeviceProvider",
+        @"SiriFindMy.FMIPManagerWrapperImpl",
+        @"_TtC10SiriFindMy22FMIPManagerWrapperImpl",
+        @"SiriFindMy.FindDeviceIntentHandler",
+        @"_TtC10SiriFindMy23FindDeviceIntentHandler",
+        @"FMIPCore.FMIPManager",
+        @"_TtC8FMIPCore11FMIPManager",
+        @"FMIPCore.FMIPDataManager",
+        @"_TtC8FMIPCore15FMIPDataManager",
+    ] matchingTerms:@[
+        @"device",
+        @"location",
+        @"provider",
+        @"publisher",
+        @"subject",
+        @"sync",
+        @"manager",
+        @"session",
+        @"refresh",
+        @"receive",
+        @"update",
+    ] methodLimit:48 ivarLimit:28];
+    diagnostics[@"object_graph"] = [self findMyObjectGraphDiagnostics];
+    diagnostics[@"session_objects"] = [self findMySessionObjectDiagnostics];
+    diagnostics[@"swizzle"] = [self findMySwizzleDiagnostics];
+    diagnostics[@"passive_captures"] = [self capturedFindMyPassiveDiagnostics];
+    diagnostics[@"active_devices_list"] = [self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"];
+
+    [[NetworkController sharedInstance] sendMessage:@{
+        @"transactionId": transaction ?: [NSNull null],
+        @"diagnostics": [self compactFindMyRefreshDiagnostics:diagnostics],
+    }];
 }
 
 - (void)handleFindMyItemsRefreshWithTransaction:(NSString *)transaction {
