@@ -7308,19 +7308,19 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
 
     [self installFindMySwizzles];
     [self installFindMyFMIPCallbackSwizzlesForClassTerms:@[
-        @"FMIPCore.FMIPDataManager",
-        @"_TtC8FMIPCore15FMIPDataManager",
-        @"FMIPDataManager",
+        @"FMIPCore.FMIPManager",
+        @"_TtC8FMIPCore11FMIPManager",
+        @"FMIPManager",
     ] selectorTerms:@[
-        @"updateDevicesLocations",
+        @"didReceiveDevices",
     ]];
     BOOL didSelectDevicesSegment = [self selectFindMySegmentIndex:1];
     NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] init];
     diagnostics[@"selected_devices_segment"] = @(didSelectDevicesSegment);
     diagnostics[@"delay_seconds"] = @8;
     diagnostics[@"watch_scope"] = @{
-        @"class_terms": @[@"FMIPDataManager"],
-        @"selector_terms": @[@"updateDevicesLocations"],
+        @"class_terms": @[@"FMIPManager"],
+        @"selector_terms": @[@"didReceiveDevices"],
     };
     diagnostics[@"fmip_callbacks_initial"] = [self findMyFMIPCallbackDiagnostics];
     diagnostics[@"runtime"] = [self compactRuntimeDiagnosticsForClassNames:@[
