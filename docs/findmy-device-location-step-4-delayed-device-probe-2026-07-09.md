@@ -45,6 +45,30 @@ The first live route test reached the delayed snapshot point, then the Find My h
 
 This keeps one unsafe accessor or KVC path from killing the Find My process, while preserving enough class/description/error information to choose the next specific field probe.
 
+## Hardened Test Result
+
+The same delayed route still timed out after the per-device Objective-C exception hardening. The helper disconnected again almost exactly when the delayed snapshot should have read populated `FMIPManager.devices`.
+
+That means the crash likely happens before Objective-C per-device serialization can catch anything. The strongest candidate is the Swift bridge boundary:
+
+- The mangled accessor is `FMIPManager.devices -> [FMIPDevice]`.
+- `FMIPDevice` appears to be a Swift value type, not a normal Objective-C object.
+- The first bridge declaration treated the accessor as returning `[AnyObject]` and then passed raw device values through an `NSDictionary` into Objective-C.
+
+## Metadata-Only Bridge Attempt
+
+The next attempt keeps the delayed route but changes the Swift bridge to:
+
+- Declare `FMIPManager.devices` as returning `[Any]`.
+- Avoid returning raw device values to Objective-C.
+- Return only safe Swift-side metadata:
+  - `device_count`
+  - `device_classes`
+  - first 10 `device_summaries`
+  - Mirror child labels for those first values
+
+If this survives with a non-zero `device_count`, then the extraction path should stay in Swift and add fields one at a time from the Mirror labels or known `FMIPDevice` accessors. If it still crashes, the problem is likely the `FMIPManager.devices` accessor itself or the manager state/timing, not the Objective-C serializer.
+
 ## Why This Helps
 
 If FMIPCore device coordinates are populated asynchronously after `FMIPManagerRefresh`, this route should show a difference between the immediate and delayed snapshots or capture `setLocation:` / related setter events. If both snapshots stay empty, the next target is the FMIPCore callback path around `FMIPManager: didReceiveDevices` and `FMIPDataManager: updateDevicesLocations`.
