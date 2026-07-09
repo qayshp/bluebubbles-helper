@@ -79,21 +79,13 @@ public func BlueBubblesFindMyCopyFMIPManagerDevices() -> UnsafeMutableRawPointer
     }
 
     let devices = FMIPManagerDevices(manager)
-    let deviceSummaries = devices.prefix(10).map { device -> [String: Any] in
-        let mirror = Mirror(reflecting: device)
-        return [
-            "swift_type": String(describing: type(of: device)),
-            "mirror_display_style": mirror.displayStyle.map { String(describing: $0) } ?? NSNull(),
-            "mirror_child_labels": mirror.children.compactMap { $0.label },
-            "description": String(describing: device),
-        ]
-    }
     let result: [String: Any] = [
         "fmip_manager_present": true,
         "manager_class": NSStringFromClass(type(of: manager)),
         "device_count": devices.count,
-        "device_classes": devices.map { String(describing: type(of: $0)) },
-        "device_summaries": deviceSummaries,
+        "device_classes": [],
+        "device_summaries": [],
+        "snapshot_mode": "count_only",
         "devices": [],
     ]
 

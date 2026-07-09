@@ -6539,6 +6539,7 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
         @"device_count": snapshot[@"device_count"] ?: @(rawDevices.count),
         @"device_classes": snapshot[@"device_classes"] ?: @[],
         @"device_summaries": snapshot[@"device_summaries"] ?: @[],
+        @"snapshot_mode": snapshot[@"snapshot_mode"] ?: [NSNull null],
         @"serialized_device_count": @(serializedDevices.count),
         @"serialization_error_count": @(serializationErrors.count),
         @"serialization_errors": serializationErrors,

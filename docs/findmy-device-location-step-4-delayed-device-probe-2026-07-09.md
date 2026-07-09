@@ -86,6 +86,19 @@ Because this version did not return raw devices to Objective-C, the remaining un
 
 The next narrower probe should be count-only: call `FMIPManager.devices` and return only `devices.count`, without touching element types, descriptions, Mirror, or Objective-C serialization.
 
+## Count-Only Bridge Attempt
+
+The next helper changes the Swift snapshot to `snapshot_mode: count_only`.
+
+It still calls the private `FMIPManager.devices` accessor, but after that it only returns:
+
+- `fmip_manager_present`
+- `manager_class`
+- `device_count`
+- `snapshot_mode`
+
+It intentionally leaves `device_classes`, `device_summaries`, and `devices` empty. If this survives, then the crash came from inspecting `FMIPDevice` elements. If it still crashes, the crash is probably caused by calling the `FMIPManager.devices` accessor itself after refresh, or by our Swift declaration not matching the real ABI closely enough.
+
 ## Why This Helps
 
 If FMIPCore device coordinates are populated asynchronously after `FMIPManagerRefresh`, this route should show a difference between the immediate and delayed snapshots or capture `setLocation:` / related setter events. If both snapshots stay empty, the next target is the FMIPCore callback path around `FMIPManager: didReceiveDevices` and `FMIPDataManager: updateDevicesLocations`.
