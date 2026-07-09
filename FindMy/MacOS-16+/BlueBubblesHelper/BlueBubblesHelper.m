@@ -75,6 +75,7 @@
 - (BOOL)selectFindMySegmentIndex:(NSInteger)index;
 - (void)installFindMySwizzles;
 - (void)installFindMyFMIPCallbackSwizzles;
+- (void)installFindMyFMIPCallbackSwizzlesForClassTerms:(NSArray<NSString *> *)classTerms selectorTerms:(NSArray<NSString *> *)selectorTerms;
 - (NSDictionary *)findMySwizzleDiagnostics;
 - (NSDictionary *)compactRuntimeDiagnosticsForClassNames:(NSArray<NSString *> *)classNames matchingTerms:(NSArray<NSString *> *)terms methodLimit:(NSUInteger)methodLimit ivarLimit:(NSUInteger)ivarLimit;
 - (NSDictionary *)compactSearchPartyLocationProbeResultForSelector:(NSString *)selectorName result:(id)result;
@@ -1207,7 +1208,11 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
         @"location",
     ];
 
-    for (NSString *className in classNames) {
+    [self installFindMyFMIPCallbackSwizzlesForClassTerms:classNames selectorTerms:terms];
+}
+
+- (void)installFindMyFMIPCallbackSwizzlesForClassTerms:(NSArray<NSString *> *)classTerms selectorTerms:(NSArray<NSString *> *)selectorTerms {
+    for (NSString *className in classTerms) {
         Class class = NSClassFromString(className);
         if (class == nil) {
             continue;
@@ -1223,7 +1228,7 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
             }
 
             BOOL matched = NO;
-            for (NSString *term in terms) {
+            for (NSString *term in selectorTerms) {
                 if ([selectorName rangeOfString:term options:NSCaseInsensitiveSearch].location != NSNotFound) {
                     matched = YES;
                     break;
@@ -1467,7 +1472,6 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
         }
     }
 
-    [self installFindMyFMIPCallbackSwizzles];
 }
 
 - (NSDictionary *)findMySwizzleDiagnostics {
@@ -7303,11 +7307,21 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
     }
 
     [self installFindMySwizzles];
-    [self installFindMyFMIPCallbackSwizzles];
+    [self installFindMyFMIPCallbackSwizzlesForClassTerms:@[
+        @"FMIPCore.FMIPDataManager",
+        @"_TtC8FMIPCore15FMIPDataManager",
+        @"FMIPDataManager",
+    ] selectorTerms:@[
+        @"updateDevicesLocations",
+    ]];
     BOOL didSelectDevicesSegment = [self selectFindMySegmentIndex:1];
     NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] init];
     diagnostics[@"selected_devices_segment"] = @(didSelectDevicesSegment);
     diagnostics[@"delay_seconds"] = @8;
+    diagnostics[@"watch_scope"] = @{
+        @"class_terms": @[@"FMIPDataManager"],
+        @"selector_terms": @[@"updateDevicesLocations"],
+    };
     diagnostics[@"fmip_callbacks_initial"] = [self findMyFMIPCallbackDiagnostics];
     diagnostics[@"runtime"] = [self compactRuntimeDiagnosticsForClassNames:@[
         @"FMIPCore.FMIPManager",
