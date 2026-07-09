@@ -69,6 +69,23 @@ The next attempt keeps the delayed route but changes the Swift bridge to:
 
 If this survives with a non-zero `device_count`, then the extraction path should stay in Swift and add fields one at a time from the Mirror labels or known `FMIPDevice` accessors. If it still crashes, the problem is likely the `FMIPManager.devices` accessor itself or the manager state/timing, not the Objective-C serializer.
 
+## Metadata-Only Test Result
+
+The metadata-only bridge still crashed at the delayed snapshot point:
+
+- Route request started at `2026-07-09 02:06:19`.
+- The Find My helper socket ended at `2026-07-09 02:06:22`.
+- The server reported the Find My process as force quit and relaunched it.
+- The curl request timed out after 30 seconds with no response body.
+
+Because this version did not return raw devices to Objective-C, the remaining unsafe operations are inside Swift:
+
+- Calling the private `FMIPManager.devices` accessor once the manager has populated devices.
+- Mapping the returned values for `type(of:)`.
+- Building descriptions or Mirror summaries from the returned values.
+
+The next narrower probe should be count-only: call `FMIPManager.devices` and return only `devices.count`, without touching element types, descriptions, Mirror, or Objective-C serialization.
+
 ## Why This Helps
 
 If FMIPCore device coordinates are populated asynchronously after `FMIPManagerRefresh`, this route should show a difference between the immediate and delayed snapshots or capture `setLocation:` / related setter events. If both snapshots stay empty, the next target is the FMIPCore callback path around `FMIPManager: didReceiveDevices` and `FMIPDataManager: updateDevicesLocations`.
