@@ -137,3 +137,74 @@ Interpretation:
 
 - Provider inspection is still the right low-risk path, but the route must return bounded summaries.
 - The most promising non-UI next target is `FMIPDataManager` ivar inspection, especially `devices` and `crowdSourcedLocations`, from a retained `FMIPManager.dataManager` instance rather than the Swift `FMIPManager.devices` accessor.
+
+## Bounded diagnostics result
+
+Installed helper md5 in `bluebubbles-server`:
+
+```text
+a1d91cb41afd1c39d945bd7cf5292783
+```
+
+Route result:
+
+- HTTP 200.
+- Response size: 10,495 bytes.
+- Server request time: 10.6 seconds.
+- No Find My crash after the route.
+- `probe_mode`: `provider_runtime_no_fmip_callback_swizzle`
+- `selected_devices_segment`: `true`
+
+Runtime availability:
+
+- Available:
+  - `FMIPCore.FMIPManager`
+  - `_TtC8FMIPCore11FMIPManager`
+  - `FMIPCore.FMIPDataManager`
+  - `_TtC8FMIPCore15FMIPDataManager`
+- Not available in this process:
+  - `SiriFindMy.FMIPCoreFindDeviceSession`
+  - `_TtC10SiriFindMy23FMIPCoreFindDeviceSession`
+  - `SiriFindMy.FMIPSyncDeviceProvider`
+  - `_TtC10SiriFindMy22FMIPSyncDeviceProvider`
+  - `SiriFindMy.FMIPManagerWrapperImpl`
+  - `_TtC10SiriFindMy22FMIPManagerWrapperImpl`
+  - `SiriFindMy.FindDeviceIntentHandler`
+  - `_TtC10SiriFindMy23FindDeviceIntentHandler`
+
+Important `FMIPDataManager` ivars:
+
+- `devices`
+- `owner`
+- `familyMembers`
+- `crowdSourcedOriginalLocations`
+- `crowdSourcedLocations`
+- `crowdSourcedLocating`
+- `deviceConnectedStates`
+- `safeLocations`
+- `safeLocationsMapping`
+
+Important `FMIPManager` ivars:
+
+- `refreshingController`
+- `beaconRefreshingController`
+- `safeLocationRefreshingController`
+- `locationController`
+- `ownerSession`
+- `dataManager`
+- `snapshotDevicesResponseReceived`
+- `snapshotItemsResponseReceived`
+- `snapshotItemsLocatedResponseReceived`
+- `isUpdatingSingleDevices`
+
+Other notes:
+
+- Active Devices UI data source was found: `FindMy.FMDevicesListDataSource`.
+- Visible device cell count was 13.
+- Passive SearchParty capture remains active, with 35 captured object snapshots and 67 SearchParty accessor snapshots.
+
+Next best target:
+
+- Capture the retained `FMIPManager` instance or follow `FMIPDataManager` from `FMIPManager.dataManager`.
+- Inspect `FMIPDataManager` ivars directly, starting with bounded summaries of `devices`, `crowdSourcedLocations`, `crowdSourcedOriginalLocations`, and `deviceConnectedStates`.
+- Avoid `FMIPManager.devices`; that accessor has already crashed even in count-only form.
