@@ -6821,6 +6821,10 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
             @"FindMy.FMDeviceDetailDataSource",
             @"FMItemDetailDataSource",
             @"FindMy.FMItemDetailDataSource",
+            @"FindMyCore.DeviceLocationEntity",
+            @"FindMyCore.DeviceLocationEntityQuery",
+            @"FindMyCore.PublishedLocation",
+            @"FindMyCore.Location",
             @"FMPeopleProvider",
             @"FindMy.FMPeopleProvider",
             @"FMPeopleListDataSource",
@@ -6858,9 +6862,25 @@ static void BBFindMyFMIPDeviceLocationSetter(id self, SEL _cmd, id value) {
             @"FMDevicesProvider",
             @"FMItemsList",
             @"FindMy",
+            @"FindMyCore",
+            @"PublishedLocation",
+            @"DeviceLocationEntity",
             @"SPOwner",
             @"Beacon",
         ] limit:200];
+        mutableDiagnostics[@"findmycore_location_runtime"] = [self compactRuntimeDiagnosticsForClassNames:@[
+            @"FindMyCore.DeviceLocationEntity",
+            @"FindMyCore.DeviceLocationEntityQuery",
+            @"FindMyCore.PublishedLocation",
+            @"FindMyCore.Location",
+        ] matchingTerms:@[
+            @"location",
+            @"fetch",
+            @"query",
+            @"device",
+            @"clLocation",
+            @"published",
+        ] methodLimit:40 ivarLimit:24];
         mutableDiagnostics[@"swizzle"] = [self findMySwizzleDiagnostics];
         mutableDiagnostics[@"captured_data_sources"] = [self capturedFindMyDataSourceDiagnostics];
         mutableDiagnostics[@"passive_captures"] = [self capturedFindMyPassiveDiagnostics];
