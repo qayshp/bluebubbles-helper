@@ -92,3 +92,48 @@ Interpretation:
 
 - Non-swizzling provider inspection is stable.
 - The helper needs to return full diagnostics for this route instead of `compactFindMyRefreshDiagnostics`.
+
+## Full diagnostics result
+
+Installed helper md5 in `bluebubbles-server`:
+
+```text
+2e14aefbe35c29b9248ba44d84e839d7
+```
+
+Result:
+
+- The helper sent the full diagnostics payload.
+- The server failed to decode it because the JSON was too large for the helper socket framing and arrived split around 64 KB chunks.
+- The HTTP request timed out because the transaction never decoded.
+
+Useful information visible in the server log before truncation:
+
+- `SiriFindMy.FMIPCoreFindDeviceSession` was not runtime-available.
+- `SiriFindMy.FMIPSyncDeviceProvider` was not runtime-available.
+- `SiriFindMy.FMIPManagerWrapperImpl` was not runtime-available.
+- `FMIPCore.FMIPManager` was runtime-available and exposed ivars including:
+  - `delegate`
+  - `siriDelegate`
+  - `refreshingController`
+  - `locationController`
+  - `ownerSession`
+  - `dataManager`
+  - `snapshotDevicesResponseReceived`
+  - `isUpdatingSingleDevices`
+- `FMIPCore.FMIPDataManager` was runtime-available and exposed ivars including:
+  - `devices`
+  - `owner`
+  - `familyMembers`
+  - `crowdSourcedOriginalLocations`
+  - `crowdSourcedLocations`
+  - `deviceConnectedStates`
+  - `safeLocations`
+  - `safeLocationsMapping`
+  - `items`
+  - `itemGroups`
+
+Interpretation:
+
+- Provider inspection is still the right low-risk path, but the route must return bounded summaries.
+- The most promising non-UI next target is `FMIPDataManager` ivar inspection, especially `devices` and `crowdSourcedLocations`, from a retained `FMIPManager.dataManager` instance rather than the Swift `FMIPManager.devices` accessor.

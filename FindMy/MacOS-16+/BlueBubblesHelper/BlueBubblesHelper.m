@@ -7420,11 +7420,65 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
         @"receive",
         @"update",
     ] methodLimit:48 ivarLimit:28];
-    diagnostics[@"object_graph"] = [self findMyObjectGraphDiagnostics];
-    diagnostics[@"session_objects"] = [self findMySessionObjectDiagnostics];
-    diagnostics[@"swizzle"] = [self findMySwizzleDiagnostics];
-    diagnostics[@"passive_captures"] = [self capturedFindMyPassiveDiagnostics];
-    diagnostics[@"active_devices_list"] = [self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"];
+    NSDictionary *objectGraph = [self findMyObjectGraphDiagnostics];
+    NSArray *objectMatches = [objectGraph[@"matches"] isKindOfClass:[NSArray class]] ? objectGraph[@"matches"] : @[];
+    NSMutableArray *objectMatchClasses = [[NSMutableArray alloc] init];
+    for (NSDictionary *match in objectMatches) {
+        NSString *className = match[@"class"];
+        if (className.length > 0 && ![objectMatchClasses containsObject:className]) {
+            [objectMatchClasses addObject:className];
+        }
+        if (objectMatchClasses.count >= 30) {
+            break;
+        }
+    }
+    diagnostics[@"object_graph_summary"] = @{
+        @"root_count": objectGraph[@"root_count"] ?: @0,
+        @"scanned": objectGraph[@"scanned"] ?: @0,
+        @"match_count": @(objectMatches.count),
+        @"match_classes_sample": objectMatchClasses,
+    };
+
+    NSDictionary *sessionObjects = [self findMySessionObjectDiagnostics];
+    NSArray *sessionMatches = [sessionObjects[@"matches"] isKindOfClass:[NSArray class]] ? sessionObjects[@"matches"] : @[];
+    NSMutableArray *sessionMatchSummaries = [[NSMutableArray alloc] init];
+    for (NSDictionary *match in sessionMatches) {
+        [sessionMatchSummaries addObject:@{
+            @"path": match[@"path"] ?: @"<nil>",
+            @"class": match[@"class"] ?: @"<nil>",
+            @"responds_to": match[@"responds_to"] ?: @[],
+        }];
+        if (sessionMatchSummaries.count >= 12) {
+            break;
+        }
+    }
+    diagnostics[@"session_objects_summary"] = @{
+        @"scanned": sessionObjects[@"scanned"] ?: @0,
+        @"match_count": @(sessionMatches.count),
+        @"matches_sample": sessionMatchSummaries,
+    };
+
+    NSDictionary *passiveCaptures = [self capturedFindMyPassiveDiagnostics];
+    NSArray *snapshots = [passiveCaptures[@"snapshots"] isKindOfClass:[NSArray class]] ? passiveCaptures[@"snapshots"] : @[];
+    NSMutableArray *snapshotSummaries = [[NSMutableArray alloc] init];
+    for (NSDictionary *snapshot in snapshots) {
+        [snapshotSummaries addObject:@{
+            @"class": snapshot[@"class"] ?: @"<nil>",
+            @"selector": snapshot[@"selector"] ?: @"<nil>",
+            @"source": snapshot[@"source"] ?: @"<nil>",
+        }];
+        if (snapshotSummaries.count >= 12) {
+            break;
+        }
+    }
+    diagnostics[@"passive_capture_summary"] = @{
+        @"snapshot_count": passiveCaptures[@"snapshot_count"] ?: @0,
+        @"searchparty_accessor_count": passiveCaptures[@"searchparty_accessor_count"] ?: @0,
+        @"snapshots_sample": snapshotSummaries,
+    };
+
+    diagnostics[@"swizzle"] = [self compactFindMySwizzleDiagnostics:[self findMySwizzleDiagnostics]];
+    diagnostics[@"active_devices_list"] = [self compactFindMyActiveListDiagnostics:[self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"]];
 
     [[NetworkController sharedInstance] sendMessage:@{
         @"transactionId": transaction ?: [NSNull null],
