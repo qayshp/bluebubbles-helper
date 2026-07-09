@@ -7428,7 +7428,7 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
 
     [[NetworkController sharedInstance] sendMessage:@{
         @"transactionId": transaction ?: [NSNull null],
-        @"diagnostics": [self compactFindMyRefreshDiagnostics:diagnostics],
+        @"diagnostics": diagnostics,
     }];
 }
 

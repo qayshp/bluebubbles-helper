@@ -65,3 +65,30 @@ If this route returns provider methods or captured instances, inspect:
 - wrapper/session references to an FMIP manager or provider
 
 Only after a concrete method signature is known should we try a method-specific hook or direct invocation.
+
+## First runtime result
+
+Installed helper md5 in `bluebubbles-server`:
+
+```text
+a76211d6b7eff967b56647c6831f12e6
+```
+
+Route call on 2026-07-09:
+
+```text
+POST /api/v1/icloud/findmy/devices/debug/provider-runtime
+```
+
+Result:
+
+- HTTP 200.
+- Find My did not crash.
+- `selected_devices_segment` was `true`.
+- `active_devices_list.visible_cell_count` was `13`.
+- The route response was over-compacted and omitted the intended `runtime`, `object_graph`, `session_objects`, and `probe_mode` fields.
+
+Interpretation:
+
+- Non-swizzling provider inspection is stable.
+- The helper needs to return full diagnostics for this route instead of `compactFindMyRefreshDiagnostics`.
