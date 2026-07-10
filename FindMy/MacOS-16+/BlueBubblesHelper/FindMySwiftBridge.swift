@@ -396,6 +396,704 @@ private func BBDevicesDataSourceFocusedSummary(_ dataSource: AnyObject, maxSecti
     return result
 }
 
+private func BBFMIPLocationSummary(_ value: Any) -> [String: Any]? {
+    let unwrapped = BBUnwrappedOptional(value) ?? value
+    let typeName = BBMirrorTypeName(unwrapped)
+    guard typeName == "FMIPCore.FMIPLocation" || typeName.hasSuffix(".FMIPLocation") else {
+        return nil
+    }
+
+    var result: [String: Any] = [
+        "type": typeName,
+    ]
+
+    for label in ["location", "floor", "isInaccurate", "isLocationFinished", "isOld", "locationType"] {
+        guard let child = BBMirrorChildValue(unwrapped, label: label) else {
+            continue
+        }
+
+        if label == "location" {
+            if let childUnwrapped = BBUnwrappedOptional(child),
+               let location = BBLocationSummary(childUnwrapped) {
+                result[label] = location
+            } else {
+                result[label] = BBCompactShapeSummary(child, maxChildLabels: 8)
+            }
+            continue
+        }
+
+        result[label] = BBCompactShapeSummary(child, maxChildLabels: 8)
+    }
+
+    return result
+}
+
+private func BBCompactScalarLikeValue(_ value: Any?) -> Any? {
+    guard let value, let unwrapped = BBUnwrappedOptional(value) else {
+        return nil
+    }
+
+    if let scalar = BBScalarMirrorValue(unwrapped) {
+        return scalar
+    }
+
+    if let location = BBLocationSummary(unwrapped) {
+        return location
+    }
+
+    if let fmipLocation = BBFMIPLocationSummary(unwrapped) {
+        return fmipLocation
+    }
+
+    let mirror = Mirror(reflecting: unwrapped)
+    if mirror.displayStyle == .enum {
+        return [
+            "type": BBMirrorTypeName(unwrapped),
+            "display_style": "enum",
+        ]
+    }
+
+    return nil
+}
+
+private func BBCompactAddressSummary(_ value: Any?) -> [String: Any]? {
+    guard let value, let unwrapped = BBUnwrappedOptional(value) else {
+        return nil
+    }
+
+    var result: [String: Any] = [
+        "type": BBMirrorTypeName(unwrapped),
+    ]
+    for label in ["label", "mapItemFormattedAddress", "mediumAddressModern", "largeAddressModern", "locality", "administrativeArea", "countryCode"] {
+        if let child = BBMirrorChildValue(unwrapped, label: label),
+           let scalar = BBCompactScalarLikeValue(child) {
+            result[label] = scalar
+        }
+    }
+
+    return result.count > 1 ? result : nil
+}
+
+private func BBFMIPDeviceCompactRecord(_ value: Any, index: Int) -> [String: Any] {
+    var result: [String: Any] = [
+        "index": index,
+        "type": BBMirrorTypeName(value),
+    ]
+
+    for label in ["identifier", "name", "displayName", "model", "rawDeviceModel", "systemVersion", "batteryLevel", "batteryStatus", "deviceConnectedState", "discoveryIdentifier", "baIdentifier", "beaconType", "category"] {
+        if let scalar = BBCompactScalarLikeValue(BBMirrorChildValue(value, label: label)) {
+            result[label] = scalar
+        }
+    }
+
+    if let address = BBCompactAddressSummary(BBMirrorChildValue(value, label: "address")) {
+        result["address"] = address
+    }
+
+    for label in ["location", "crowdSourcedLocation"] {
+        if let child = BBMirrorChildValue(value, label: label) {
+            result["\(label)Present"] = BBUnwrappedOptional(child) != nil
+            if let scalar = BBCompactScalarLikeValue(child) {
+                result[label] = scalar
+            }
+        }
+    }
+
+    if let historicalLocations = BBMirrorChildValue(value, label: "historicalLocations") {
+        let unwrapped = BBUnwrappedOptional(historicalLocations)
+        result["historicalLocationsPresent"] = unwrapped != nil
+        if let unwrapped {
+            let mirror = Mirror(reflecting: unwrapped)
+            result["historicalLocationsCount"] = BBKnownCollectionCount(unwrapped, mirror: mirror)
+        }
+    }
+
+    if let safeLocations = BBMirrorChildValue(value, label: "safeLocations") {
+        let mirror = Mirror(reflecting: safeLocations)
+        result["safeLocationsCount"] = BBKnownCollectionCount(safeLocations, mirror: mirror)
+    }
+
+    return result
+}
+
+private func BBFMIPDataManagerDevicesCompact(_ dataManager: Any, maxDevices: Int) -> [String: Any] {
+    guard let devicesValue = BBMirrorChildValue(dataManager, label: "devices"),
+          let devices = BBUnwrappedOptional(devicesValue) else {
+        return [
+            "present": false,
+        ]
+    }
+
+    let mirror = Mirror(reflecting: devices)
+    var records: [[String: Any]] = []
+    var index = 0
+    for child in mirror.children {
+        if records.count >= maxDevices {
+            break
+        }
+
+        records.append(BBFMIPDeviceCompactRecord(child.value, index: index))
+        index += 1
+    }
+
+    return [
+        "present": true,
+        "type": BBMirrorTypeName(devices),
+        "display_style": BBMirrorDisplayStyleName(mirror.displayStyle),
+        "device_count": BBKnownCollectionCount(devices, mirror: mirror) ?? index,
+        "devices_returned": records.count,
+        "devices": records,
+    ]
+}
+
+private func BBCollectionCountOnly(_ value: Any?, label: String) -> [String: Any] {
+    guard let value, let unwrapped = BBUnwrappedOptional(value) else {
+        return [
+            "label": label,
+            "present": false,
+        ]
+    }
+
+    let mirror = Mirror(reflecting: unwrapped)
+    var result: [String: Any] = [
+        "label": label,
+        "present": true,
+        "type": BBMirrorTypeName(unwrapped),
+        "display_style": BBMirrorDisplayStyleName(mirror.displayStyle),
+    ]
+
+    if let count = BBKnownCollectionCount(unwrapped, mirror: mirror) {
+        result["count"] = count
+    }
+
+    return result
+}
+
+private func BBCompactShapeSummary(_ value: Any, maxChildLabels: Int = 24) -> [String: Any] {
+    let mirror = Mirror(reflecting: value)
+    var result: [String: Any] = [
+        "type": BBMirrorTypeName(value),
+        "display_style": BBMirrorDisplayStyleName(mirror.displayStyle),
+    ]
+
+    if mirror.displayStyle == .optional {
+        result["optional_is_some"] = mirror.children.first != nil
+        if let wrapped = BBUnwrappedOptional(value) {
+            result["wrapped"] = BBCompactShapeSummary(wrapped, maxChildLabels: maxChildLabels)
+        }
+        return result
+    }
+
+    if mirror.displayStyle == .class {
+        let object = value as AnyObject
+        result["object_class"] = BBObjectClassName(object)
+    }
+
+    if let count = BBKnownCollectionCount(value, mirror: mirror) {
+        result["collection_count"] = count
+    }
+
+    if let scalar = BBScalarMirrorValue(value) {
+        result["value"] = scalar
+    }
+
+    if let location = BBLocationSummary(value) {
+        result["direct_location"] = location
+    }
+
+    if let fmipLocation = BBFMIPLocationSummary(value) {
+        result["fmip_location"] = fmipLocation
+    }
+
+    let children = BBMirrorChildrenByLabel(value)
+    if !children.isEmpty {
+        result["child_count"] = children.count
+        result["child_labels_sample"] = Array(children.keys.sorted().prefix(maxChildLabels))
+    }
+
+    return result
+}
+
+private func BBCompactFieldSummary(_ value: Any?, label: String, maxChildLabels: Int = 24) -> [String: Any] {
+    guard let value else {
+        return [
+            "label": label,
+            "present": false,
+        ]
+    }
+
+    let declaredMirror = Mirror(reflecting: value)
+    var result: [String: Any] = [
+        "label": label,
+        "present": true,
+        "declared_type": BBMirrorTypeName(value),
+        "declared_display_style": BBMirrorDisplayStyleName(declaredMirror.displayStyle),
+    ]
+
+    if declaredMirror.displayStyle == .optional {
+        result["optional_is_some"] = declaredMirror.children.first != nil
+    }
+
+    if let unwrapped = BBUnwrappedOptional(value) {
+        result["shape"] = BBCompactShapeSummary(unwrapped, maxChildLabels: maxChildLabels)
+    }
+
+    return result
+}
+
+private func BBCompactLocationSignal(_ value: Any, maxSignals: Int = 8) -> [String: Any] {
+    if let location = BBLocationSummary(value) {
+        return [
+            "direct_location": location,
+        ]
+    }
+
+    let children = BBMirrorChildrenByLabel(value)
+    var labels: [String] = []
+    var summaries: [String: Any] = [:]
+    for label in children.keys.sorted() {
+        let lower = label.lowercased()
+        guard lower.contains("location") || lower.contains("coordinate") else {
+            continue
+        }
+        labels.append(label)
+        if let child = children[label] {
+            if let fmipLocation = BBFMIPLocationSummary(child) {
+                summaries[label] = fmipLocation
+            } else if let unwrapped = BBUnwrappedOptional(child), let location = BBLocationSummary(unwrapped) {
+                summaries[label] = location
+            } else {
+                summaries[label] = BBCompactShapeSummary(child, maxChildLabels: 12)
+            }
+        }
+        if labels.count >= maxSignals {
+            break
+        }
+    }
+
+    if labels.isEmpty {
+        return [:]
+    }
+
+    return [
+        "location_like_child_labels": labels,
+        "location_like_child_summaries": summaries,
+    ]
+}
+
+private func BBCompactSelectedFields(_ value: Any, labels: [String], maxChildLabels: Int = 16) -> [String: Any] {
+    var result: [String: Any] = [:]
+    for label in labels {
+        if let child = BBMirrorChildValue(value, label: label) {
+            result[label] = BBCompactFieldSummary(child, label: label, maxChildLabels: maxChildLabels)
+        }
+    }
+    return result
+}
+
+private func BBCompactCollectionSummary(_ value: Any?, label: String, maxElements: Int, selectedElementFields: [String] = []) -> [String: Any] {
+    var result = BBCompactFieldSummary(value, label: label, maxChildLabels: 18)
+    guard let value, let unwrapped = BBUnwrappedOptional(value) else {
+        return result
+    }
+
+    let mirror = Mirror(reflecting: unwrapped)
+    result["collection_type"] = BBMirrorTypeName(unwrapped)
+    result["collection_display_style"] = BBMirrorDisplayStyleName(mirror.displayStyle)
+    result["collection_count"] = BBKnownCollectionCount(unwrapped, mirror: mirror)
+
+    var samples: [[String: Any]] = []
+    var index = 0
+    for child in mirror.children {
+        if samples.count >= maxElements {
+            break
+        }
+
+        var sample: [String: Any] = [
+            "index": index,
+            "shape": BBCompactShapeSummary(child.value, maxChildLabels: 20),
+        ]
+
+        let selectedFields = BBCompactSelectedFields(child.value, labels: selectedElementFields, maxChildLabels: 12)
+        if !selectedFields.isEmpty {
+            sample["selected_fields"] = selectedFields
+        }
+
+        let signal = BBCompactLocationSignal(child.value)
+        if !signal.isEmpty {
+            sample["location_signal"] = signal
+        }
+
+        samples.append(sample)
+        index += 1
+    }
+
+    result["sample_count"] = samples.count
+    result["sample"] = samples
+    return result
+}
+
+private func BBDevicesProviderFocusedSummary(_ dataSource: AnyObject, maxShares: Int, maxChildren: Int, maxNestedChildren: Int) -> [String: Any] {
+    var result: [String: Any] = [
+        "focused_summary_available": true,
+        "object_class": BBObjectClassName(dataSource),
+        "type": String(reflecting: type(of: dataSource)),
+        "max_shares": maxShares,
+        "max_children": maxChildren,
+        "max_nested_children": maxNestedChildren,
+        "summary_mode": "compact_provider_manager_datamanager_counts",
+    ]
+
+    guard let mediatorValue = BBMirrorChildValue(dataSource, label: "mediator") else {
+        result["mediator"] = [
+            "present": false,
+        ]
+        return result
+    }
+
+    result["mediator"] = BBCompactFieldSummary(mediatorValue, label: "mediator")
+
+    let providerLabels = [
+        "conditionProvider",
+        "devicesProvider",
+        "etaProvider",
+        "locationProvider",
+        "peopleProvider",
+        "selectionController",
+        "productAssetProvider",
+        "isRefreshing",
+    ]
+    var providerSummaries: [String: Any] = [:]
+    for providerLabel in providerLabels {
+        providerSummaries[providerLabel] = BBCompactFieldSummary(
+            BBMirrorChildValue(mediatorValue, label: providerLabel),
+            label: providerLabel
+        )
+    }
+    result["providers"] = providerSummaries
+
+    if let devicesProviderValue = BBMirrorChildValue(mediatorValue, label: "devicesProvider"),
+       let devicesProvider = BBUnwrappedOptional(devicesProviderValue) {
+        let providerFields = [
+            "shares",
+            "unknownItemsDetectedNearYou",
+            "sharingLimits",
+            "imageCache",
+            "itemImageCache",
+            "actionController",
+            "isSubscriptionPaused",
+            "fmipManager",
+        ]
+        var fieldSummaries: [String: Any] = [:]
+        for field in providerFields {
+            let fieldValue = BBMirrorChildValue(devicesProvider, label: field)
+            if field == "shares" || field == "unknownItemsDetectedNearYou" {
+                fieldSummaries[field] = BBCompactCollectionSummary(
+                    fieldValue,
+                    label: field,
+                    maxElements: min(maxShares, 2),
+                    selectedElementFields: [
+                        "identifier",
+                        "beaconIdentifier",
+                        "accessoryIdentifier",
+                        "stableIdentifier",
+                        "owner",
+                        "displayName",
+                        "name",
+                        "status",
+                    ]
+                )
+            } else {
+                fieldSummaries[field] = BBCompactFieldSummary(
+                    fieldValue,
+                    label: field
+                )
+            }
+        }
+        result["devicesProviderFields"] = fieldSummaries
+
+        if let managerValue = BBMirrorChildValue(devicesProvider, label: "fmipManager"),
+           let manager = BBUnwrappedOptional(managerValue) {
+            let managerFields = [
+                "identifier",
+                "delegate",
+                "siriDelegate",
+                "refreshingController",
+                "beaconRefreshingController",
+                "safeLocationRefreshingController",
+                "locationController",
+                "dataManager",
+                "interactionController",
+                "beaconSharingController",
+                "isDevicesSnapshotMode",
+                "isItemsSnapshotMode",
+            ]
+            var managerFieldSummaries: [String: Any] = [:]
+            for field in managerFields {
+                managerFieldSummaries[field] = BBCompactFieldSummary(
+                    BBMirrorChildValue(manager, label: field),
+                    label: field
+                )
+            }
+
+            result["fmipManagerFocused"] = [
+                "summary": BBCompactFieldSummary(manager, label: "fmipManager"),
+                "fields": managerFieldSummaries,
+            ]
+
+            if let dataManager = BBMirrorChildValue(manager, label: "dataManager") {
+                let deviceFields = [
+                    "identifier",
+                    "id",
+                    "name",
+                    "deviceName",
+                    "model",
+                    "modelName",
+                    "rawDeviceModel",
+                    "systemVersion",
+                    "batteryLevel",
+                    "batteryStatus",
+                    "location",
+                    "lastLocation",
+                    "latestLocation",
+                    "crowdSourcedLocation",
+                    "address",
+                    "isOnline",
+                    "isOffline",
+                ]
+                result["dataManagerFocused"] = [
+                    "summary": BBCompactFieldSummary(dataManager, label: "dataManager"),
+                    "fields": [
+                        "devices": BBCompactCollectionSummary(
+                            BBMirrorChildValue(dataManager, label: "devices"),
+                            label: "devices",
+                            maxElements: 2,
+                            selectedElementFields: deviceFields
+                        ),
+                        "crowdSourcedLocations": BBCompactCollectionSummary(
+                            BBMirrorChildValue(dataManager, label: "crowdSourcedLocations"),
+                            label: "crowdSourcedLocations",
+                            maxElements: 2
+                        ),
+                        "crowdSourcedOriginalLocations": BBCompactCollectionSummary(
+                            BBMirrorChildValue(dataManager, label: "crowdSourcedOriginalLocations"),
+                            label: "crowdSourcedOriginalLocations",
+                            maxElements: 2
+                        ),
+                        "deviceConnectedStates": BBCompactCollectionSummary(
+                            BBMirrorChildValue(dataManager, label: "deviceConnectedStates"),
+                            label: "deviceConnectedStates",
+                            maxElements: 2
+                        ),
+                        "safeLocations": BBCompactCollectionSummary(
+                            BBMirrorChildValue(dataManager, label: "safeLocations"),
+                            label: "safeLocations",
+                            maxElements: 2
+                        ),
+                        "safeLocationsMapping": BBCompactCollectionSummary(
+                            BBMirrorChildValue(dataManager, label: "safeLocationsMapping"),
+                            label: "safeLocationsMapping",
+                            maxElements: 2
+                        ),
+                    ],
+                    "devices_compact": BBFMIPDataManagerDevicesCompact(dataManager, maxDevices: 80),
+                    "location_signal": BBCompactLocationSignal(dataManager),
+                ]
+            } else {
+                result["dataManagerFocused"] = [
+                    "present": false,
+                ]
+            }
+
+            if let locationController = BBMirrorChildValue(manager, label: "locationController") {
+                result["locationControllerFocused"] = [
+                    "summary": BBCompactFieldSummary(locationController, label: "locationController"),
+                    "fields": [
+                        "currentLocation": BBCompactFieldSummary(BBMirrorChildValue(locationController, label: "currentLocation"), label: "currentLocation"),
+                        "limitedPrecision": BBCompactFieldSummary(BBMirrorChildValue(locationController, label: "limitedPrecision"), label: "limitedPrecision"),
+                        "locationManager": BBCompactFieldSummary(BBMirrorChildValue(locationController, label: "locationManager"), label: "locationManager"),
+                    ],
+                    "location_signal": BBCompactLocationSignal(locationController),
+                ]
+            }
+
+            if let beaconSharingController = BBMirrorChildValue(manager, label: "beaconSharingController") {
+                result["beaconSharingControllerFocused"] = [
+                    "summary": BBCompactFieldSummary(beaconSharingController, label: "beaconSharingController"),
+                    "fields": [
+                        "rawShares": BBCompactCollectionSummary(
+                            BBMirrorChildValue(beaconSharingController, label: "rawShares"),
+                            label: "rawShares",
+                            maxElements: 2
+                        ),
+                        "shares": BBCompactCollectionSummary(
+                            BBMirrorChildValue(beaconSharingController, label: "shares"),
+                            label: "shares",
+                            maxElements: 2
+                        ),
+                        "isRefreshing": BBCompactFieldSummary(BBMirrorChildValue(beaconSharingController, label: "isRefreshing"), label: "isRefreshing"),
+                    ],
+                ]
+            }
+        } else {
+            result["fmipManagerFocused"] = [
+                "present": false,
+            ]
+        }
+    } else {
+        result["devicesProviderFields"] = [
+            "present": false,
+        ]
+        result["fmipManagerFocused"] = [
+            "present": false,
+        ]
+    }
+
+    if let locationProviderValue = BBMirrorChildValue(mediatorValue, label: "locationProvider"),
+       let locationProvider = BBUnwrappedOptional(locationProviderValue) {
+        let locationProviderFields = [
+            "subscriptions",
+            "currentLocation",
+            "currentHeading",
+            "poiLocations",
+            "poiFidelity",
+            "locationManager",
+            "locationShifter",
+            "includeHeading",
+            "isLocationAuthorized",
+            "limitedPrecision",
+        ]
+        var fieldSummaries: [String: Any] = [:]
+        for field in locationProviderFields {
+            let fieldValue = BBMirrorChildValue(locationProvider, label: field)
+            if field == "subscriptions" || field == "poiLocations" {
+                fieldSummaries[field] = BBCompactCollectionSummary(
+                    fieldValue,
+                    label: field,
+                    maxElements: 2
+                )
+            } else {
+                fieldSummaries[field] = BBCompactFieldSummary(
+                    fieldValue,
+                    label: field
+                )
+            }
+        }
+        result["locationProviderFields"] = [
+            "fields": fieldSummaries,
+            "location_signal": BBCompactLocationSignal(locationProvider),
+        ]
+    } else {
+        result["locationProviderFields"] = [
+            "present": false,
+        ]
+    }
+
+    if let conditionProviderValue = BBMirrorChildValue(mediatorValue, label: "conditionProvider"),
+       let conditionProvider = BBUnwrappedOptional(conditionProviderValue) {
+        let conditionFields = [
+            "areDevicesInitialized",
+            "didDevicesFailToInitialize",
+            "isNetworkReachable",
+            "isAccountInitialized",
+            "isAccountSignedIn",
+            "isFMIPRestricted",
+        ]
+        var fieldSummaries: [String: Any] = [:]
+        for field in conditionFields {
+            fieldSummaries[field] = BBCompactFieldSummary(
+                BBMirrorChildValue(conditionProvider, label: field),
+                label: field
+            )
+        }
+        result["conditionProviderFields"] = fieldSummaries
+    } else {
+        result["conditionProviderFields"] = [
+            "present": false,
+        ]
+    }
+
+    return result
+}
+
+private func BBDevicesDataManagerDevicesSummary(_ dataSource: AnyObject, maxDevices: Int) -> [String: Any] {
+    var result: [String: Any] = [
+        "focused_summary_available": true,
+        "object_class": BBObjectClassName(dataSource),
+        "type": String(reflecting: type(of: dataSource)),
+        "max_devices": maxDevices,
+        "summary_mode": "app_owned_fmip_datamanager_devices_compact",
+    ]
+
+    guard let mediatorValue = BBMirrorChildValue(dataSource, label: "mediator"),
+          let mediator = BBUnwrappedOptional(mediatorValue) else {
+        result["mediator_present"] = false
+        return result
+    }
+
+    result["mediator_present"] = true
+    result["mediator_type"] = BBMirrorTypeName(mediator)
+
+    if let conditionProviderValue = BBMirrorChildValue(mediator, label: "conditionProvider"),
+       let conditionProvider = BBUnwrappedOptional(conditionProviderValue) {
+        var conditionFields: [String: Any] = [:]
+        for field in ["areDevicesInitialized", "didDevicesFailToInitialize"] {
+            if let value = BBCompactScalarLikeValue(BBMirrorChildValue(conditionProvider, label: field)) {
+                conditionFields[field] = value
+            }
+        }
+        result["condition_provider"] = conditionFields
+    }
+
+    guard let devicesProviderValue = BBMirrorChildValue(mediator, label: "devicesProvider"),
+          let devicesProvider = BBUnwrappedOptional(devicesProviderValue) else {
+        result["devices_provider_present"] = false
+        return result
+    }
+
+    result["devices_provider_present"] = true
+    result["devices_provider_type"] = BBMirrorTypeName(devicesProvider)
+    result["shares"] = BBCollectionCountOnly(BBMirrorChildValue(devicesProvider, label: "shares"), label: "shares")
+    result["unknown_items_detected_near_you"] = BBCollectionCountOnly(
+        BBMirrorChildValue(devicesProvider, label: "unknownItemsDetectedNearYou"),
+        label: "unknownItemsDetectedNearYou"
+    )
+
+    guard let managerValue = BBMirrorChildValue(devicesProvider, label: "fmipManager"),
+          let manager = BBUnwrappedOptional(managerValue) else {
+        result["fmip_manager_present"] = false
+        return result
+    }
+
+    result["fmip_manager_present"] = true
+    result["fmip_manager_type"] = BBMirrorTypeName(manager)
+
+    if let locationController = BBMirrorChildValue(manager, label: "locationController") {
+        result["location_controller_current_location"] = BBCompactScalarLikeValue(
+            BBMirrorChildValue(locationController, label: "currentLocation")
+        ) ?? ["present": false]
+    }
+
+    guard let dataManagerValue = BBMirrorChildValue(manager, label: "dataManager"),
+          let dataManager = BBUnwrappedOptional(dataManagerValue) else {
+        result["data_manager_present"] = false
+        return result
+    }
+
+    result["data_manager_present"] = true
+    result["data_manager_type"] = BBMirrorTypeName(dataManager)
+    result["data_manager_counts"] = [
+        "devices": BBCollectionCountOnly(BBMirrorChildValue(dataManager, label: "devices"), label: "devices"),
+        "safeLocations": BBCollectionCountOnly(BBMirrorChildValue(dataManager, label: "safeLocations"), label: "safeLocations"),
+        "crowdSourcedLocations": BBCollectionCountOnly(BBMirrorChildValue(dataManager, label: "crowdSourcedLocations"), label: "crowdSourcedLocations"),
+        "crowdSourcedOriginalLocations": BBCollectionCountOnly(BBMirrorChildValue(dataManager, label: "crowdSourcedOriginalLocations"), label: "crowdSourcedOriginalLocations"),
+        "deviceConnectedStates": BBCollectionCountOnly(BBMirrorChildValue(dataManager, label: "deviceConnectedStates"), label: "deviceConnectedStates"),
+    ]
+    result["devices_compact"] = BBFMIPDataManagerDevicesCompact(dataManager, maxDevices: maxDevices)
+
+    return result
+}
+
 private func BBIvarMetadata(_ startingClass: AnyClass?) -> [[String: Any]] {
     var result: [[String: Any]] = []
     var seen = Set<String>()
@@ -821,6 +1519,48 @@ public func BlueBubblesFindMyCopyDevicesDataSourceFocusedSummary(_ objectPointer
         maxRowsPerSection: boundedMaxRowsPerSection,
         maxChildren: boundedMaxChildren,
         maxNestedChildren: boundedMaxNestedChildren
+    )
+
+    return Unmanaged.passRetained(summary as NSDictionary).toOpaque()
+}
+
+@_cdecl("BlueBubblesFindMyCopyDevicesProviderFocusedSummary")
+public func BlueBubblesFindMyCopyDevicesProviderFocusedSummary(_ objectPointer: UnsafeMutableRawPointer?, _ maxShares: Int32, _ maxChildren: Int32, _ maxNestedChildren: Int32) -> UnsafeMutableRawPointer? {
+    guard let objectPointer else {
+        return Unmanaged.passRetained([
+            "focused_summary_available": false,
+            "error": "missing object pointer",
+        ] as NSDictionary).toOpaque()
+    }
+
+    let dataSource = Unmanaged<AnyObject>.fromOpaque(objectPointer).takeUnretainedValue()
+    let boundedMaxShares = max(0, min(Int(maxShares), 8))
+    let boundedMaxChildren = max(0, min(Int(maxChildren), 64))
+    let boundedMaxNestedChildren = max(0, min(Int(maxNestedChildren), 16))
+    let summary = BBDevicesProviderFocusedSummary(
+        dataSource,
+        maxShares: boundedMaxShares,
+        maxChildren: boundedMaxChildren,
+        maxNestedChildren: boundedMaxNestedChildren
+    )
+
+    return Unmanaged.passRetained(summary as NSDictionary).toOpaque()
+}
+
+@_cdecl("BlueBubblesFindMyCopyDevicesDataManagerDevicesSummary")
+public func BlueBubblesFindMyCopyDevicesDataManagerDevicesSummary(_ objectPointer: UnsafeMutableRawPointer?, _ maxDevices: Int32) -> UnsafeMutableRawPointer? {
+    guard let objectPointer else {
+        return Unmanaged.passRetained([
+            "focused_summary_available": false,
+            "error": "missing object pointer",
+        ] as NSDictionary).toOpaque()
+    }
+
+    let dataSource = Unmanaged<AnyObject>.fromOpaque(objectPointer).takeUnretainedValue()
+    let boundedMaxDevices = max(0, min(Int(maxDevices), 120))
+    let summary = BBDevicesDataManagerDevicesSummary(
+        dataSource,
+        maxDevices: boundedMaxDevices
     )
 
     return Unmanaged.passRetained(summary as NSDictionary).toOpaque()

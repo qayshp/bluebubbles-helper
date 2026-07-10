@@ -30,6 +30,8 @@
 - (void)handleFindMyDevicesDataSourceProbeWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesDataSourceMirrorProbeWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesDataSourceModelProbeWithTransaction:(NSString *)transaction;
+- (void)handleFindMyDevicesProviderModelProbeWithTransaction:(NSString *)transaction;
+- (void)handleFindMyDevicesDataManagerDevicesProbeWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesFMIPDataManagerProbeWithTransaction:(NSString *)transaction;
 - (void)handleFindMyItemsRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyDebugWithTransaction:(NSString *)transaction;
@@ -56,9 +58,12 @@
 - (NSDictionary *)findMyActiveDevicesBackingDiagnostics;
 - (NSDictionary *)findMyActiveDevicesSwiftMirrorDiagnostics;
 - (NSDictionary *)findMyActiveDevicesModelFocusedDiagnostics;
+- (NSDictionary *)findMyActiveDevicesProviderFocusedDiagnostics;
+- (NSDictionary *)findMyActiveDevicesDataManagerDevicesDiagnostics;
 - (NSDictionary *)findMyBackingObjectDiagnosticsForObject:(id)object label:(NSString *)label;
 - (NSDictionary *)swiftMirrorDiagnosticsForObject:(id)object label:(NSString *)label maxChildren:(int32_t)maxChildren maxNestedChildren:(int32_t)maxNestedChildren;
 - (NSDictionary *)focusedDevicesDataSourceDiagnosticsForObject:(id)object label:(NSString *)label maxSections:(int32_t)maxSections maxRowsPerSection:(int32_t)maxRowsPerSection maxChildren:(int32_t)maxChildren maxNestedChildren:(int32_t)maxNestedChildren;
+- (NSDictionary *)focusedDevicesProviderDiagnosticsForObject:(id)object label:(NSString *)label maxShares:(int32_t)maxShares maxChildren:(int32_t)maxChildren maxNestedChildren:(int32_t)maxNestedChildren;
 - (NSArray *)runtimeIvarMetadataForObject:(id)object limit:(NSUInteger)limit;
 - (NSArray *)runtimeMethodMetadataForObject:(id)object matchingTerms:(NSArray<NSString *> *)terms limit:(NSUInteger)limit;
 - (NSDictionary *)kvcDiagnosticsForObject:(id)object keys:(NSArray<NSString *> *)keys limit:(NSUInteger)limit;
@@ -128,6 +133,8 @@ extern void *BlueBubblesFindMyCopyFMIPManagerDevices(void);
 extern void *BlueBubblesFindMyCopyFMIPDataManagerSnapshot(void);
 extern void *BlueBubblesFindMyCopySwiftMirrorSummary(void *object, int32_t maxChildren, int32_t maxNestedChildren);
 extern void *BlueBubblesFindMyCopyDevicesDataSourceFocusedSummary(void *object, int32_t maxSections, int32_t maxRowsPerSection, int32_t maxChildren, int32_t maxNestedChildren);
+extern void *BlueBubblesFindMyCopyDevicesProviderFocusedSummary(void *object, int32_t maxShares, int32_t maxChildren, int32_t maxNestedChildren);
+extern void *BlueBubblesFindMyCopyDevicesDataManagerDevicesSummary(void *object, int32_t maxDevices);
 
 static NSString *BBFindMySwizzleKey(Class class, SEL selector) {
     return [NSString stringWithFormat:@"%@:%@", NSStringFromClass(class), NSStringFromSelector(selector)];
@@ -651,6 +658,16 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
 
     if ([event isEqualToString:@"debug-findmy-devices-data-source-model"]) {
         [self handleFindMyDevicesDataSourceModelProbeWithTransaction:transaction];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-devices-provider-model"]) {
+        [self handleFindMyDevicesProviderModelProbeWithTransaction:transaction];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-devices-datamanager-devices"]) {
+        [self handleFindMyDevicesDataManagerDevicesProbeWithTransaction:transaction];
         return;
     }
 
@@ -6331,6 +6348,112 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
     return [result copy];
 }
 
+- (NSDictionary *)focusedDevicesProviderDiagnosticsForObject:(id)object label:(NSString *)label maxShares:(int32_t)maxShares maxChildren:(int32_t)maxChildren maxNestedChildren:(int32_t)maxNestedChildren {
+    if (object == nil) {
+        return @{
+            @"label": label ?: @"<nil>",
+            @"present": @NO,
+            @"class": @"<nil>",
+            @"focused_summary_available": @NO,
+            @"error": @"missing object",
+        };
+    }
+
+    void *summaryPointer = NULL;
+    @try {
+        summaryPointer = BlueBubblesFindMyCopyDevicesProviderFocusedSummary((__bridge void *)object, maxShares, maxChildren, maxNestedChildren);
+    } @catch (NSException *exception) {
+        return @{
+            @"label": label ?: @"<nil>",
+            @"present": @YES,
+            @"class": [self classNameForObject:object],
+            @"focused_summary_available": @NO,
+            @"exception": exception.reason ?: exception.name ?: @"unknown Objective-C exception",
+        };
+    }
+
+    if (summaryPointer == NULL) {
+        return @{
+            @"label": label ?: @"<nil>",
+            @"present": @YES,
+            @"class": [self classNameForObject:object],
+            @"focused_summary_available": @NO,
+            @"error": @"Swift focused provider summary returned null",
+        };
+    }
+
+    id summary = CFBridgingRelease(summaryPointer);
+    if (![summary isKindOfClass:[NSDictionary class]]) {
+        return @{
+            @"label": label ?: @"<nil>",
+            @"present": @YES,
+            @"class": [self classNameForObject:object],
+            @"focused_summary_available": @NO,
+            @"error": @"Swift focused provider summary returned a non-dictionary value",
+            @"summary_class": [self classNameForObject:summary],
+        };
+    }
+
+    NSMutableDictionary *result = [[NSMutableDictionary alloc] initWithDictionary:(NSDictionary *)summary];
+    result[@"label"] = label ?: @"<nil>";
+    result[@"present"] = @YES;
+    result[@"class"] = [self classNameForObject:object];
+    return [result copy];
+}
+
+- (NSDictionary *)dataManagerDevicesDiagnosticsForObject:(id)object label:(NSString *)label maxDevices:(int32_t)maxDevices {
+    if (object == nil) {
+        return @{
+            @"label": label ?: @"<nil>",
+            @"present": @NO,
+            @"class": @"<nil>",
+            @"focused_summary_available": @NO,
+            @"error": @"missing object",
+        };
+    }
+
+    void *summaryPointer = NULL;
+    @try {
+        summaryPointer = BlueBubblesFindMyCopyDevicesDataManagerDevicesSummary((__bridge void *)object, maxDevices);
+    } @catch (NSException *exception) {
+        return @{
+            @"label": label ?: @"<nil>",
+            @"present": @YES,
+            @"class": [self classNameForObject:object],
+            @"focused_summary_available": @NO,
+            @"exception": exception.reason ?: exception.name ?: @"unknown Objective-C exception",
+        };
+    }
+
+    if (summaryPointer == NULL) {
+        return @{
+            @"label": label ?: @"<nil>",
+            @"present": @YES,
+            @"class": [self classNameForObject:object],
+            @"focused_summary_available": @NO,
+            @"error": @"Swift data-manager devices summary returned null",
+        };
+    }
+
+    id summary = CFBridgingRelease(summaryPointer);
+    if (![summary isKindOfClass:[NSDictionary class]]) {
+        return @{
+            @"label": label ?: @"<nil>",
+            @"present": @YES,
+            @"class": [self classNameForObject:object],
+            @"focused_summary_available": @NO,
+            @"error": @"Swift data-manager devices summary returned a non-dictionary value",
+            @"summary_class": [self classNameForObject:summary],
+        };
+    }
+
+    NSMutableDictionary *result = [[NSMutableDictionary alloc] initWithDictionary:(NSDictionary *)summary];
+    result[@"label"] = label ?: @"<nil>";
+    result[@"present"] = @YES;
+    result[@"class"] = [self classNameForObject:object];
+    return [result copy];
+}
+
 - (NSDictionary *)findMyActiveDevicesBackingDiagnostics {
     NSDictionary *active = [self activeFindMyTableViewForDataSourceTerm:@"FMDevicesListDataSource"];
     id tableView = active[@"tableView"];
@@ -6460,6 +6583,50 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
                                                                      maxRowsPerSection:2
                                                                            maxChildren:48
                                                                      maxNestedChildren:8];
+    return [diagnostics copy];
+}
+
+- (NSDictionary *)findMyActiveDevicesProviderFocusedDiagnostics {
+    NSDictionary *active = [self activeFindMyTableViewForDataSourceTerm:@"FMDevicesListDataSource"];
+    id tableView = active[@"tableView"];
+    id dataSource = active[@"dataSource"];
+    id delegate = [self safeValueForKey:@"delegate" object:tableView];
+
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"found": @(tableView != nil && dataSource != nil),
+        @"active_scan_count": active[@"scanned"] ?: @0,
+        @"table_view_class": [self classNameForObject:tableView],
+        @"data_source_class": [self classNameForObject:dataSource],
+        @"delegate_class": [self classNameForObject:delegate],
+        @"route_mode": @"active_devices_provider_model_focus_no_fmip_devices_accessor",
+    }];
+
+    diagnostics[@"provider_model"] = [self focusedDevicesProviderDiagnosticsForObject:dataSource
+                                                                                label:@"FMDevicesListDataSource.dataSource"
+                                                                            maxShares:4
+                                                                          maxChildren:36
+                                                                    maxNestedChildren:8];
+    return [diagnostics copy];
+}
+
+- (NSDictionary *)findMyActiveDevicesDataManagerDevicesDiagnostics {
+    NSDictionary *active = [self activeFindMyTableViewForDataSourceTerm:@"FMDevicesListDataSource"];
+    id tableView = active[@"tableView"];
+    id dataSource = active[@"dataSource"];
+    id delegate = [self safeValueForKey:@"delegate" object:tableView];
+
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"found": @(tableView != nil && dataSource != nil),
+        @"active_scan_count": active[@"scanned"] ?: @0,
+        @"table_view_class": [self classNameForObject:tableView],
+        @"data_source_class": [self classNameForObject:dataSource],
+        @"delegate_class": [self classNameForObject:delegate],
+        @"route_mode": @"active_devices_datamanager_devices_compact",
+    }];
+
+    diagnostics[@"devices_data_manager_devices"] = [self dataManagerDevicesDiagnosticsForObject:dataSource
+                                                                                          label:@"FMDevicesListDataSource.dataSource"
+                                                                                     maxDevices:80];
     return [diagnostics copy];
 }
 
@@ -8140,6 +8307,50 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
     diagnostics[@"active_devices_list"] = [self compactFindMyActiveListDiagnostics:[self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"]];
     diagnostics[@"devices_data_source_model"] = [self findMyActiveDevicesModelFocusedDiagnostics];
     diagnostics[@"swizzle"] = [self compactFindMySwizzleDiagnostics:[self findMySwizzleDiagnostics]];
+
+    [[NetworkController sharedInstance] sendMessage:@{
+        @"transactionId": transaction ?: [NSNull null],
+        @"diagnostics": diagnostics,
+    }];
+}
+
+- (void)handleFindMyDevicesProviderModelProbeWithTransaction:(NSString *)transaction {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleFindMyDevicesProviderModelProbeWithTransaction:transaction];
+        });
+        return;
+    }
+
+    [self installFindMySwizzles];
+    BOOL didSelectDevicesSegment = [self selectFindMySegmentIndex:1];
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] init];
+    diagnostics[@"selected_devices_segment"] = @(didSelectDevicesSegment);
+    diagnostics[@"probe_mode"] = @"active_devices_provider_model_focus_no_fmip_devices_accessor";
+    diagnostics[@"active_devices_list"] = [self compactFindMyActiveListDiagnostics:[self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"]];
+    diagnostics[@"devices_provider_model"] = [self findMyActiveDevicesProviderFocusedDiagnostics];
+    diagnostics[@"swizzle"] = [self compactFindMySwizzleDiagnostics:[self findMySwizzleDiagnostics]];
+
+    [[NetworkController sharedInstance] sendMessage:@{
+        @"transactionId": transaction ?: [NSNull null],
+        @"diagnostics": diagnostics,
+    }];
+}
+
+- (void)handleFindMyDevicesDataManagerDevicesProbeWithTransaction:(NSString *)transaction {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleFindMyDevicesDataManagerDevicesProbeWithTransaction:transaction];
+        });
+        return;
+    }
+
+    [self installFindMySwizzles];
+    BOOL didSelectDevicesSegment = [self selectFindMySegmentIndex:1];
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] init];
+    diagnostics[@"selected_devices_segment"] = @(didSelectDevicesSegment);
+    diagnostics[@"probe_mode"] = @"active_devices_datamanager_devices_compact";
+    diagnostics[@"devices_data_manager"] = [self findMyActiveDevicesDataManagerDevicesDiagnostics];
 
     [[NetworkController sharedInstance] sendMessage:@{
         @"transactionId": transaction ?: [NSNull null],
