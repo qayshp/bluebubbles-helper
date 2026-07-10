@@ -48,3 +48,51 @@ It records bounded metadata and summaries:
 - If the data source exposes readable device arrays, view models, snapshots, or provider objects, follow that path next and inspect one object type at a time.
 - If only visible cell view models contain useful fields, extract the view model schema and look for backing identifiers or location fields.
 - If the route crashes, remove KVC reads and keep only runtime metadata for the data source/list controller/cell classes.
+
+## First runtime result
+
+Installed helper checksum in the server repo:
+
+```text
+76a48d9a1f887ddf48852cf92e55bf92
+```
+
+The route reached Find My and produced useful diagnostics, but the payload was too large for the BlueBubbles helper socket framing:
+
+- Request started at `2026-07-10 09:41:18`.
+- BlueBubbles logged `Failed to decode BlueBubblesHelper data!`.
+- Curl timed out after 90 seconds with HTTP `000`.
+- Find My did not crash.
+
+Useful data visible before truncation:
+
+- Active data source: `FindMy.FMDevicesListDataSource`.
+- Active delegate/list controller: `_TtGC6FindMy20FMListViewControllerCS_23FMDevicesListDataSourceCS_14FMNoDeviceViewCS_21FMDevicesTerminalView_`.
+- `FMDevicesListDataSource` Swift ivars:
+  - `delegate`
+  - `mediator`
+  - `tableView`
+  - `deviceSubscription`
+  - `locationSubscription`
+  - `cellsViewModel`
+  - `itemAger`
+  - `updateQueue`
+  - `delayedUpdateWorkItem`
+  - `isRemovingCell`
+  - `_listTitle`
+  - `updatesEnabled`
+- Data source KVC attempts for obvious keys such as `devices`, `viewModels`, `cellsViewModel`, `provider`, `fmipManager`, `dataManager`, and `location` returned nil or unreadable.
+- Visible cells are still `_TtGC6FindMy19FMListTableViewCellVS_21FMDeviceCellViewModel_`, and their Swift ivars include UI fields such as `titleLabel`, `subtitleLabel`, `distanceLabel`, and `batteryStatusView`.
+
+## Payload-bound follow-up
+
+The probe was reduced to avoid another socket decode failure:
+
+- Runtime ivar/method scans now include only classes whose declaring class name contains `FindMy`.
+- Visible cell samples are limited to 3.
+- The table view now returns a shallow summary instead of full UIKit metadata.
+- Method limits and KVC readable-result limits were reduced.
+
+Next target if this bounded route returns:
+
+- Inspect `cellsViewModel` specifically, likely by reading the Swift ivar memory layout or by invoking table data-source methods for a row and inspecting the returned cell/view-model class metadata.

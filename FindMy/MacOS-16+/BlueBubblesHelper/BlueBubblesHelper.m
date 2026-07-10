@@ -5970,6 +5970,13 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
     Class currentClass = [object class];
     NSUInteger classDepth = 0;
     while (currentClass != nil && classDepth < 8 && result.count < limit) {
+        NSString *declaringClass = NSStringFromClass(currentClass);
+        if ([declaringClass rangeOfString:@"FindMy" options:NSCaseInsensitiveSearch].location == NSNotFound) {
+            currentClass = class_getSuperclass(currentClass);
+            classDepth++;
+            continue;
+        }
+
         unsigned int ivarCount = 0;
         Ivar *ivarList = class_copyIvarList(currentClass, &ivarCount);
         for (unsigned int i = 0; i < ivarCount && result.count < limit; i++) {
@@ -5985,7 +5992,7 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
                 @"name": name,
                 @"encoding": encoding != NULL ? [NSString stringWithUTF8String:encoding] : @"<nil>",
                 @"offset": @(ivar_getOffset(ivar)),
-                @"declaring_class": NSStringFromClass(currentClass),
+                @"declaring_class": declaringClass,
             }];
         }
         free(ivarList);
@@ -6006,6 +6013,13 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
     Class currentClass = [object class];
     NSUInteger classDepth = 0;
     while (currentClass != nil && classDepth < 8 && result.count < limit) {
+        NSString *declaringClass = NSStringFromClass(currentClass);
+        if ([declaringClass rangeOfString:@"FindMy" options:NSCaseInsensitiveSearch].location == NSNotFound) {
+            currentClass = class_getSuperclass(currentClass);
+            classDepth++;
+            continue;
+        }
+
         unsigned int methodCount = 0;
         Method *methodList = class_copyMethodList(currentClass, &methodCount);
         for (unsigned int i = 0; i < methodCount && result.count < limit; i++) {
@@ -6031,7 +6045,7 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
             [result addObject:@{
                 @"name": name,
                 @"encoding": encoding != NULL ? [NSString stringWithUTF8String:encoding] : @"<nil>",
-                @"declaring_class": NSStringFromClass(currentClass),
+                @"declaring_class": declaringClass,
             }];
         }
         free(methodList);
@@ -6094,6 +6108,13 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
     Class currentClass = [object class];
     NSUInteger classDepth = 0;
     while (currentClass != nil && classDepth < 8 && result.count < limit) {
+        NSString *declaringClass = NSStringFromClass(currentClass);
+        if ([declaringClass rangeOfString:@"FindMy" options:NSCaseInsensitiveSearch].location == NSNotFound) {
+            currentClass = class_getSuperclass(currentClass);
+            classDepth++;
+            continue;
+        }
+
         unsigned int ivarCount = 0;
         Ivar *ivarList = class_copyIvarList(currentClass, &ivarCount);
         for (unsigned int i = 0; i < ivarCount && result.count < limit; i++) {
@@ -6135,7 +6156,7 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
             [result addObject:@{
                 @"name": name,
                 @"encoding": [NSString stringWithUTF8String:encoding],
-                @"declaring_class": NSStringFromClass(currentClass),
+                @"declaring_class": declaringClass,
                 @"value_summary": [self summaryForValue:value],
             }];
         }
@@ -6179,10 +6200,10 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
         @"present": @YES,
         @"class": [self classNameForObject:object],
         @"summary": [self summaryForValue:object],
-        @"ivar_metadata": [self runtimeIvarMetadataForObject:object limit:80],
-        @"matching_methods": [self runtimeMethodMetadataForObject:object matchingTerms:terms limit:80],
-        @"kvc": [self kvcDiagnosticsForObject:object keys:keys limit:24],
-        @"object_ivar_values": [self objectIvarValueSummariesForObject:object matchingTerms:terms limit:40],
+        @"ivar_metadata": [self runtimeIvarMetadataForObject:object limit:48],
+        @"matching_methods": [self runtimeMethodMetadataForObject:object matchingTerms:terms limit:32],
+        @"kvc": [self kvcDiagnosticsForObject:object keys:keys limit:12],
+        @"object_ivar_values": [self objectIvarValueSummariesForObject:object matchingTerms:terms limit:20],
     };
 }
 
@@ -6203,7 +6224,14 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
 
     diagnostics[@"data_source"] = [self findMyBackingObjectDiagnosticsForObject:dataSource label:@"FMDevicesListDataSource.dataSource"];
     diagnostics[@"delegate"] = [self findMyBackingObjectDiagnosticsForObject:delegate label:@"FMDevicesListDataSource.delegate"];
-    diagnostics[@"table_view"] = [self findMyBackingObjectDiagnosticsForObject:tableView label:@"FMDevicesListDataSource.tableView"];
+    diagnostics[@"table_view"] = @{
+        @"label": @"FMDevicesListDataSource.tableView",
+        @"present": @(tableView != nil),
+        @"class": [self classNameForObject:tableView],
+        @"summary": [self summaryForValue:tableView],
+        @"ivar_metadata": [self runtimeIvarMetadataForObject:tableView limit:24],
+        @"matching_methods": [self runtimeMethodMetadataForObject:tableView matchingTerms:@[@"device", @"location", @"dataSource", @"delegate"] limit:16],
+    };
 
     SEL visibleCellsSelector = @selector(visibleCells);
     NSMutableArray *cellDiagnostics = [[NSMutableArray alloc] init];
@@ -6222,7 +6250,7 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
         diagnostics[@"visible_cell_count"] = @(cells.count);
         NSUInteger index = 0;
         for (id cell in cells ?: @[]) {
-            if (cellDiagnostics.count >= 6) {
+            if (cellDiagnostics.count >= 3) {
                 break;
             }
             NSMutableDictionary *cellEntry = [[NSMutableDictionary alloc] initWithDictionary:[self findMyBackingObjectDiagnosticsForObject:cell label:[NSString stringWithFormat:@"visible_cell_%lu", (unsigned long)index]]];
