@@ -216,3 +216,100 @@ Next target:
 - Add a focused mirror/extractor for `cellsViewModel` that samples section/row `FMDeviceCellViewModel` values and reports their child fields.
 - Add a focused mirror/extractor for `FMMediator.devicesProvider`, `FMMediator.locationProvider`, and the two subscriptions.
 - Continue avoiding direct `FMIPManager` access.
+
+## Focused cell view-model route
+
+Added a narrower helper action:
+
+```text
+debug-findmy-devices-data-source-model
+```
+
+The BlueBubbles route is:
+
+```text
+POST /api/v1/icloud/findmy/devices/debug/data-source-model
+```
+
+Installed helper checksum in the server repo:
+
+```text
+d48afe4c788e5e828a4453f8073f3717
+```
+
+Runtime result:
+
+- HTTP 200.
+- Runtime about 7.2 seconds.
+- Payload size about 63.8 KB.
+- Find My did not crash.
+
+This route keeps the same safety boundary:
+
+- It starts from the active app-owned `FindMy.FMDevicesListDataSource`.
+- It does not create or retain a new `FMIPManager`.
+- It does not call `FMIPManager.devices`.
+- It does not touch `FMIPManager.dataManager`.
+- It does not install FMIPCore callback swizzles.
+
+The route confirmed that `cellsViewModel` is the full Devices backing model:
+
+```text
+Swift.Array<Swift.Array<FindMy.FMDeviceCellViewModel>>
+```
+
+Section counts observed:
+
+```text
+21
+1
+11
+4
+```
+
+Sampled `FMDeviceCellViewModel` fields included:
+
+- `identifier`: long encrypted/base64-like identifier string
+- `title`: device display name
+- `subtitle`: UI-ready location text, for example current place text plus `Now`
+- `distance`: UI-ready distance text such as `With You`, `0 mi`, or a larger distance
+- `rawDistance`: numeric distance-like value
+- `timestamp`: `Foundation.Date`
+- `isOnline`
+- `isInaccurate`
+- `isLocating`
+- `batteryLevel`
+- `shouldShowBatteryIndicator`
+- `shouldShowCharging`
+- `owner`
+- `primaryItemPart`: optional `FMIPCore.FMIPItem`
+- `itemParts`: optional array of `FMIPCore.FMIPItem`
+
+Interpretation:
+
+- This is immediately useful for an Android Devices UI that can accept the same human-readable location text Find My shows.
+- It still does not expose per-device latitude/longitude in the sampled view-model fields.
+- Some sampled rows had non-empty fresh UI location text, so the official app has recent location state for at least some Devices on this Mac.
+
+The same focused route also exposed provider state through the data source's `FMMediator`:
+
+- `FMLocationProvider.currentLocation` was a `CLLocation`, but this appears to be the Mac/current-user location provider state, not a per-device coordinate.
+- `FMDevicesProvider.shares` was a `Swift.Array<FMIPCore.FMIPBeaconShare>` with count 28.
+- `FMDevicesProvider.fmipManager` pointed to an app-owned `FMIPCore.FMIPManager`.
+- That app-owned `FMIPManager` mirrored safely enough to show:
+  - `identifier`
+  - `delegate`
+  - `siriDelegate`
+  - `refreshingController`
+  - `beaconRefreshingController`
+  - `safeLocationRefreshingController`
+  - `isDevicesSnapshotMode: false`
+  - `isItemsSnapshotMode: false`
+
+Next target:
+
+- Start from `FMDevicesProvider`, not from a newly created `FMIPManager`.
+- Mirror `FMDevicesProvider.shares`.
+- Mirror the app-owned `fmipManager` only shallowly.
+- Inspect `refreshingController`, `beaconRefreshingController`, and `safeLocationRefreshingController`.
+- Preserve `CLLocation` scalar summaries so any future real location object is reported with coordinate, accuracy, and timestamp.

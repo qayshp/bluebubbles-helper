@@ -220,6 +220,182 @@ private func BBShallowMirrorSummary(_ object: AnyObject, maxChildren: Int, maxNe
     ]
 }
 
+private func BBShallowAnyMirrorSummary(_ value: Any, maxChildren: Int, maxNestedChildren: Int) -> [String: Any] {
+    let mirror = Mirror(reflecting: value)
+    var children: [[String: Any]] = []
+    var current: Mirror? = mirror
+
+    while let currentMirror = current, children.count < maxChildren {
+        for child in currentMirror.children {
+            if children.count >= maxChildren {
+                break
+            }
+
+            var childSummary = BBMirrorChildSummary(child.label, value: child.value)
+            let nested = BBMirrorChildrenSample(child.value, maxChildren: maxNestedChildren)
+            if !nested.isEmpty {
+                childSummary["children_sample"] = nested
+            }
+
+            children.append(childSummary)
+        }
+
+        current = currentMirror.superclassMirror
+    }
+
+    var result: [String: Any] = [
+        "type": BBMirrorTypeName(value),
+        "display_style": BBMirrorDisplayStyleName(mirror.displayStyle),
+        "children_sampled": children.count,
+        "max_children": maxChildren,
+        "max_nested_children": maxNestedChildren,
+    ]
+
+    if mirror.displayStyle == .class {
+        let object = value as AnyObject
+        result["object_class"] = BBObjectClassName(object)
+    }
+
+    if let count = BBKnownCollectionCount(value, mirror: mirror) {
+        result["collection_count"] = count
+    }
+
+    if let scalar = BBScalarMirrorValue(value) {
+        result["value"] = scalar
+    }
+
+    if !children.isEmpty {
+        result["children"] = children
+    }
+
+    return result
+}
+
+private func BBMirrorChildValue(_ value: Any, label targetLabel: String) -> Any? {
+    var current: Mirror? = Mirror(reflecting: value)
+
+    while let mirror = current {
+        for child in mirror.children where child.label == targetLabel {
+            return child.value
+        }
+
+        current = mirror.superclassMirror
+    }
+
+    return nil
+}
+
+private func BBUnwrappedOptional(_ value: Any) -> Any? {
+    let mirror = Mirror(reflecting: value)
+    guard mirror.displayStyle == .optional else {
+        return value
+    }
+
+    return mirror.children.first?.value
+}
+
+private func BBDevicesDataSourceFocusedSummary(_ dataSource: AnyObject, maxSections: Int, maxRowsPerSection: Int, maxChildren: Int, maxNestedChildren: Int) -> [String: Any] {
+    var result: [String: Any] = [
+        "focused_summary_available": true,
+        "object_class": BBObjectClassName(dataSource),
+        "type": String(reflecting: type(of: dataSource)),
+        "max_sections": maxSections,
+        "max_rows_per_section": maxRowsPerSection,
+        "max_children": maxChildren,
+        "max_nested_children": maxNestedChildren,
+    ]
+
+    if let cellsValue = BBMirrorChildValue(dataSource, label: "cellsViewModel") {
+        let cellsMirror = Mirror(reflecting: cellsValue)
+        var sections: [[String: Any]] = []
+        var sectionIndex = 0
+        for sectionChild in cellsMirror.children {
+            if sections.count >= maxSections {
+                break
+            }
+
+            let sectionValue = sectionChild.value
+            let sectionMirror = Mirror(reflecting: sectionValue)
+            var rows: [[String: Any]] = []
+            var rowIndex = 0
+            for rowChild in sectionMirror.children {
+                if rows.count >= maxRowsPerSection {
+                    break
+                }
+
+                rows.append([
+                    "row_index": rowIndex,
+                    "summary": BBShallowAnyMirrorSummary(rowChild.value, maxChildren: maxChildren, maxNestedChildren: maxNestedChildren),
+                ])
+                rowIndex += 1
+            }
+
+            sections.append([
+                "section_index": sectionIndex,
+                "section_type": BBMirrorTypeName(sectionValue),
+                "section_display_style": BBMirrorDisplayStyleName(sectionMirror.displayStyle),
+                "row_count": BBKnownCollectionCount(sectionValue, mirror: sectionMirror) ?? rowIndex,
+                "rows_sample": rows,
+            ])
+            sectionIndex += 1
+        }
+
+        result["cellsViewModel"] = [
+            "type": BBMirrorTypeName(cellsValue),
+            "display_style": BBMirrorDisplayStyleName(cellsMirror.displayStyle),
+            "section_count": BBKnownCollectionCount(cellsValue, mirror: cellsMirror) ?? sectionIndex,
+            "sections_sample": sections,
+        ]
+    } else {
+        result["cellsViewModel"] = [
+            "present": false,
+        ]
+    }
+
+    let providerLabels = [
+        "conditionProvider",
+        "devicesProvider",
+        "etaProvider",
+        "locationProvider",
+        "peopleProvider",
+        "selectionController",
+        "productAssetProvider",
+        "isRefreshing",
+    ]
+    if let mediatorValue = BBMirrorChildValue(dataSource, label: "mediator") {
+        var providerSummaries: [String: Any] = [:]
+        for providerLabel in providerLabels {
+            if let providerValue = BBMirrorChildValue(mediatorValue, label: providerLabel) {
+                providerSummaries[providerLabel] = BBShallowAnyMirrorSummary(providerValue, maxChildren: maxChildren, maxNestedChildren: maxNestedChildren)
+            } else {
+                providerSummaries[providerLabel] = ["present": false]
+            }
+        }
+
+        result["mediator"] = [
+            "summary": BBShallowAnyMirrorSummary(mediatorValue, maxChildren: maxChildren, maxNestedChildren: maxNestedChildren),
+            "providers": providerSummaries,
+        ]
+    } else {
+        result["mediator"] = [
+            "present": false,
+        ]
+    }
+
+    var subscriptionSummaries: [String: Any] = [:]
+    for subscriptionLabel in ["deviceSubscription", "locationSubscription", "itemAger"] {
+        if let subscriptionValue = BBMirrorChildValue(dataSource, label: subscriptionLabel),
+           let unwrapped = BBUnwrappedOptional(subscriptionValue) {
+            subscriptionSummaries[subscriptionLabel] = BBShallowAnyMirrorSummary(unwrapped, maxChildren: maxChildren, maxNestedChildren: maxNestedChildren)
+        } else {
+            subscriptionSummaries[subscriptionLabel] = ["present": false]
+        }
+    }
+    result["subscriptions"] = subscriptionSummaries
+
+    return result
+}
+
 private func BBIvarMetadata(_ startingClass: AnyClass?) -> [[String: Any]] {
     var result: [[String: Any]] = []
     var seen = Set<String>()
@@ -621,6 +797,31 @@ public func BlueBubblesFindMyCopySwiftMirrorSummary(_ objectPointer: UnsafeMutab
     let boundedMaxChildren = max(0, min(Int(maxChildren), 48))
     let boundedMaxNestedChildren = max(0, min(Int(maxNestedChildren), 12))
     let summary = BBShallowMirrorSummary(object, maxChildren: boundedMaxChildren, maxNestedChildren: boundedMaxNestedChildren)
+
+    return Unmanaged.passRetained(summary as NSDictionary).toOpaque()
+}
+
+@_cdecl("BlueBubblesFindMyCopyDevicesDataSourceFocusedSummary")
+public func BlueBubblesFindMyCopyDevicesDataSourceFocusedSummary(_ objectPointer: UnsafeMutableRawPointer?, _ maxSections: Int32, _ maxRowsPerSection: Int32, _ maxChildren: Int32, _ maxNestedChildren: Int32) -> UnsafeMutableRawPointer? {
+    guard let objectPointer else {
+        return Unmanaged.passRetained([
+            "focused_summary_available": false,
+            "error": "missing object pointer",
+        ] as NSDictionary).toOpaque()
+    }
+
+    let dataSource = Unmanaged<AnyObject>.fromOpaque(objectPointer).takeUnretainedValue()
+    let boundedMaxSections = max(0, min(Int(maxSections), 8))
+    let boundedMaxRowsPerSection = max(0, min(Int(maxRowsPerSection), 8))
+    let boundedMaxChildren = max(0, min(Int(maxChildren), 64))
+    let boundedMaxNestedChildren = max(0, min(Int(maxNestedChildren), 16))
+    let summary = BBDevicesDataSourceFocusedSummary(
+        dataSource,
+        maxSections: boundedMaxSections,
+        maxRowsPerSection: boundedMaxRowsPerSection,
+        maxChildren: boundedMaxChildren,
+        maxNestedChildren: boundedMaxNestedChildren
+    )
 
     return Unmanaged.passRetained(summary as NSDictionary).toOpaque()
 }
