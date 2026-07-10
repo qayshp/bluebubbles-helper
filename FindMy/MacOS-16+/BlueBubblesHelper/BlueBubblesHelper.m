@@ -27,6 +27,7 @@
 - (void)handleFindMyDevicesDelayedProbeWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesFMIPCallbackWatchWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesProviderRuntimeProbeWithTransaction:(NSString *)transaction;
+- (void)handleFindMyDevicesDataSourceProbeWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesFMIPDataManagerProbeWithTransaction:(NSString *)transaction;
 - (void)handleFindMyItemsRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyDebugWithTransaction:(NSString *)transaction;
@@ -50,6 +51,12 @@
 - (NSDictionary *)findMyObjectGraphDiagnostics;
 - (NSDictionary *)findMySessionObjectDiagnostics;
 - (NSArray *)compactFindMyObjectMatches:(NSArray *)matches matchingTerms:(NSArray<NSString *> *)terms limit:(NSUInteger)limit;
+- (NSDictionary *)findMyActiveDevicesBackingDiagnostics;
+- (NSDictionary *)findMyBackingObjectDiagnosticsForObject:(id)object label:(NSString *)label;
+- (NSArray *)runtimeIvarMetadataForObject:(id)object limit:(NSUInteger)limit;
+- (NSArray *)runtimeMethodMetadataForObject:(id)object matchingTerms:(NSArray<NSString *> *)terms limit:(NSUInteger)limit;
+- (NSDictionary *)kvcDiagnosticsForObject:(id)object keys:(NSArray<NSString *> *)keys limit:(NSUInteger)limit;
+- (NSArray *)objectIvarValueSummariesForObject:(id)object matchingTerms:(NSArray<NSString *> *)terms limit:(NSUInteger)limit;
 - (void)captureFindMyDataSource:(id)dataSource tableView:(id)tableView;
 - (void)captureFindMyInterestingObject:(id)object source:(NSString *)source selector:(SEL)selector;
 - (void)captureFindMyInterestingSetterObject:(id)object value:(id)value selector:(SEL)selector;
@@ -621,6 +628,11 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
 
     if ([event isEqualToString:@"debug-findmy-devices-provider-runtime"]) {
         [self handleFindMyDevicesProviderRuntimeProbeWithTransaction:transaction];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-devices-data-source"]) {
+        [self handleFindMyDevicesDataSourceProbeWithTransaction:transaction];
         return;
     }
 
@@ -5948,6 +5960,282 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
     return [result copy];
 }
 
+- (NSArray *)runtimeIvarMetadataForObject:(id)object limit:(NSUInteger)limit {
+    if (object == nil) {
+        return @[];
+    }
+
+    NSMutableArray *result = [[NSMutableArray alloc] init];
+    NSMutableSet *seen = [[NSMutableSet alloc] init];
+    Class currentClass = [object class];
+    NSUInteger classDepth = 0;
+    while (currentClass != nil && classDepth < 8 && result.count < limit) {
+        unsigned int ivarCount = 0;
+        Ivar *ivarList = class_copyIvarList(currentClass, &ivarCount);
+        for (unsigned int i = 0; i < ivarCount && result.count < limit; i++) {
+            Ivar ivar = ivarList[i];
+            NSString *name = [NSString stringWithUTF8String:ivar_getName(ivar) ?: ""];
+            if (name.length == 0 || [seen containsObject:name]) {
+                continue;
+            }
+            [seen addObject:name];
+
+            const char *encoding = ivar_getTypeEncoding(ivar);
+            [result addObject:@{
+                @"name": name,
+                @"encoding": encoding != NULL ? [NSString stringWithUTF8String:encoding] : @"<nil>",
+                @"offset": @(ivar_getOffset(ivar)),
+                @"declaring_class": NSStringFromClass(currentClass),
+            }];
+        }
+        free(ivarList);
+        currentClass = class_getSuperclass(currentClass);
+        classDepth++;
+    }
+
+    return [result copy];
+}
+
+- (NSArray *)runtimeMethodMetadataForObject:(id)object matchingTerms:(NSArray<NSString *> *)terms limit:(NSUInteger)limit {
+    if (object == nil) {
+        return @[];
+    }
+
+    NSMutableArray *result = [[NSMutableArray alloc] init];
+    NSMutableSet *seen = [[NSMutableSet alloc] init];
+    Class currentClass = [object class];
+    NSUInteger classDepth = 0;
+    while (currentClass != nil && classDepth < 8 && result.count < limit) {
+        unsigned int methodCount = 0;
+        Method *methodList = class_copyMethodList(currentClass, &methodCount);
+        for (unsigned int i = 0; i < methodCount && result.count < limit; i++) {
+            Method method = methodList[i];
+            NSString *name = NSStringFromSelector(method_getName(method));
+            if (name.length == 0 || [seen containsObject:name]) {
+                continue;
+            }
+
+            BOOL matches = terms.count == 0;
+            for (NSString *term in terms) {
+                if ([name rangeOfString:term options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                    matches = YES;
+                    break;
+                }
+            }
+            if (!matches) {
+                continue;
+            }
+
+            [seen addObject:name];
+            const char *encoding = method_getTypeEncoding(method);
+            [result addObject:@{
+                @"name": name,
+                @"encoding": encoding != NULL ? [NSString stringWithUTF8String:encoding] : @"<nil>",
+                @"declaring_class": NSStringFromClass(currentClass),
+            }];
+        }
+        free(methodList);
+        currentClass = class_getSuperclass(currentClass);
+        classDepth++;
+    }
+
+    return [result copy];
+}
+
+- (NSDictionary *)kvcDiagnosticsForObject:(id)object keys:(NSArray<NSString *> *)keys limit:(NSUInteger)limit {
+    if (object == nil) {
+        return @{};
+    }
+
+    NSMutableDictionary *readable = [[NSMutableDictionary alloc] init];
+    NSMutableArray *nilOrUnreadable = [[NSMutableArray alloc] init];
+    for (NSString *key in keys) {
+        if (readable.count >= limit) {
+            break;
+        }
+
+        id value = [self safeValueForKey:key object:object];
+        if (value == nil) {
+            [nilOrUnreadable addObject:key];
+            continue;
+        }
+
+        NSArray *children = [self objectChildrenForValue:value];
+        NSMutableArray *childClasses = [[NSMutableArray alloc] init];
+        for (id child in children) {
+            if (childClasses.count >= 12) {
+                break;
+            }
+            [childClasses addObject:[self classNameForObject:child]];
+        }
+
+        NSMutableDictionary *entry = [[NSMutableDictionary alloc] initWithDictionary:@{
+            @"summary": [self summaryForValue:value],
+            @"child_count": @(children.count),
+            @"child_classes_sample": childClasses,
+        }];
+        readable[key] = entry;
+    }
+
+    return @{
+        @"readable": readable,
+        @"nil_or_unreadable_sample": [nilOrUnreadable subarrayWithRange:NSMakeRange(0, MIN(nilOrUnreadable.count, 40))],
+        @"attempted_count": @(keys.count),
+    };
+}
+
+- (NSArray *)objectIvarValueSummariesForObject:(id)object matchingTerms:(NSArray<NSString *> *)terms limit:(NSUInteger)limit {
+    if (object == nil) {
+        return @[];
+    }
+
+    NSMutableArray *result = [[NSMutableArray alloc] init];
+    NSMutableSet *seen = [[NSMutableSet alloc] init];
+    Class currentClass = [object class];
+    NSUInteger classDepth = 0;
+    while (currentClass != nil && classDepth < 8 && result.count < limit) {
+        unsigned int ivarCount = 0;
+        Ivar *ivarList = class_copyIvarList(currentClass, &ivarCount);
+        for (unsigned int i = 0; i < ivarCount && result.count < limit; i++) {
+            Ivar ivar = ivarList[i];
+            const char *encoding = ivar_getTypeEncoding(ivar);
+            if (encoding == NULL || encoding[0] != '@') {
+                continue;
+            }
+
+            NSString *name = [NSString stringWithUTF8String:ivar_getName(ivar) ?: ""];
+            if (name.length == 0 || [seen containsObject:name]) {
+                continue;
+            }
+            [seen addObject:name];
+
+            id value = nil;
+            @try {
+                value = object_getIvar(object, ivar);
+            } @catch (NSException *exception) {
+                value = nil;
+            }
+            if (value == nil) {
+                continue;
+            }
+
+            NSString *valueClass = [self classNameForObject:value];
+            NSMutableString *haystack = [[NSMutableString alloc] initWithFormat:@"%@ %@", name, valueClass ?: @""];
+            BOOL matched = terms.count == 0;
+            for (NSString *term in terms) {
+                if ([haystack rangeOfString:term options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                    matched = YES;
+                    break;
+                }
+            }
+            if (!matched) {
+                continue;
+            }
+
+            [result addObject:@{
+                @"name": name,
+                @"encoding": [NSString stringWithUTF8String:encoding],
+                @"declaring_class": NSStringFromClass(currentClass),
+                @"value_summary": [self summaryForValue:value],
+            }];
+        }
+        free(ivarList);
+        currentClass = class_getSuperclass(currentClass);
+        classDepth++;
+    }
+
+    return [result copy];
+}
+
+- (NSDictionary *)findMyBackingObjectDiagnosticsForObject:(id)object label:(NSString *)label {
+    NSArray *terms = @[
+        @"device", @"location", @"model", @"viewModel", @"data", @"source",
+        @"provider", @"manager", @"session", @"repository", @"controller",
+        @"snapshot", @"publisher", @"subject", @"item", @"fmip", @"update",
+        @"row", @"cell", @"section"
+    ];
+    NSArray *keys = @[
+        @"devices", @"device", @"allDevices", @"currentDevice", @"selectedDevice",
+        @"items", @"item", @"allItems", @"sections", @"rows", @"data", @"snapshot",
+        @"model", @"viewModel", @"cellViewModel", @"viewModels", @"representedObject",
+        @"objectValue", @"content", @"contentConfiguration", @"configuration",
+        @"provider", @"manager", @"repository", @"session", @"ownerSession",
+        @"fmipManager", @"dataManager", @"devicesProvider", @"locationProvider",
+        @"delegate", @"dataSource", @"tableView", @"collectionView", @"controller",
+        @"viewController", @"parentViewController", @"childViewControllers",
+        @"annotations", @"mapItems", @"locations", @"location"
+    ];
+
+    if (object == nil) {
+        return @{
+            @"label": label ?: @"<nil>",
+            @"present": @NO,
+            @"class": @"<nil>",
+        };
+    }
+
+    return @{
+        @"label": label ?: @"<nil>",
+        @"present": @YES,
+        @"class": [self classNameForObject:object],
+        @"summary": [self summaryForValue:object],
+        @"ivar_metadata": [self runtimeIvarMetadataForObject:object limit:80],
+        @"matching_methods": [self runtimeMethodMetadataForObject:object matchingTerms:terms limit:80],
+        @"kvc": [self kvcDiagnosticsForObject:object keys:keys limit:24],
+        @"object_ivar_values": [self objectIvarValueSummariesForObject:object matchingTerms:terms limit:40],
+    };
+}
+
+- (NSDictionary *)findMyActiveDevicesBackingDiagnostics {
+    NSDictionary *active = [self activeFindMyTableViewForDataSourceTerm:@"FMDevicesListDataSource"];
+    id tableView = active[@"tableView"];
+    id dataSource = active[@"dataSource"];
+    id delegate = [self safeValueForKey:@"delegate" object:tableView];
+
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"found": @(tableView != nil && dataSource != nil),
+        @"active_scan_count": active[@"scanned"] ?: @0,
+        @"table_view_class": [self classNameForObject:tableView],
+        @"data_source_class": [self classNameForObject:dataSource],
+        @"delegate_class": [self classNameForObject:delegate],
+        @"route_mode": @"active_devices_data_source_backing_metadata_and_bounded_kvc",
+    }];
+
+    diagnostics[@"data_source"] = [self findMyBackingObjectDiagnosticsForObject:dataSource label:@"FMDevicesListDataSource.dataSource"];
+    diagnostics[@"delegate"] = [self findMyBackingObjectDiagnosticsForObject:delegate label:@"FMDevicesListDataSource.delegate"];
+    diagnostics[@"table_view"] = [self findMyBackingObjectDiagnosticsForObject:tableView label:@"FMDevicesListDataSource.tableView"];
+
+    SEL visibleCellsSelector = @selector(visibleCells);
+    NSMutableArray *cellDiagnostics = [[NSMutableArray alloc] init];
+    if (tableView != nil && [tableView respondsToSelector:visibleCellsSelector]) {
+        id (*visibleCells)(id, SEL) = (id (*)(id, SEL))objc_msgSend;
+        NSArray *cells = nil;
+        @try {
+            id visible = visibleCells(tableView, visibleCellsSelector);
+            if ([visible isKindOfClass:[NSArray class]]) {
+                cells = visible;
+            }
+        } @catch (NSException *exception) {
+            cells = nil;
+        }
+
+        diagnostics[@"visible_cell_count"] = @(cells.count);
+        NSUInteger index = 0;
+        for (id cell in cells ?: @[]) {
+            if (cellDiagnostics.count >= 6) {
+                break;
+            }
+            NSMutableDictionary *cellEntry = [[NSMutableDictionary alloc] initWithDictionary:[self findMyBackingObjectDiagnosticsForObject:cell label:[NSString stringWithFormat:@"visible_cell_%lu", (unsigned long)index]]];
+            cellEntry[@"visible_index"] = @(index);
+            [cellDiagnostics addObject:cellEntry];
+            index++;
+        }
+    }
+    diagnostics[@"visible_cells_sample"] = cellDiagnostics;
+
+    return [diagnostics copy];
+}
+
 - (NSArray *)findMyRootObjects {
     NSMutableArray *roots = [[NSMutableArray alloc] init];
     if (NSApp != nil) {
@@ -7556,6 +7844,29 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
 
     diagnostics[@"swizzle"] = [self compactFindMySwizzleDiagnostics:[self findMySwizzleDiagnostics]];
     diagnostics[@"active_devices_list"] = [self compactFindMyActiveListDiagnostics:[self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"]];
+
+    [[NetworkController sharedInstance] sendMessage:@{
+        @"transactionId": transaction ?: [NSNull null],
+        @"diagnostics": diagnostics,
+    }];
+}
+
+- (void)handleFindMyDevicesDataSourceProbeWithTransaction:(NSString *)transaction {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleFindMyDevicesDataSourceProbeWithTransaction:transaction];
+        });
+        return;
+    }
+
+    [self installFindMySwizzles];
+    BOOL didSelectDevicesSegment = [self selectFindMySegmentIndex:1];
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] init];
+    diagnostics[@"selected_devices_segment"] = @(didSelectDevicesSegment);
+    diagnostics[@"probe_mode"] = @"active_devices_data_source_backing_inspection_no_fmip_manager";
+    diagnostics[@"active_devices_list"] = [self compactFindMyActiveListDiagnostics:[self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"]];
+    diagnostics[@"devices_backing"] = [self findMyActiveDevicesBackingDiagnostics];
+    diagnostics[@"swizzle"] = [self compactFindMySwizzleDiagnostics:[self findMySwizzleDiagnostics]];
 
     [[NetworkController sharedInstance] sendMessage:@{
         @"transactionId": transaction ?: [NSNull null],
