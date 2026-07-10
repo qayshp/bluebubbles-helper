@@ -66,3 +66,36 @@ For each field, the helper records:
 - If `crowdSourcedLocations` or `devices` contains location-bearing samples, add a second narrow serializer for those exact value types.
 - If these fields are empty but `deviceConnectedStates` or `safeLocations` are populated, inspect how they key back to device identifiers.
 - If starting FMIPManager or mirroring `dataManager` crashes, the next step is to capture the app-created manager instance instead of creating our own.
+
+## Runtime result
+
+Installed helper checksum in the server repo:
+
+```text
+3d23119a7bdb365ac6ea013b7f757de3
+```
+
+Server route:
+
+```text
+POST /api/v1/icloud/findmy/devices/debug/fmip-datamanager
+```
+
+Observed result:
+
+- Request started at `2026-07-10 01:10:06`.
+- The Find My helper socket ended at `2026-07-10 01:10:11`, about when the delayed `FMIPDataManager` snapshot should have run.
+- BlueBubbles marked the Find My process as force quit and relaunched it.
+- Curl timed out after 90 seconds with HTTP `000` and no response body.
+
+Interpretation:
+
+- The route reached Find My and selected the Devices path, but the helper crashed before it could send diagnostics.
+- The crash timing implicates the Swift `Mirror` snapshot over the retained manager's `dataManager` or over one of the selected `FMIPDataManager` ivar values.
+- This does not rule out `FMIPDataManager` as the source of device locations. It only rules out this broad Swift `Mirror` value-summary shape as safe.
+
+Next step:
+
+- Replace the value-summary snapshot with a narrower Objective-C runtime metadata probe.
+- Keep the retained manager path, but report only class names, ivar names, and whether `dataManager` can be reached.
+- Do not summarize `devices`, `crowdSourcedLocations`, or other `FMIPDataManager` values until the metadata-only probe proves the object can be touched without crashing.
