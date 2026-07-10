@@ -124,3 +124,25 @@ Expected interpretation:
 
 - If this route returns, `FMIPManager.dataManager` is reachable and the next step is one-field-at-a-time reads, starting with metadata or count-only access to `crowdSourcedLocations` before `devices`.
 - If it still crashes, even `object_getIvar(manager, dataManager)` is too risky for the retained manager path, and the next step should be locating an app-owned manager/data-manager object through the Find My object graph rather than creating our own `FMIPManager`.
+
+## Metadata-only runtime result
+
+Installed helper checksum in the server repo:
+
+```text
+ce071df9bd50a6521706770ed545316c
+```
+
+Observed result:
+
+- Request started at `2026-07-10 01:16:57`.
+- The Find My helper socket ended at `2026-07-10 01:17:02`, again at the delayed snapshot point.
+- BlueBubbles marked Find My as force quit and relaunched it.
+- Curl timed out after 90 seconds with HTTP `000` and no response body.
+- No matching `FindMy` crash report appeared under `~/Library/Logs/DiagnosticReports`.
+
+Interpretation:
+
+- Avoiding Swift `Mirror` over `FMIPDataManager` values was not enough.
+- The remaining risky operations in this route are retained `FMIPManager` startup/refresh and delayed access to the retained manager's `dataManager` reference.
+- Because the bounded provider-runtime route can inspect runtime metadata safely, the next direction should avoid creating a separate `FMIPManager` and instead look for an app-owned `FMIPManager` or `FMIPDataManager` object already retained by Find My.
