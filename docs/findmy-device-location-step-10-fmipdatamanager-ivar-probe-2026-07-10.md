@@ -99,3 +99,28 @@ Next step:
 - Replace the value-summary snapshot with a narrower Objective-C runtime metadata probe.
 - Keep the retained manager path, but report only class names, ivar names, and whether `dataManager` can be reached.
 - Do not summarize `devices`, `crowdSourcedLocations`, or other `FMIPDataManager` values until the metadata-only probe proves the object can be touched without crashing.
+
+## Metadata-only follow-up
+
+Implemented a narrower snapshot mode:
+
+```text
+objc_runtime_ivar_metadata_retained_fmip_manager_data_manager
+```
+
+This build still starts and retains `FMIPManager`, but the snapshot now avoids broad Swift value traversal:
+
+- It does not use Swift `Mirror` to summarize `FMIPDataManager` field values.
+- It does not call `FMIPManager.devices`.
+- It uses Objective-C runtime metadata to list manager ivars and data-manager ivars.
+- It uses `object_getIvar(manager, dataManager)` only for the single `dataManager` reference.
+- It reports target field metadata for `devices`, `crowdSourcedLocations`, `crowdSourcedOriginalLocations`, `deviceConnectedStates`, `safeLocations`, `safeLocationsMapping`, `owner`, and `familyMembers`.
+
+Build result:
+
+- `xcodebuild` completed successfully on `2026-07-10`.
+
+Expected interpretation:
+
+- If this route returns, `FMIPManager.dataManager` is reachable and the next step is one-field-at-a-time reads, starting with metadata or count-only access to `crowdSourcedLocations` before `devices`.
+- If it still crashes, even `object_getIvar(manager, dataManager)` is too risky for the retained manager path, and the next step should be locating an app-owned manager/data-manager object through the Find My object graph rather than creating our own `FMIPManager`.

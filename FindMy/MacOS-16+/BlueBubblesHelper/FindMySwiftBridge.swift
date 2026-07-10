@@ -1,6 +1,7 @@
 import Foundation
 import Darwin
 import CoreLocation
+import ObjectiveC
 
 @_silgen_name("$s8FMIPCore24FMIPManagerConfigurationC7defaultACvgZ")
 private func FMIPManagerConfigurationDefault() -> AnyObject
@@ -43,6 +44,63 @@ private func BBMirrorChildrenByLabel(_ value: Any) -> [String: Any] {
         current = mirror.superclassMirror
     }
     return result
+}
+
+private func BBObjectClassName(_ object: AnyObject) -> String {
+    return String(cString: object_getClassName(object))
+}
+
+private func BBIvarMetadata(_ startingClass: AnyClass?) -> [[String: Any]] {
+    var result: [[String: Any]] = []
+    var seen = Set<String>()
+    var currentClass: AnyClass? = startingClass
+
+    while let klass = currentClass {
+        var count: UInt32 = 0
+        if let ivars = class_copyIvarList(klass, &count) {
+            defer { free(ivars) }
+            for index in 0..<Int(count) {
+                let ivar = ivars[index]
+                let name = ivar_getName(ivar).map { String(cString: $0) } ?? ""
+                guard !name.isEmpty, !seen.contains(name) else {
+                    continue
+                }
+
+                seen.insert(name)
+                result.append([
+                    "name": name,
+                    "encoding": ivar_getTypeEncoding(ivar).map { String(cString: $0) } ?? "",
+                    "offset": ivar_getOffset(ivar),
+                    "declaring_class": NSStringFromClass(klass),
+                ])
+            }
+        }
+
+        currentClass = class_getSuperclass(klass)
+    }
+
+    return result
+}
+
+private func BBIvar(_ startingClass: AnyClass?, named name: String) -> Ivar? {
+    var currentClass: AnyClass? = startingClass
+    while let klass = currentClass {
+        if let ivar = class_getInstanceVariable(klass, name) {
+            return ivar
+        }
+
+        currentClass = class_getSuperclass(klass)
+    }
+
+    return nil
+}
+
+private func BBObjectIvar(_ object: AnyObject, named name: String) -> AnyObject? {
+    guard let ivar = BBIvar(object_getClass(object), named: name) else {
+        return nil
+    }
+
+    return object_getIvar(object, ivar) as AnyObject?
 }
 
 private func BBLocationSummary(_ value: Any) -> [String: Any]? {
@@ -278,17 +336,13 @@ private func BBFMIPDataManagerSnapshot() -> [String: Any] {
         ]
     }
 
-    let managerChildren = BBMirrorChildrenByLabel(manager)
-    guard let dataManager = managerChildren["dataManager"] else {
-        return [
-            "fmip_manager_present": true,
-            "manager_class": NSStringFromClass(type(of: manager)),
-            "manager_child_labels_sample": Array(managerChildren.keys.sorted().prefix(24)),
-            "data_manager_present": false,
-        ]
-    }
-
-    let dataManagerChildren = BBMirrorChildrenByLabel(dataManager)
+    let managerClass: AnyClass? = object_getClass(manager)
+    let managerIvars = BBIvarMetadata(managerClass)
+    let managerIvarNames = managerIvars.compactMap { $0["name"] as? String }
+    let dataManagerObject = BBObjectIvar(manager, named: "dataManager")
+    let dataManagerClass: AnyClass? = dataManagerObject.flatMap { object_getClass($0) }
+    let dataManagerIvars = BBIvarMetadata(dataManagerClass)
+    let dataManagerIvarNames = dataManagerIvars.compactMap { $0["name"] as? String }
     let targetFields = [
         "devices",
         "crowdSourcedLocations",
@@ -300,31 +354,39 @@ private func BBFMIPDataManagerSnapshot() -> [String: Any] {
         "familyMembers",
     ]
 
-    var fields: [String: Any] = [:]
-    var missingFields: [String] = []
-    for field in targetFields {
-        guard let value = dataManagerChildren[field] else {
-            missingFields.append(field)
-            continue
+    let targetFieldMetadata = targetFields.map { field -> [String: Any] in
+        if let metadata = dataManagerIvars.first(where: { ($0["name"] as? String) == field }) {
+            return [
+                "name": field,
+                "present": true,
+                "encoding": metadata["encoding"] ?? "",
+                "offset": metadata["offset"] ?? 0,
+                "declaring_class": metadata["declaring_class"] ?? "",
+            ]
         }
-        var summary = BBValueSummary(value, sampleLimit: 5)
-        let signal = BBLocationSignalSummary(value)
-        if !signal.isEmpty {
-            summary["location_signal"] = signal
-        }
-        fields[field] = summary
+
+        return [
+            "name": field,
+            "present": false,
+        ]
     }
 
     return [
         "fmip_manager_present": true,
-        "manager_class": NSStringFromClass(type(of: manager)),
-        "manager_child_labels_sample": Array(managerChildren.keys.sorted().prefix(24)),
-        "data_manager_present": true,
-        "data_manager_type": String(reflecting: type(of: dataManager)),
-        "data_manager_child_labels_sample": Array(dataManagerChildren.keys.sorted().prefix(40)),
-        "field_summaries": fields,
-        "missing_fields": missingFields,
-        "snapshot_mode": "swift_mirror_retained_fmip_manager_data_manager",
+        "manager_class": BBObjectClassName(manager),
+        "manager_runtime_class": managerClass.map { NSStringFromClass($0) } ?? "",
+        "manager_ivar_count": managerIvars.count,
+        "manager_ivar_names_sample": Array(managerIvarNames.prefix(40)),
+        "data_manager_ivar_declared": managerIvarNames.contains("dataManager"),
+        "data_manager_present": dataManagerObject != nil,
+        "data_manager_class": dataManagerObject.map { BBObjectClassName($0) } ?? "",
+        "data_manager_runtime_class": dataManagerClass.map { NSStringFromClass($0) } ?? "",
+        "data_manager_ivar_count": dataManagerIvars.count,
+        "data_manager_ivar_names_sample": Array(dataManagerIvarNames.prefix(80)),
+        "target_field_metadata": targetFieldMetadata,
+        "field_summaries": [:],
+        "missing_fields": targetFieldMetadata.compactMap { (($0["present"] as? Bool) == false) ? ($0["name"] as? String) : nil },
+        "snapshot_mode": "objc_runtime_ivar_metadata_retained_fmip_manager_data_manager",
     ]
 }
 
