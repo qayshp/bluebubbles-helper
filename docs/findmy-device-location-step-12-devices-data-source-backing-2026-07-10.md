@@ -96,3 +96,123 @@ The probe was reduced to avoid another socket decode failure:
 Next target if this bounded route returns:
 
 - Inspect `cellsViewModel` specifically, likely by reading the Swift ivar memory layout or by invoking table data-source methods for a row and inspecting the returned cell/view-model class metadata.
+
+## Bounded route result
+
+Installed helper checksum in the server repo:
+
+```text
+053b5c560b014f963799f56de55d5a03
+```
+
+The bounded Objective-C metadata route returned successfully:
+
+- HTTP 200.
+- Runtime about 8 seconds.
+- Payload size about 21 KB.
+- Find My did not crash.
+- Active data source remained `FindMy.FMDevicesListDataSource`.
+- Active table view remained `FindMy.FMTableView`.
+- Visible device cell count was 13.
+
+Confirmed data-source Swift ivar layout:
+
+- `delegate`
+- `mediator`
+- `tableView`
+- `deviceSubscription`
+- `locationSubscription`
+- `cellsViewModel`
+- `itemAger`
+- `updateQueue`
+- `delayedUpdateWorkItem`
+- `isRemovingCell`
+- `_listTitle`
+- `updatesEnabled`
+
+Important limitation:
+
+- Objective-C runtime ivars are present, but most Swift ivar encodings are empty.
+- KVC still cannot read `devices`, `viewModels`, `cellsViewModel`, `provider`, `fmipManager`, `dataManager`, or `location`.
+- `object_getIvar` is not appropriate for these Swift fields because the metadata does not mark them as Objective-C object ivars.
+
+## Swift mirror follow-up
+
+Added a separate helper action:
+
+```text
+debug-findmy-devices-data-source-mirror
+```
+
+This route calls Swift `Mirror` on app-owned active UI objects only:
+
+- `FindMy.FMDevicesListDataSource`
+- its delegate/list controller
+- up to 3 visible `FMDeviceCellViewModel` table cells
+
+Safety boundary:
+
+- It does not create or retain `FMIPManager`.
+- It does not call `FMIPManager.devices`.
+- It does not touch `FMIPManager.dataManager`.
+- It does not install FMIPCore callback swizzles.
+- It returns only shallow labels, type names, display styles, scalar values, collection counts, and tiny child samples.
+
+Installed helper checksum for this route:
+
+```text
+024cb2d3385a0fe6b17e194cee6be007
+```
+
+Build notes:
+
+- Full Xcode was used through `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`.
+- `ENABLE_USER_SCRIPT_SANDBOXING=NO` was required because the CocoaPods manifest script failed under Xcode's script sandbox while loading system/private framework dependencies.
+
+Runtime result:
+
+- Route: `POST /api/v1/icloud/findmy/devices/debug/data-source-mirror`
+- HTTP 200.
+- Runtime about 7 seconds.
+- Payload size about 22.7 KB.
+- Find My did not crash.
+
+Most useful fields from the active `FMDevicesListDataSource` mirror:
+
+- `delegate`: `Swift.Optional<FindMy.FMListDataSourceDelegate>`, containing the active `FMListViewController`.
+- `mediator`: `FindMy.FMMediator`.
+- `tableView`: `FindMy.FMTableView`.
+- `deviceSubscription`: `Swift.Optional<FindMy.FMDevicesSubscription>`, containing `FindMy.FMDevicesSubscription`.
+- `locationSubscription`: `Swift.Optional<FindMy.FMLocationSubscription>`, containing `FindMy.FMLocationSubscription`.
+- `cellsViewModel`: `Swift.Array<Swift.Array<FindMy.FMDeviceCellViewModel>>`, collection count 4.
+- `itemAger`: `FindMy.FMItemAger`.
+- `_listTitle`: `Devices`.
+- `updatesEnabled`: `true`.
+
+`cellsViewModel` section counts from the shallow mirror:
+
+```text
+21
+1
+11
+4
+```
+
+This is the first non-crashing path that exposes the full Devices list backing model count, not only visible cells.
+
+The `FMMediator` child sample is also important:
+
+- `conditionProvider`: `FindMy.FMConditionProvider`
+- `devicesProvider`: `FindMy.FMDevicesProvider`
+- `etaProvider`: `FindMy.FMETAProvider`
+- `locationProvider`: `FindMy.FMLocationProvider`
+- `peopleProvider`: `FindMy.FMPeopleProvider`
+- `selectionController`: `FindMy.FMSelectionController`
+- `productAssetProvider`: `FindMy.FMProductAssetProvider`
+- `isRefreshing`: `true`
+
+Next target:
+
+- Add a focused mirror/extractor for `cellsViewModel` that samples section/row `FMDeviceCellViewModel` values and reports their child fields.
+- Add a focused mirror/extractor for `FMMediator.devicesProvider`, `FMMediator.locationProvider`, and the two subscriptions.
+- Continue avoiding direct `FMIPManager` access.

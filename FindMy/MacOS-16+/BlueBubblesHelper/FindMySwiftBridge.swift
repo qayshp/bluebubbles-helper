@@ -50,6 +50,176 @@ private func BBObjectClassName(_ object: AnyObject) -> String {
     return String(cString: object_getClassName(object))
 }
 
+private func BBMirrorDisplayStyleName(_ style: Mirror.DisplayStyle?) -> String {
+    guard let style else {
+        return "<nil>"
+    }
+
+    switch style {
+    case .class:
+        return "class"
+    case .collection:
+        return "collection"
+    case .dictionary:
+        return "dictionary"
+    case .enum:
+        return "enum"
+    case .optional:
+        return "optional"
+    case .set:
+        return "set"
+    case .struct:
+        return "struct"
+    case .tuple:
+        return "tuple"
+    default:
+        return "\(style)"
+    }
+}
+
+private func BBMirrorTypeName(_ value: Any) -> String {
+    return String(reflecting: type(of: value))
+}
+
+private func BBKnownCollectionCount(_ value: Any, mirror: Mirror) -> Int? {
+    if let array = value as? [Any] {
+        return array.count
+    }
+
+    if let array = value as? NSArray {
+        return array.count
+    }
+
+    if let set = value as? NSSet {
+        return set.count
+    }
+
+    if let dictionary = value as? NSDictionary {
+        return dictionary.count
+    }
+
+    switch mirror.displayStyle {
+    case .collection, .dictionary, .set:
+        return mirror.children.count
+    default:
+        return nil
+    }
+}
+
+private func BBScalarMirrorValue(_ value: Any) -> Any? {
+    if let string = value as? String {
+        return string
+    }
+
+    if let number = value as? NSNumber {
+        return number
+    }
+
+    if let date = value as? NSDate {
+        return date.description
+    }
+
+    if let bool = value as? Bool {
+        return bool
+    }
+
+    if let integer = value as? Int {
+        return integer
+    }
+
+    if let double = value as? Double {
+        return double
+    }
+
+    if let float = value as? Float {
+        return float
+    }
+
+    return nil
+}
+
+private func BBMirrorChildSummary(_ label: String?, value: Any) -> [String: Any] {
+    let mirror = Mirror(reflecting: value)
+    var result: [String: Any] = [
+        "label": label ?? "<nil>",
+        "type": BBMirrorTypeName(value),
+        "display_style": BBMirrorDisplayStyleName(mirror.displayStyle),
+    ]
+
+    if mirror.displayStyle == .class {
+        let object = value as AnyObject
+        result["object_class"] = BBObjectClassName(object)
+    }
+
+    if let count = BBKnownCollectionCount(value, mirror: mirror) {
+        result["collection_count"] = count
+    }
+
+    if let scalar = BBScalarMirrorValue(value) {
+        result["value"] = scalar
+    }
+
+    return result
+}
+
+private func BBMirrorChildrenSample(_ value: Any, maxChildren: Int) -> [[String: Any]] {
+    guard maxChildren > 0 else {
+        return []
+    }
+
+    var children: [[String: Any]] = []
+    var current: Mirror? = Mirror(reflecting: value)
+
+    while let mirror = current, children.count < maxChildren {
+        for child in mirror.children {
+            if children.count >= maxChildren {
+                break
+            }
+
+            children.append(BBMirrorChildSummary(child.label, value: child.value))
+        }
+
+        current = mirror.superclassMirror
+    }
+
+    return children
+}
+
+private func BBShallowMirrorSummary(_ object: AnyObject, maxChildren: Int, maxNestedChildren: Int) -> [String: Any] {
+    let mirror = Mirror(reflecting: object)
+    var children: [[String: Any]] = []
+    var current: Mirror? = mirror
+
+    while let currentMirror = current, children.count < maxChildren {
+        for child in currentMirror.children {
+            if children.count >= maxChildren {
+                break
+            }
+
+            var childSummary = BBMirrorChildSummary(child.label, value: child.value)
+            let nested = BBMirrorChildrenSample(child.value, maxChildren: maxNestedChildren)
+            if !nested.isEmpty {
+                childSummary["children_sample"] = nested
+            }
+
+            children.append(childSummary)
+        }
+
+        current = currentMirror.superclassMirror
+    }
+
+    return [
+        "mirror_available": true,
+        "object_class": BBObjectClassName(object),
+        "type": String(reflecting: type(of: object)),
+        "display_style": BBMirrorDisplayStyleName(mirror.displayStyle),
+        "children_sampled": children.count,
+        "max_children": maxChildren,
+        "max_nested_children": maxNestedChildren,
+        "children": children,
+    ]
+}
+
 private func BBIvarMetadata(_ startingClass: AnyClass?) -> [[String: Any]] {
     var result: [[String: Any]] = []
     var seen = Set<String>()
@@ -436,6 +606,23 @@ public func BlueBubblesFindMySwiftProbe() -> UnsafeMutableRawPointer? {
     ]
 
     return Unmanaged.passRetained(result as NSDictionary).toOpaque()
+}
+
+@_cdecl("BlueBubblesFindMyCopySwiftMirrorSummary")
+public func BlueBubblesFindMyCopySwiftMirrorSummary(_ objectPointer: UnsafeMutableRawPointer?, _ maxChildren: Int32, _ maxNestedChildren: Int32) -> UnsafeMutableRawPointer? {
+    guard let objectPointer else {
+        return Unmanaged.passRetained([
+            "mirror_available": false,
+            "error": "missing object pointer",
+        ] as NSDictionary).toOpaque()
+    }
+
+    let object = Unmanaged<AnyObject>.fromOpaque(objectPointer).takeUnretainedValue()
+    let boundedMaxChildren = max(0, min(Int(maxChildren), 48))
+    let boundedMaxNestedChildren = max(0, min(Int(maxNestedChildren), 12))
+    let summary = BBShallowMirrorSummary(object, maxChildren: boundedMaxChildren, maxNestedChildren: boundedMaxNestedChildren)
+
+    return Unmanaged.passRetained(summary as NSDictionary).toOpaque()
 }
 
 @_cdecl("BlueBubblesFindMyCopyFMIPManagerDevices")

@@ -28,6 +28,7 @@
 - (void)handleFindMyDevicesFMIPCallbackWatchWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesProviderRuntimeProbeWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesDataSourceProbeWithTransaction:(NSString *)transaction;
+- (void)handleFindMyDevicesDataSourceMirrorProbeWithTransaction:(NSString *)transaction;
 - (void)handleFindMyDevicesFMIPDataManagerProbeWithTransaction:(NSString *)transaction;
 - (void)handleFindMyItemsRefreshWithTransaction:(NSString *)transaction;
 - (void)handleFindMySearchPartyDebugWithTransaction:(NSString *)transaction;
@@ -52,7 +53,9 @@
 - (NSDictionary *)findMySessionObjectDiagnostics;
 - (NSArray *)compactFindMyObjectMatches:(NSArray *)matches matchingTerms:(NSArray<NSString *> *)terms limit:(NSUInteger)limit;
 - (NSDictionary *)findMyActiveDevicesBackingDiagnostics;
+- (NSDictionary *)findMyActiveDevicesSwiftMirrorDiagnostics;
 - (NSDictionary *)findMyBackingObjectDiagnosticsForObject:(id)object label:(NSString *)label;
+- (NSDictionary *)swiftMirrorDiagnosticsForObject:(id)object label:(NSString *)label maxChildren:(int32_t)maxChildren maxNestedChildren:(int32_t)maxNestedChildren;
 - (NSArray *)runtimeIvarMetadataForObject:(id)object limit:(NSUInteger)limit;
 - (NSArray *)runtimeMethodMetadataForObject:(id)object matchingTerms:(NSArray<NSString *> *)terms limit:(NSUInteger)limit;
 - (NSDictionary *)kvcDiagnosticsForObject:(id)object keys:(NSArray<NSString *> *)keys limit:(NSUInteger)limit;
@@ -120,6 +123,7 @@ extern void *BlueBubblesFindMySwiftProbe(void);
 extern void *BlueBubblesFindMyStartFMIPManager(void *ownerSession);
 extern void *BlueBubblesFindMyCopyFMIPManagerDevices(void);
 extern void *BlueBubblesFindMyCopyFMIPDataManagerSnapshot(void);
+extern void *BlueBubblesFindMyCopySwiftMirrorSummary(void *object, int32_t maxChildren, int32_t maxNestedChildren);
 
 static NSString *BBFindMySwizzleKey(Class class, SEL selector) {
     return [NSString stringWithFormat:@"%@:%@", NSStringFromClass(class), NSStringFromSelector(selector)];
@@ -633,6 +637,11 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
 
     if ([event isEqualToString:@"debug-findmy-devices-data-source"]) {
         [self handleFindMyDevicesDataSourceProbeWithTransaction:transaction];
+        return;
+    }
+
+    if ([event isEqualToString:@"debug-findmy-devices-data-source-mirror"]) {
+        [self handleFindMyDevicesDataSourceMirrorProbeWithTransaction:transaction];
         return;
     }
 
@@ -6207,6 +6216,59 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
     };
 }
 
+- (NSDictionary *)swiftMirrorDiagnosticsForObject:(id)object label:(NSString *)label maxChildren:(int32_t)maxChildren maxNestedChildren:(int32_t)maxNestedChildren {
+    if (object == nil) {
+        return @{
+            @"label": label ?: @"<nil>",
+            @"present": @NO,
+            @"class": @"<nil>",
+            @"mirror_available": @NO,
+            @"error": @"missing object",
+        };
+    }
+
+    void *summaryPointer = NULL;
+    @try {
+        summaryPointer = BlueBubblesFindMyCopySwiftMirrorSummary((__bridge void *)object, maxChildren, maxNestedChildren);
+    } @catch (NSException *exception) {
+        return @{
+            @"label": label ?: @"<nil>",
+            @"present": @YES,
+            @"class": [self classNameForObject:object],
+            @"mirror_available": @NO,
+            @"exception": exception.reason ?: exception.name ?: @"unknown Objective-C exception",
+        };
+    }
+
+    if (summaryPointer == NULL) {
+        return @{
+            @"label": label ?: @"<nil>",
+            @"present": @YES,
+            @"class": [self classNameForObject:object],
+            @"mirror_available": @NO,
+            @"error": @"Swift mirror returned null",
+        };
+    }
+
+    id summary = CFBridgingRelease(summaryPointer);
+    if (![summary isKindOfClass:[NSDictionary class]]) {
+        return @{
+            @"label": label ?: @"<nil>",
+            @"present": @YES,
+            @"class": [self classNameForObject:object],
+            @"mirror_available": @NO,
+            @"error": @"Swift mirror returned a non-dictionary value",
+            @"summary_class": [self classNameForObject:summary],
+        };
+    }
+
+    NSMutableDictionary *result = [[NSMutableDictionary alloc] initWithDictionary:(NSDictionary *)summary];
+    result[@"label"] = label ?: @"<nil>";
+    result[@"present"] = @YES;
+    result[@"class"] = [self classNameForObject:object];
+    return [result copy];
+}
+
 - (NSDictionary *)findMyActiveDevicesBackingDiagnostics {
     NSDictionary *active = [self activeFindMyTableViewForDataSourceTerm:@"FMDevicesListDataSource"];
     id tableView = active[@"tableView"];
@@ -6254,6 +6316,57 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
                 break;
             }
             NSMutableDictionary *cellEntry = [[NSMutableDictionary alloc] initWithDictionary:[self findMyBackingObjectDiagnosticsForObject:cell label:[NSString stringWithFormat:@"visible_cell_%lu", (unsigned long)index]]];
+            cellEntry[@"visible_index"] = @(index);
+            [cellDiagnostics addObject:cellEntry];
+            index++;
+        }
+    }
+    diagnostics[@"visible_cells_sample"] = cellDiagnostics;
+
+    return [diagnostics copy];
+}
+
+- (NSDictionary *)findMyActiveDevicesSwiftMirrorDiagnostics {
+    NSDictionary *active = [self activeFindMyTableViewForDataSourceTerm:@"FMDevicesListDataSource"];
+    id tableView = active[@"tableView"];
+    id dataSource = active[@"dataSource"];
+    id delegate = [self safeValueForKey:@"delegate" object:tableView];
+
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] initWithDictionary:@{
+        @"found": @(tableView != nil && dataSource != nil),
+        @"active_scan_count": active[@"scanned"] ?: @0,
+        @"table_view_class": [self classNameForObject:tableView],
+        @"data_source_class": [self classNameForObject:dataSource],
+        @"delegate_class": [self classNameForObject:delegate],
+        @"route_mode": @"active_devices_data_source_swift_mirror_no_fmip_manager",
+    }];
+
+    diagnostics[@"data_source_mirror"] = [self swiftMirrorDiagnosticsForObject:dataSource label:@"FMDevicesListDataSource.dataSource" maxChildren:32 maxNestedChildren:8];
+    diagnostics[@"delegate_mirror"] = [self swiftMirrorDiagnosticsForObject:delegate label:@"FMDevicesListDataSource.delegate" maxChildren:18 maxNestedChildren:4];
+
+    SEL visibleCellsSelector = @selector(visibleCells);
+    NSMutableArray *cellDiagnostics = [[NSMutableArray alloc] init];
+    if (tableView != nil && [tableView respondsToSelector:visibleCellsSelector]) {
+        id (*visibleCells)(id, SEL) = (id (*)(id, SEL))objc_msgSend;
+        NSArray *cells = nil;
+        @try {
+            id visible = visibleCells(tableView, visibleCellsSelector);
+            if ([visible isKindOfClass:[NSArray class]]) {
+                cells = visible;
+            }
+        } @catch (NSException *exception) {
+            cells = nil;
+            diagnostics[@"visible_cells_exception"] = exception.reason ?: exception.name ?: @"unknown Objective-C exception";
+        }
+
+        diagnostics[@"visible_cell_count"] = @(cells.count);
+        NSUInteger index = 0;
+        for (id cell in cells ?: @[]) {
+            if (cellDiagnostics.count >= 3) {
+                break;
+            }
+
+            NSMutableDictionary *cellEntry = [[NSMutableDictionary alloc] initWithDictionary:[self swiftMirrorDiagnosticsForObject:cell label:[NSString stringWithFormat:@"visible_cell_%lu", (unsigned long)index] maxChildren:32 maxNestedChildren:6]];
             cellEntry[@"visible_index"] = @(index);
             [cellDiagnostics addObject:cellEntry];
             index++;
@@ -7894,6 +8007,29 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
     diagnostics[@"probe_mode"] = @"active_devices_data_source_backing_inspection_no_fmip_manager";
     diagnostics[@"active_devices_list"] = [self compactFindMyActiveListDiagnostics:[self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"]];
     diagnostics[@"devices_backing"] = [self findMyActiveDevicesBackingDiagnostics];
+    diagnostics[@"swizzle"] = [self compactFindMySwizzleDiagnostics:[self findMySwizzleDiagnostics]];
+
+    [[NetworkController sharedInstance] sendMessage:@{
+        @"transactionId": transaction ?: [NSNull null],
+        @"diagnostics": diagnostics,
+    }];
+}
+
+- (void)handleFindMyDevicesDataSourceMirrorProbeWithTransaction:(NSString *)transaction {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self handleFindMyDevicesDataSourceMirrorProbeWithTransaction:transaction];
+        });
+        return;
+    }
+
+    [self installFindMySwizzles];
+    BOOL didSelectDevicesSegment = [self selectFindMySegmentIndex:1];
+    NSMutableDictionary *diagnostics = [[NSMutableDictionary alloc] init];
+    diagnostics[@"selected_devices_segment"] = @(didSelectDevicesSegment);
+    diagnostics[@"probe_mode"] = @"active_devices_data_source_swift_mirror_inspection_no_fmip_manager";
+    diagnostics[@"active_devices_list"] = [self compactFindMyActiveListDiagnostics:[self activeFindMyListDiagnosticsForDataSourceTerm:@"FMDevicesListDataSource" type:@"device"]];
+    diagnostics[@"devices_data_source_mirror"] = [self findMyActiveDevicesSwiftMirrorDiagnostics];
     diagnostics[@"swizzle"] = [self compactFindMySwizzleDiagnostics:[self findMySwizzleDiagnostics]];
 
     [[NetworkController sharedInstance] sendMessage:@{
