@@ -49,6 +49,7 @@
 - (NSDictionary *)serializeFMLLocation:(id)location handle:(id)handle;
 - (NSDictionary *)findMyObjectGraphDiagnostics;
 - (NSDictionary *)findMySessionObjectDiagnostics;
+- (NSArray *)compactFindMyObjectMatches:(NSArray *)matches matchingTerms:(NSArray<NSString *> *)terms limit:(NSUInteger)limit;
 - (void)captureFindMyDataSource:(id)dataSource tableView:(id)tableView;
 - (void)captureFindMyInterestingObject:(id)object source:(NSString *)source selector:(SEL)selector;
 - (void)captureFindMyInterestingSetterObject:(id)object value:(id)value selector:(SEL)selector;
@@ -5890,6 +5891,63 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
     };
 }
 
+- (NSArray *)compactFindMyObjectMatches:(NSArray *)matches matchingTerms:(NSArray<NSString *> *)terms limit:(NSUInteger)limit {
+    NSMutableArray *result = [[NSMutableArray alloc] init];
+    for (id rawMatch in matches) {
+        if (![rawMatch isKindOfClass:[NSDictionary class]]) {
+            continue;
+        }
+
+        NSDictionary *match = (NSDictionary *)rawMatch;
+        NSString *className = [match[@"class"] isKindOfClass:[NSString class]] ? match[@"class"] : @"";
+        NSString *path = [match[@"path"] isKindOfClass:[NSString class]] ? match[@"path"] : @"";
+        NSArray *respondsTo = [match[@"responds_to"] isKindOfClass:[NSArray class]] ? match[@"responds_to"] : @[];
+        NSArray *methods = [match[@"methods"] isKindOfClass:[NSArray class]] ? match[@"methods"] : @[];
+        NSDictionary *ivars = [match[@"ivars"] isKindOfClass:[NSDictionary class]] ? match[@"ivars"] : @{};
+        NSArray *ivarKeys = [ivars.allKeys sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+
+        NSMutableString *haystack = [[NSMutableString alloc] init];
+        [haystack appendString:className ?: @""];
+        [haystack appendString:@" "];
+        [haystack appendString:path ?: @""];
+        for (NSString *selectorName in respondsTo) {
+            [haystack appendFormat:@" %@", selectorName];
+        }
+        for (NSString *methodName in methods) {
+            [haystack appendFormat:@" %@", methodName];
+        }
+        for (NSString *ivarName in ivarKeys) {
+            [haystack appendFormat:@" %@", ivarName];
+        }
+
+        BOOL matched = NO;
+        for (NSString *term in terms) {
+            if ([haystack rangeOfString:term options:NSCaseInsensitiveSearch].location != NSNotFound) {
+                matched = YES;
+                break;
+            }
+        }
+
+        if (!matched) {
+            continue;
+        }
+
+        [result addObject:@{
+            @"path": path.length > 0 ? path : @"<nil>",
+            @"class": className.length > 0 ? className : @"<nil>",
+            @"responds_to": [respondsTo subarrayWithRange:NSMakeRange(0, MIN(respondsTo.count, 20))],
+            @"methods": [methods subarrayWithRange:NSMakeRange(0, MIN(methods.count, 20))],
+            @"ivar_keys": [ivarKeys subarrayWithRange:NSMakeRange(0, MIN(ivarKeys.count, 24))],
+        }];
+
+        if (result.count >= limit) {
+            break;
+        }
+    }
+
+    return [result copy];
+}
+
 - (NSArray *)findMyRootObjects {
     NSMutableArray *roots = [[NSMutableArray alloc] init];
     if (NSApp != nil) {
@@ -7463,6 +7521,18 @@ static void BBFindMyFMIPCallback3(id self, SEL _cmd, id arg1, id arg2, id arg3) 
         @"scanned": sessionObjects[@"scanned"] ?: @0,
         @"match_count": @(sessionMatches.count),
         @"matches_sample": sessionMatchSummaries,
+    };
+    NSArray *fmipCandidateTerms = @[
+        @"FMIPManager",
+        @"FMIPDataManager",
+        @"dataManager",
+        @"fmipManager",
+        @"devicesProvider",
+        @"locationProvider"
+    ];
+    diagnostics[@"app_owned_fmip_candidates"] = @{
+        @"object_graph": [self compactFindMyObjectMatches:objectMatches matchingTerms:fmipCandidateTerms limit:20],
+        @"session_objects": [self compactFindMyObjectMatches:sessionMatches matchingTerms:fmipCandidateTerms limit:20],
     };
 
     NSDictionary *passiveCaptures = [self capturedFindMyPassiveDiagnostics];
