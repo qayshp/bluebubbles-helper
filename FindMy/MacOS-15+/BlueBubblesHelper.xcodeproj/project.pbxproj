@@ -8,8 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		A62991D02972104E00B7E663 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A62991CF2972104E00B7E663 /* AppKit.framework */; };
-		A62991D12972106200B7E663 /* BlueBubblesHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = 93AC09CB2565E45F0000C60C /* BlueBubblesHelper.m */; };
-		A62991D22972106500B7E663 /* NetworkController.m in Sources */ = {isa = PBXBuildFile; fileRef = 93FD99392568E7360060D430 /* NetworkController.m */; };
+		A62991D12972106200B7E663 /* FindMyFriendsHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = 93AC09CB2565E45F0000C60C /* FindMyFriendsHelper.m */; };
+		A62991D22972106500B7E663 /* ServerConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 93FD99392568E7360060D430 /* ServerConnection.m */; };
 		A62991D7297210A500B7E663 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A62991D6297210A500B7E663 /* Foundation.framework */; };
 		A6490A0E2984697C002B0E1D /* PrefixHeader.pch in Resources */ = {isa = PBXBuildFile; fileRef = FBCE4ECD201C0F4D002F8A61 /* PrefixHeader.pch */; };
 		BBF100000000000000000001 /* FindMyFriendPayload.m in Sources */ = {isa = PBXBuildFile; fileRef = BBF100000000000000000003 /* FindMyFriendPayload.m */; };
@@ -18,20 +18,17 @@
 /* Begin PBXFileReference section */
 		2A31F700CE646BC3B6A3921F /* libPods-BlueBubblesHelper DyLib.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-BlueBubblesHelper DyLib.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		72EF502B6438F8F18EC16DBF /* Pods-BlueBubblesHelper DyLib.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper DyLib.release.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper DyLib/Pods-BlueBubblesHelper DyLib.release.xcconfig"; sourceTree = "<group>"; };
-		93AC09CB2565E45F0000C60C /* BlueBubblesHelper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = BlueBubblesHelper.m; sourceTree = "<group>"; };
-		93B28EA5257399450056DAD4 /* Logging.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Logging.h; sourceTree = "<group>"; };
-		93FD99392568E7360060D430 /* NetworkController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = NetworkController.m; sourceTree = "<group>"; };
-		93FD993D2568E7500060D430 /* NetworkController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NetworkController.h; sourceTree = "<group>"; };
+		93AC09CB2565E45F0000C60C /* FindMyFriendsHelper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FindMyFriendsHelper.m; sourceTree = "<group>"; };
+		93FD99392568E7360060D430 /* ServerConnection.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ServerConnection.m; sourceTree = "<group>"; };
+		93FD993D2568E7500060D430 /* ServerConnection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ServerConnection.h; sourceTree = "<group>"; };
 		A623AA3C2F9EC6930054D931 /* libCocoaAsyncSocket.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libCocoaAsyncSocket.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		A623AA3E2F9EC7190054D931 /* libCocoaAsyncSocket.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libCocoaAsyncSocket.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		A62991CB29720FAC00B7E663 /* BlueBubblesHelper.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = BlueBubblesHelper.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		A62991CF2972104E00B7E663 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		A62991D6297210A500B7E663 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		A67F85DA2FA7EB4300F04596 /* BlueBubblesHelper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BlueBubblesHelper.h; sourceTree = "<group>"; };
+		A67F85DA2FA7EB4300F04596 /* FindMyFriendsHelper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FindMyFriendsHelper.h; sourceTree = "<group>"; };
 		A69960ED2B2004540081FB69 /* FindMyLocateObjCWrapper.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyLocateObjCWrapper.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyLocateObjCWrapper.framework; sourceTree = "<group>"; };
-		A69960F12B2005100081FB69 /* FMLSession.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMLSession.h; sourceTree = "<group>"; };
-		A69960F62B20E46B0081FB69 /* FMLLocation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMLLocation.h; sourceTree = "<group>"; };
-		A69960F72B20E4AD0081FB69 /* FMLHandle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMLHandle.h; sourceTree = "<group>"; };
+		A69960F12B2005100081FB69 /* FindMyLocateSession.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FindMyLocateSession.h; sourceTree = "<group>"; };
 		BBF100000000000000000002 /* FindMyFriendPayload.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FindMyFriendPayload.h; sourceTree = "<group>"; };
 		BBF100000000000000000003 /* FindMyFriendPayload.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FindMyFriendPayload.m; sourceTree = "<group>"; };
 		AE20B1F38F795C02536396EA /* Pods-BlueBubblesHelper DyLib.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper DyLib.debug.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper DyLib/Pods-BlueBubblesHelper DyLib.debug.xcconfig"; sourceTree = "<group>"; };
@@ -86,8 +83,8 @@
 		93FD99382568E7230060D430 /* Networking */ = {
 			isa = PBXGroup;
 			children = (
-				93FD99392568E7360060D430 /* NetworkController.m */,
-				93FD993D2568E7500060D430 /* NetworkController.h */,
+				93FD99392568E7360060D430 /* ServerConnection.m */,
+				93FD993D2568E7500060D430 /* ServerConnection.h */,
 			);
 			name = Networking;
 			sourceTree = "<group>";
@@ -147,8 +144,8 @@
 				FBCE4EC3201C0F4D002F8A61 /* Supporting Files */,
 				BBF100000000000000000002 /* FindMyFriendPayload.h */,
 				BBF100000000000000000003 /* FindMyFriendPayload.m */,
-				93AC09CB2565E45F0000C60C /* BlueBubblesHelper.m */,
-				A67F85DA2FA7EB4300F04596 /* BlueBubblesHelper.h */,
+				93AC09CB2565E45F0000C60C /* FindMyFriendsHelper.m */,
+				A67F85DA2FA7EB4300F04596 /* FindMyFriendsHelper.h */,
 			);
 			path = BlueBubblesHelper;
 			sourceTree = "<group>";
@@ -158,7 +155,6 @@
 			children = (
 				FBCE4EC4201C0F4D002F8A61 /* Info.plist */,
 				FBCE4ECD201C0F4D002F8A61 /* PrefixHeader.pch */,
-				93B28EA5257399450056DAD4 /* Logging.h */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -166,9 +162,7 @@
 		FBCE4EDB201C264F002F8A61 /* Find My */ = {
 			isa = PBXGroup;
 			children = (
-				A69960F12B2005100081FB69 /* FMLSession.h */,
-				A69960F62B20E46B0081FB69 /* FMLLocation.h */,
-				A69960F72B20E4AD0081FB69 /* FMLHandle.h */,
+				A69960F12B2005100081FB69 /* FindMyLocateSession.h */,
 			);
 			name = "Find My";
 			sourceTree = "<group>";
@@ -254,9 +248,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A62991D22972106500B7E663 /* NetworkController.m in Sources */,
+				A62991D22972106500B7E663 /* ServerConnection.m in Sources */,
 				BBF100000000000000000001 /* FindMyFriendPayload.m in Sources */,
-				A62991D12972106200B7E663 /* BlueBubblesHelper.m in Sources */,
+				A62991D12972106200B7E663 /* FindMyFriendsHelper.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -2,12 +2,12 @@
 
 #import <math.h>
 
-@protocol BBFindMyHandleLike <NSObject>
+@protocol BBFindMyHandle <NSObject>
 - (id)identifier;
 - (id)comparisonIdentifier;
 @end
 
-@protocol BBFindMyLocationLike <NSObject>
+@protocol BBFindMyLocation <NSObject>
 - (double)altitude;
 - (id)coarseAddressLabel;
 - (double)horizontalAccuracy;
@@ -22,7 +22,7 @@
 
 @implementation FindMyFriendPayload
 
-+ (nullable id)objectValueFromObject:(nullable id)object selector:(SEL)selector {
++ (nullable id)valueForSelector:(SEL)selector onObject:(nullable id)object {
     if (object == nil || ![object respondsToSelector:selector]) {
         return nil;
     }
@@ -38,47 +38,58 @@
         return nil;
     }
 
-    NSString *string = (NSString *)value;
-    return string.length > 0 ? string : nil;
+    NSString *trimmedString = [(NSString *)value
+        stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return trimmedString.length > 0 ? trimmedString : nil;
 }
 
-+ (nullable NSString *)firstLabel:(nullable id)value {
++ (nullable NSString *)firstStringInArray:(nullable id)value {
     if (![value isKindOfClass:[NSArray class]]) {
         return nil;
     }
 
     for (id label in (NSArray *)value) {
-        NSString *string = [self nonEmptyString:label];
-        if (string != nil) {
-            return string;
+        NSString *nonEmptyLabel = [self nonEmptyString:label];
+        if (nonEmptyLabel != nil) {
+            return nonEmptyLabel;
         }
     }
 
     return nil;
 }
 
-+ (id)finiteNumberOrNull:(double)value {
++ (id)numberForFiniteValue:(double)value {
     return isfinite(value) ? @(value) : [NSNull null];
 }
 
++ (NSString *)statusForLocationType:(long long)locationType {
+    if (locationType == 2) {
+        return @"live";
+    }
+    if (locationType == 0) {
+        return @"legacy";
+    }
+    return @"shallow";
+}
+
 + (nullable NSString *)identifierForHandle:(nullable id)handle {
-    NSString *identifier = [self nonEmptyString:[self objectValueFromObject:handle selector:@selector(identifier)]];
-    if (identifier != nil) {
-        return identifier;
+    NSString *primaryIdentifier = [self nonEmptyString:[self valueForSelector:@selector(identifier) onObject:handle]];
+    if (primaryIdentifier != nil) {
+        return primaryIdentifier;
     }
 
-    return [self nonEmptyString:[self objectValueFromObject:handle selector:@selector(comparisonIdentifier)]];
+    return [self nonEmptyString:[self valueForSelector:@selector(comparisonIdentifier) onObject:handle]];
 }
 
 + (nullable NSDictionary *)locationPayloadForLocation:(nullable id)location handle:(nullable id)handle {
-    NSString *identifier = [self identifierForHandle:handle];
-    if (identifier == nil) {
+    NSString *friendIdentifier = [self identifierForHandle:handle];
+    if (friendIdentifier == nil) {
         return nil;
     }
 
     if (location == nil) {
         return @{
-            @"handle": identifier,
+            @"handle": friendIdentifier,
             @"coordinates": [NSNull null],
             @"long_address": [NSNull null],
             @"short_address": [NSNull null],
@@ -95,71 +106,77 @@
         };
     }
 
-    id<BBFindMyLocationLike> typedLocation = (id<BBFindMyLocationLike>)location;
-    BOOL hasCoordinates = [typedLocation respondsToSelector:@selector(latitude)] &&
-        [typedLocation respondsToSelector:@selector(longitude)];
+    id<BBFindMyLocation> findMyLocation = (id<BBFindMyLocation>)location;
+    BOOL providesCoordinates = [findMyLocation respondsToSelector:@selector(latitude)] &&
+        [findMyLocation respondsToSelector:@selector(longitude)];
     id coordinates = [NSNull null];
-    if (hasCoordinates) {
-        double latitude = [typedLocation latitude];
-        double longitude = [typedLocation longitude];
+    if (providesCoordinates) {
+        double latitude = [findMyLocation latitude];
+        double longitude = [findMyLocation longitude];
         if (isfinite(latitude) && isfinite(longitude)) {
             coordinates = @[@(latitude), @(longitude)];
         }
     }
 
-    double timestamp = [typedLocation respondsToSelector:@selector(timestamp)] ? [typedLocation timestamp] : 0;
-    BOOL hasLocationType = [typedLocation respondsToSelector:@selector(locationType)];
-    long long locationType = hasLocationType ? [typedLocation locationType] : 0;
-    NSString *status = locationType == 2 ? @"live" : locationType == 0 ? @"legacy" : @"shallow";
-    NSString *address = [self nonEmptyString:[self objectValueFromObject:typedLocation selector:@selector(coarseAddressLabel)]];
-    NSString *title = [self firstLabel:[self objectValueFromObject:typedLocation selector:@selector(labels)]];
+    double timestampSeconds = [findMyLocation respondsToSelector:@selector(timestamp)]
+        ? [findMyLocation timestamp] : 0;
+    BOOL providesLocationType = [findMyLocation respondsToSelector:@selector(locationType)];
+    long long locationType = providesLocationType ? [findMyLocation locationType] : 0;
+    NSString *coarseAddress = [self nonEmptyString:
+        [self valueForSelector:@selector(coarseAddressLabel) onObject:findMyLocation]];
+    NSString *firstLocationLabel = [self firstStringInArray:
+        [self valueForSelector:@selector(labels) onObject:findMyLocation]];
 
     return @{
-        @"handle": identifier,
+        @"handle": friendIdentifier,
         @"coordinates": coordinates,
-        @"long_address": address ?: [NSNull null],
-        @"short_address": address ?: [NSNull null],
-        @"subtitle": address ?: [NSNull null],
-        @"title": title ?: [NSNull null],
-        @"last_updated": timestamp > 0 && isfinite(timestamp) ? @(llround(timestamp * 1000.0)) : [NSNull null],
+        @"long_address": coarseAddress ?: [NSNull null],
+        @"short_address": coarseAddress ?: [NSNull null],
+        @"subtitle": coarseAddress ?: [NSNull null],
+        @"title": firstLocationLabel ?: [NSNull null],
+        @"last_updated": timestampSeconds > 0 && isfinite(timestampSeconds)
+            ? @(llround(timestampSeconds * 1000.0)) : [NSNull null],
         @"is_locating_in_progress": @NO,
-        @"status": status,
-        @"location_type": hasLocationType ? @(locationType) : [NSNull null],
-        @"horizontal_accuracy": [typedLocation respondsToSelector:@selector(horizontalAccuracy)]
-            ? [self finiteNumberOrNull:[typedLocation horizontalAccuracy]] : [NSNull null],
-        @"vertical_accuracy": [typedLocation respondsToSelector:@selector(verticalAccuracy)]
-            ? [self finiteNumberOrNull:[typedLocation verticalAccuracy]] : [NSNull null],
-        @"speed": [typedLocation respondsToSelector:@selector(speed)]
-            ? [self finiteNumberOrNull:[typedLocation speed]] : [NSNull null],
-        @"altitude": [typedLocation respondsToSelector:@selector(altitude)]
-            ? [self finiteNumberOrNull:[typedLocation altitude]] : [NSNull null],
+        @"status": [self statusForLocationType:locationType],
+        @"location_type": providesLocationType ? @(locationType) : [NSNull null],
+        @"horizontal_accuracy": [findMyLocation respondsToSelector:@selector(horizontalAccuracy)]
+            ? [self numberForFiniteValue:[findMyLocation horizontalAccuracy]] : [NSNull null],
+        @"vertical_accuracy": [findMyLocation respondsToSelector:@selector(verticalAccuracy)]
+            ? [self numberForFiniteValue:[findMyLocation verticalAccuracy]] : [NSNull null],
+        @"speed": [findMyLocation respondsToSelector:@selector(speed)]
+            ? [self numberForFiniteValue:[findMyLocation speed]] : [NSNull null],
+        @"altitude": [findMyLocation respondsToSelector:@selector(altitude)]
+            ? [self numberForFiniteValue:[findMyLocation altitude]] : [NSNull null],
     };
 }
 
-+ (NSDictionary *)responseForTransaction:(nullable NSString *)transaction
-                        locationsByHandle:(NSDictionary<NSString *, NSDictionary *> *)locationsByHandle
-                           pendingHandles:(NSSet<NSString *> *)pendingHandles
-                       friendListTimedOut:(BOOL)friendListTimedOut
-                           skippedFriends:(NSUInteger)skippedFriends {
-    NSArray<NSString *> *sortedHandles = [[locationsByHandle allKeys] sortedArrayUsingSelector:@selector(compare:)];
-    NSMutableArray<NSDictionary *> *locations = [[NSMutableArray alloc] initWithCapacity:sortedHandles.count];
-    for (NSString *handle in sortedHandles) {
-        NSDictionary *location = locationsByHandle[handle];
-        if (location != nil) {
-            [locations addObject:location];
++ (NSDictionary *)responseForTransactionIdentifier:(nullable NSString *)transactionIdentifier
+                       locationsByFriendIdentifier:(NSDictionary<NSString *, NSDictionary *> *)locationsByFriendIdentifier
+                          pendingFriendIdentifiers:(NSSet<NSString *> *)pendingFriendIdentifiers
+                               friendListTimedOut:(BOOL)friendListTimedOut
+                        unidentifiedFriendCount:(NSUInteger)unidentifiedFriendCount {
+    NSArray<NSString *> *sortedFriendIdentifiers = [[locationsByFriendIdentifier allKeys]
+        sortedArrayUsingSelector:@selector(compare:)];
+    NSMutableArray<NSDictionary *> *orderedLocations = [[NSMutableArray alloc]
+        initWithCapacity:sortedFriendIdentifiers.count];
+    for (NSString *friendIdentifier in sortedFriendIdentifiers) {
+        NSDictionary *locationPayload = locationsByFriendIdentifier[friendIdentifier];
+        if (locationPayload != nil) {
+            [orderedLocations addObject:locationPayload];
         }
     }
 
-    NSArray<NSString *> *timedOutHandles = [[pendingHandles allObjects] sortedArrayUsingSelector:@selector(compare:)];
-    BOOL partial = friendListTimedOut || timedOutHandles.count > 0;
+    NSArray<NSString *> *timedOutFriendIdentifiers = [[pendingFriendIdentifiers allObjects]
+        sortedArrayUsingSelector:@selector(compare:)];
+    BOOL responseIsPartial = friendListTimedOut || timedOutFriendIdentifiers.count > 0;
 
     return @{
-        @"transactionId": transaction ?: [NSNull null],
-        @"locations": locations,
-        @"partial": @(partial),
+        @"transactionId": transactionIdentifier ?: [NSNull null],
+        @"locations": orderedLocations,
+        @"partial": @(responseIsPartial),
         @"friendListTimedOut": @(friendListTimedOut),
-        @"timedOutHandles": timedOutHandles,
-        @"skippedFriends": @(skippedFriends),
+        @"timedOutHandles": timedOutFriendIdentifiers,
+        @"skippedFriends": @(unidentifiedFriendCount),
     };
 }
 

@@ -9,11 +9,11 @@ NS_ASSUME_NONNULL_BEGIN
 + (nullable NSDictionary *)locationPayloadForLocation:(nullable id)location
                                                 handle:(nullable id)handle;
 
-+ (NSDictionary *)responseForTransaction:(nullable NSString *)transaction
-                        locationsByHandle:(NSDictionary<NSString *, NSDictionary *> *)locationsByHandle
-                           pendingHandles:(NSSet<NSString *> *)pendingHandles
-                       friendListTimedOut:(BOOL)friendListTimedOut
-                           skippedFriends:(NSUInteger)skippedFriends;
++ (NSDictionary *)responseForTransactionIdentifier:(nullable NSString *)transactionIdentifier
+                       locationsByFriendIdentifier:(NSDictionary<NSString *, NSDictionary *> *)locationsByFriendIdentifier
+                          pendingFriendIdentifiers:(NSSet<NSString *> *)pendingFriendIdentifiers
+                               friendListTimedOut:(BOOL)friendListTimedOut
+                        unidentifiedFriendCount:(NSUInteger)unidentifiedFriendCount;
 
 @end
 
