@@ -12,22 +12,8 @@
 		A62991D22972106500B7E663 /* NetworkController.m in Sources */ = {isa = PBXBuildFile; fileRef = 93FD99392568E7360060D430 /* NetworkController.m */; };
 		A62991D7297210A500B7E663 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A62991D6297210A500B7E663 /* Foundation.framework */; };
 		A6490A0E2984697C002B0E1D /* PrefixHeader.pch in Resources */ = {isa = PBXBuildFile; fileRef = FBCE4ECD201C0F4D002F8A61 /* PrefixHeader.pch */; };
-		A65C21A72A9AAB1500D6FB7F /* BlueBubblesHelper.dylib in Copy Files */ = {isa = PBXBuildFile; fileRef = A62991CB29720FAC00B7E663 /* BlueBubblesHelper.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		BBF100000000000000000001 /* FindMyFriendPayload.m in Sources */ = {isa = PBXBuildFile; fileRef = BBF100000000000000000003 /* FindMyFriendPayload.m */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		A65C21A62A9AAAE600D6FB7F /* Copy Files */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 12;
-			dstPath = "/Applications/BlueBubbles.app/Contents/Resources/appResources/private-api/macos11";
-			dstSubfolderSpec = 0;
-			files = (
-				A65C21A72A9AAB1500D6FB7F /* BlueBubblesHelper.dylib in Copy Files */,
-			);
-			name = "Copy Files";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		2A31F700CE646BC3B6A3921F /* libPods-BlueBubblesHelper DyLib.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-BlueBubblesHelper DyLib.a"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -46,6 +32,8 @@
 		A69960F12B2005100081FB69 /* FMLSession.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMLSession.h; sourceTree = "<group>"; };
 		A69960F62B20E46B0081FB69 /* FMLLocation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMLLocation.h; sourceTree = "<group>"; };
 		A69960F72B20E4AD0081FB69 /* FMLHandle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FMLHandle.h; sourceTree = "<group>"; };
+		BBF100000000000000000002 /* FindMyFriendPayload.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FindMyFriendPayload.h; sourceTree = "<group>"; };
+		BBF100000000000000000003 /* FindMyFriendPayload.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FindMyFriendPayload.m; sourceTree = "<group>"; };
 		AE20B1F38F795C02536396EA /* Pods-BlueBubblesHelper DyLib.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper DyLib.debug.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper DyLib/Pods-BlueBubblesHelper DyLib.debug.xcconfig"; sourceTree = "<group>"; };
 		B6E17DF925EE5FA4CB129B31 /* Pods-BlueBubblesHelper.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper.debug.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper/Pods-BlueBubblesHelper.debug.xcconfig"; sourceTree = "<group>"; };
 		BFA22E41EA07AA1C37D1B255 /* Pods-BlueBubblesHelper.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper.release.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper/Pods-BlueBubblesHelper.release.xcconfig"; sourceTree = "<group>"; };
@@ -157,6 +145,8 @@
 				93FD99382568E7230060D430 /* Networking */,
 				FBCE4EDB201C264F002F8A61 /* Find My */,
 				FBCE4EC3201C0F4D002F8A61 /* Supporting Files */,
+				BBF100000000000000000002 /* FindMyFriendPayload.h */,
+				BBF100000000000000000003 /* FindMyFriendPayload.m */,
 				93AC09CB2565E45F0000C60C /* BlueBubblesHelper.m */,
 				A67F85DA2FA7EB4300F04596 /* BlueBubblesHelper.h */,
 			);
@@ -200,13 +190,10 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = A62991CE29720FAC00B7E663 /* Build configuration list for PBXNativeTarget "BlueBubblesHelper DyLib" */;
 			buildPhases = (
-				A56C609B1DF77BC2D39B2EDF /* [CP] Check Pods Manifest.lock */,
 				A62991C729720FAC00B7E663 /* Headers */,
 				A62991C829720FAC00B7E663 /* Sources */,
 				A62991C929720FAC00B7E663 /* Frameworks */,
 				A6490A0D29846973002B0E1D /* Resources */,
-				A65C21A62A9AAAE600D6FB7F /* Copy Files */,
-				A6490A0F29846A3A002B0E1D /* Run Script */,
 			);
 			buildRules = (
 			);
@@ -262,56 +249,13 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		A56C609B1DF77BC2D39B2EDF /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-BlueBubblesHelper DyLib-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		A6490A0F29846A3A002B0E1D /* Run Script */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Run Script";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "killall -q FindMy; exit 0;\n";
-		};
-/* End PBXShellScriptBuildPhase section */
-
 /* Begin PBXSourcesBuildPhase section */
 		A62991C829720FAC00B7E663 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				A62991D22972106500B7E663 /* NetworkController.m in Sources */,
+				BBF100000000000000000001 /* FindMyFriendPayload.m in Sources */,
 				A62991D12972106200B7E663 /* BlueBubblesHelper.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -323,10 +267,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = AE20B1F38F795C02536396EA /* Pods-BlueBubblesHelper DyLib.debug.xcconfig */;
 			buildSettings = {
-				ARCHS = (
-					"$(ARCHS_STANDARD)",
-					arm64e,
-				);
+				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -344,13 +285,13 @@
 				EXECUTABLE_PREFIX = "";
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = "$(SRCROOT)/BlueBubblesHelper/Info.plist";
-				INSTALL_PATH = /Users/tanay/Desktop/test;
+				INSTALL_PATH = "@rpath";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.5;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 0.0.20;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++20";
@@ -385,10 +326,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 72EF502B6438F8F18EC16DBF /* Pods-BlueBubblesHelper DyLib.release.xcconfig */;
 			buildSettings = {
-				ARCHS = (
-					"$(ARCHS_STANDARD)",
-					arm64e,
-				);
+				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
@@ -406,13 +344,13 @@
 				EXECUTABLE_PREFIX = "";
 				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = "$(SRCROOT)/BlueBubblesHelper/Info.plist";
-				INSTALL_PATH = /Users/tanay/Desktop/test;
+				INSTALL_PATH = "@rpath";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 11.5;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 0.0.20;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
 				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++20";
@@ -444,10 +382,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = (
-					"$(ARCHS_STANDARD)",
-					arm64e,
-				);
+				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -498,7 +433,6 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = NO;
-				VALID_ARCHS = "x86_64 arm64 arm64e";
 			};
 			name = Debug;
 		};
@@ -506,10 +440,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = (
-					"$(ARCHS_STANDARD)",
-					arm64e,
-				);
+				ARCHS = "$(ARCHS_STANDARD)";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -554,7 +485,6 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				ONLY_ACTIVE_ARCH = NO;
-				VALID_ARCHS = "x86_64 arm64 arm64e";
 			};
 			name = Release;
 		};

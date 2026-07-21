@@ -44,18 +44,19 @@ static os_log_t logger;
     // then we add this to the base port to get a unique port for the socket
     int port = CLAMP(45670 + getuid()-501, 45670, 65535);
     os_log(logger, "Connecting to socket on port %d...", port);
-    
+
     // connect to socket
     asyncSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:dispatch_get_main_queue()];
-    
+
     NSError *err = nil;
     if (![asyncSocket connectToHost:@"localhost" onPort:port error:&err]) {
         // If there was an error, it's likely something like "already connected" or "no delegate set"
         os_log_error(logger, "Failed to connect to socket! %@", err);
     }
-    
-    // initiate the 1st read request in anticipation
-    [asyncSocket readDataWithTimeout:(-1) tag:(1)];
+
+    // Server messages are newline-delimited JSON. Reading to the delimiter avoids
+    // treating partial or coalesced TCP packets as complete JSON documents.
+    [asyncSocket readDataToData:[GCDAsyncSocket LFData] withTimeout:(-1) tag:(1)];
 }
 
 - (void)sendMessage:(NSDictionary*)data {
@@ -68,7 +69,7 @@ static os_log_t logger;
         // add a newline to the message so back-to-back messages are split and sent correctly
         NSString *jsonMessage = [NSString stringWithFormat:(@"%@\r\n"), message];
         NSData* finalData = [jsonMessage dataUsingEncoding:NSUTF8StringEncoding];
-        
+
         os_log(logger, "Sending data to server:\r\n%@", data);
         [asyncSocket writeData:(finalData) withTimeout:(-1) tag:(1)];
     }
@@ -77,17 +78,16 @@ static os_log_t logger;
 #pragma mark - Private methods
 // The data from the server is in the form of a json string, so we need to convert it to a NSDictionary
 - (NSDictionary*) jsonDecode:(NSString*) json {
-    // For some reason the data is sometimes duplicated, so account for that
-    NSRange range = [json rangeOfString:@"}\n{"];
-    if (range.location != NSNotFound) {
-        json = [json substringWithRange:NSMakeRange(0, range.location + 1)];
-    }
-    
+    NSString *trimmedJSON = [json stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSError *error;
-    NSData *jsonData = [json dataUsingEncoding:NSUTF8StringEncoding];
-    NSDictionary *dictionary = [NSJSONSerialization JSONObjectWithData:jsonData options:kNilOptions error:&error];
-    
-    return dictionary;
+    NSData *jsonData = [trimmedJSON dataUsingEncoding:NSUTF8StringEncoding];
+    id value = [NSJSONSerialization JSONObjectWithData:jsonData options:kNilOptions error:&error];
+    if (error != nil || ![value isKindOfClass:[NSDictionary class]]) {
+        os_log_error(logger, "Failed to decode server JSON: %{public}@", error);
+        return nil;
+    }
+
+    return (NSDictionary *)value;
 }
 
 
@@ -95,7 +95,7 @@ static os_log_t logger;
 
 - (void)socket:(GCDAsyncSocket*)sock didConnectToHost:(NSString*)host port:(UInt16)port {
     os_log(logger, "Helper socket connected on port:%{public}hu", port);
-    
+
     NSDictionary *message = @{
         @"event": @"ping",
         @"message": @"Helper Connected!",
@@ -107,11 +107,14 @@ static os_log_t logger;
 - (void)socket:(GCDAsyncSocket*)sock didReadData:(NSData*)data withTag:(long)tag {
     NSString* str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
     os_log(logger, "Received data from server:\r\n%{public}@\r\nwith tag: %{public}ld", str, tag);
-    // initiate a new read request for the next data item
-    [asyncSocket readDataWithTimeout:(-1) tag:(1)];
-    
+    // Initiate a new read request for the next newline-delimited item.
+    [asyncSocket readDataToData:[GCDAsyncSocket LFData] withTimeout:(-1) tag:(1)];
+
     // parse and send the data to the handler
     NSDictionary* dictionary = [self jsonDecode:str];
+    if (dictionary == nil) {
+        return;
+    }
     // Event is the type of packet that was sent
     NSString *event = dictionary[@"action"];
     // Data is the actual information that we need in the packet
