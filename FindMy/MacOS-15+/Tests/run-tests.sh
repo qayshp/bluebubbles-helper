@@ -4,6 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SOURCE_DIR="$ROOT_DIR/BlueBubblesHelper"
+SOCKET_DIR="$ROOT_DIR/Pods/CocoaAsyncSocket/Source/GCD"
 BUILD_DIR="$ROOT_DIR/.build/tests"
 DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 
@@ -17,12 +18,19 @@ xcrun --sdk macosx clang \
     -Wall \
     -Wextra \
     -Werror \
+    -Wno-deprecated-declarations \
     -isysroot "$SDKROOT" \
     -mmacosx-version-min=15.0 \
     -I "$SOURCE_DIR" \
+    -I "$SOCKET_DIR" \
     "$SOURCE_DIR/FindMyFriendPayload.m" \
-    "$ROOT_DIR/Tests/FindMyFriendPayloadTests.m" \
+    "$SOURCE_DIR/FindMyFriendsRefreshCoordinator.m" \
+    "$SOURCE_DIR/ServerConnection.m" \
+    "$SOCKET_DIR/GCDAsyncSocket.m" \
+    "$ROOT_DIR/Tests/FindMyFriendsTests.m" \
     -framework Foundation \
-    -o "$BUILD_DIR/FindMyFriendPayloadTests"
+    -framework Security \
+    -framework CFNetwork \
+    -o "$BUILD_DIR/FindMyFriendsTests"
 
-"$BUILD_DIR/FindMyFriendPayloadTests"
+"$BUILD_DIR/FindMyFriendsTests"

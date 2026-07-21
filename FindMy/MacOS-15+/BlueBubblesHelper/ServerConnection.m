@@ -9,19 +9,32 @@ static const uint16_t BBPrivateApiBasePort = 45670;
 static const uint16_t BBMaximumPort = UINT16_MAX;
 static const uid_t BBFirstUserIdentifier = 501;
 static const NSTimeInterval BBReconnectDelaySeconds = 5.0;
+static const NSUInteger BBMaximumPendingMessageCount = 100;
+static NSString * const BBFindMyBundleIdentifier = @"com.apple.findmy";
 
 @interface ServerConnection ()
 @property(nonatomic, strong, nullable) GCDAsyncSocket *socket;
+@property(nonatomic, strong) NSMutableArray<NSData *> *pendingMessages;
 @property(nonatomic) BOOL reconnectScheduled;
 - (nullable NSDictionary *)decodeMessageData:(NSData *)messageData;
 - (uint16_t)serverPort;
 - (void)readNextMessage;
+- (void)flushPendingMessages;
+- (void)writeMessageData:(NSData *)messageData;
 - (void)scheduleReconnect;
 @end
 
 @implementation ServerConnection
 
 static os_log_t connectionLog;
+
+- (instancetype)init {
+    self = [super init];
+    if (self != nil) {
+        _pendingMessages = [[NSMutableArray alloc] init];
+    }
+    return self;
+}
 
 + (instancetype)sharedInstance {
     static ServerConnection *sharedConnection = nil;
@@ -70,7 +83,19 @@ static os_log_t connectionLog;
 
     NSMutableData *framedMessage = [jsonData mutableCopy];
     [framedMessage appendData:[GCDAsyncSocket LFData]];
-    [self.socket writeData:framedMessage withTimeout:-1 tag:1];
+
+    @synchronized (self.pendingMessages) {
+        if (self.socket == nil || self.socket.isDisconnected) {
+            if (self.pendingMessages.count >= BBMaximumPendingMessageCount) {
+                [self.pendingMessages removeObjectAtIndex:0];
+                os_log_error(connectionLog, "Dropped oldest queued server message after reaching the queue limit");
+            }
+            [self.pendingMessages addObject:framedMessage];
+            return;
+        }
+    }
+
+    [self writeMessageData:framedMessage];
 }
 
 - (nullable NSDictionary *)decodeMessageData:(NSData *)messageData {
@@ -85,6 +110,22 @@ static os_log_t connectionLog;
 
 - (void)readNextMessage {
     [self.socket readDataToData:[GCDAsyncSocket LFData] withTimeout:-1 tag:1];
+}
+
+- (void)writeMessageData:(NSData *)messageData {
+    [self.socket writeData:messageData withTimeout:-1 tag:1];
+}
+
+- (void)flushPendingMessages {
+    NSArray<NSData *> *queuedMessages = nil;
+    @synchronized (self.pendingMessages) {
+        queuedMessages = [self.pendingMessages copy];
+        [self.pendingMessages removeAllObjects];
+    }
+
+    for (NSData *messageData in queuedMessages) {
+        [self writeMessageData:messageData];
+    }
 }
 
 - (void)scheduleReconnect {
@@ -104,16 +145,25 @@ static os_log_t connectionLog;
 }
 
 - (void)socket:(GCDAsyncSocket *)socket didConnectToHost:(NSString *)host port:(uint16_t)port {
+    if (socket != self.socket) {
+        return;
+    }
+
     self.reconnectScheduled = NO;
     os_log(connectionLog, "Connected to BlueBubbles Server on port %{public}hu", port);
     [self sendMessage:@{
         @"event": @"ping",
         @"message": @"Find My Friends helper connected",
-        @"process": [[NSBundle mainBundle] bundleIdentifier],
+        @"process": [[NSBundle mainBundle] bundleIdentifier] ?: BBFindMyBundleIdentifier,
     }];
+    [self flushPendingMessages];
 }
 
 - (void)socket:(GCDAsyncSocket *)socket didReadData:(NSData *)messageData withTag:(long)tag {
+    if (socket != self.socket) {
+        return;
+    }
+
     [self readNextMessage];
 
     NSDictionary *serverMessage = [self decodeMessageData:messageData];

@@ -13,6 +13,7 @@
 		A62991D7297210A500B7E663 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A62991D6297210A500B7E663 /* Foundation.framework */; };
 		A6490A0E2984697C002B0E1D /* PrefixHeader.pch in Resources */ = {isa = PBXBuildFile; fileRef = FBCE4ECD201C0F4D002F8A61 /* PrefixHeader.pch */; };
 		BBF100000000000000000001 /* FindMyFriendPayload.m in Sources */ = {isa = PBXBuildFile; fileRef = BBF100000000000000000003 /* FindMyFriendPayload.m */; };
+		BBF200000000000000000001 /* FindMyFriendsRefreshCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = BBF200000000000000000003 /* FindMyFriendsRefreshCoordinator.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,8 @@
 		A69960F12B2005100081FB69 /* FindMyLocateSession.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FindMyLocateSession.h; sourceTree = "<group>"; };
 		BBF100000000000000000002 /* FindMyFriendPayload.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FindMyFriendPayload.h; sourceTree = "<group>"; };
 		BBF100000000000000000003 /* FindMyFriendPayload.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FindMyFriendPayload.m; sourceTree = "<group>"; };
+		BBF200000000000000000002 /* FindMyFriendsRefreshCoordinator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FindMyFriendsRefreshCoordinator.h; sourceTree = "<group>"; };
+		BBF200000000000000000003 /* FindMyFriendsRefreshCoordinator.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FindMyFriendsRefreshCoordinator.m; sourceTree = "<group>"; };
 		AE20B1F38F795C02536396EA /* Pods-BlueBubblesHelper DyLib.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper DyLib.debug.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper DyLib/Pods-BlueBubblesHelper DyLib.debug.xcconfig"; sourceTree = "<group>"; };
 		B6E17DF925EE5FA4CB129B31 /* Pods-BlueBubblesHelper.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper.debug.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper/Pods-BlueBubblesHelper.debug.xcconfig"; sourceTree = "<group>"; };
 		BFA22E41EA07AA1C37D1B255 /* Pods-BlueBubblesHelper.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper.release.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper/Pods-BlueBubblesHelper.release.xcconfig"; sourceTree = "<group>"; };
@@ -144,6 +147,8 @@
 				FBCE4EC3201C0F4D002F8A61 /* Supporting Files */,
 				BBF100000000000000000002 /* FindMyFriendPayload.h */,
 				BBF100000000000000000003 /* FindMyFriendPayload.m */,
+				BBF200000000000000000002 /* FindMyFriendsRefreshCoordinator.h */,
+				BBF200000000000000000003 /* FindMyFriendsRefreshCoordinator.m */,
 				93AC09CB2565E45F0000C60C /* FindMyFriendsHelper.m */,
 				A67F85DA2FA7EB4300F04596 /* FindMyFriendsHelper.h */,
 			);
@@ -250,6 +255,7 @@
 			files = (
 				A62991D22972106500B7E663 /* ServerConnection.m in Sources */,
 				BBF100000000000000000001 /* FindMyFriendPayload.m in Sources */,
+				BBF200000000000000000001 /* FindMyFriendsRefreshCoordinator.m in Sources */,
 				A62991D12972106200B7E663 /* FindMyFriendsHelper.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

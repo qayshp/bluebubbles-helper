@@ -3,24 +3,17 @@
 #import <os/log.h>
 
 #import "FindMyLocateSession.h"
-#import "FindMyFriendPayload.h"
+#import "FindMyFriendsRefreshCoordinator.h"
 #import "ServerConnection.h"
 
 static const NSTimeInterval BBConnectionDelaySeconds = 5.0;
 static const NSTimeInterval BBFriendListTimeoutSeconds = 5.0;
 static const NSTimeInterval BBLocationRefreshTimeoutSeconds = 8.0;
-static const long long BBLocationRefreshPriority = 1000;
 
 @interface FindMyFriendsHelper ()
-- (nullable id)valueForSelector:(SEL)selector onObject:(nullable id)object;
+@property(nonatomic, strong, nullable) FindMyLocateSession *activeLocateSession;
+@property(nonatomic, strong) NSMutableSet<FindMyFriendsRefreshCoordinator *> *activeRefreshes;
 - (nullable FindMyLocateSession *)locateSession;
-- (nullable id)locationHandleForFriend:(nullable id)friendRecord;
-- (nullable id)cachedLocationForHandle:(id)locationHandle session:(FindMyLocateSession *)session;
-- (NSArray *)cachedFriendsForSession:(FindMyLocateSession *)session;
-- (void)refreshAndSendLocationsForFriends:(NSArray *)friendRecords
-                                  session:(FindMyLocateSession *)session
-                    transactionIdentifier:(nullable NSString *)transactionIdentifier
-                       friendListTimedOut:(BOOL)friendListTimedOut;
 - (void)handleFriendsRefreshForTransactionIdentifier:(nullable NSString *)transactionIdentifier;
 - (void)sendError:(NSString *)errorMessage transactionIdentifier:(nullable NSString *)transactionIdentifier;
 @end
@@ -28,7 +21,14 @@ static const long long BBLocationRefreshPriority = 1000;
 @implementation FindMyFriendsHelper
 
 static os_log_t helperLog;
-static FindMyLocateSession *activeLocateSession;
+
+- (instancetype)init {
+    self = [super init];
+    if (self != nil) {
+        _activeRefreshes = [[NSMutableSet alloc] init];
+    }
+    return self;
+}
 
 + (instancetype)sharedInstance {
     static FindMyFriendsHelper *sharedHelper = nil;
@@ -100,20 +100,9 @@ static FindMyLocateSession *activeLocateSession;
     }];
 }
 
-- (nullable id)valueForSelector:(SEL)selector onObject:(nullable id)object {
-    if (object == nil || ![object respondsToSelector:selector]) {
-        return nil;
-    }
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
-    return [object performSelector:selector];
-#pragma clang diagnostic pop
-}
-
 - (nullable FindMyLocateSession *)locateSession {
-    if (activeLocateSession != nil) {
-        return activeLocateSession;
+    if (self.activeLocateSession != nil) {
+        return self.activeLocateSession;
     }
 
     Class locateSessionClass = NSClassFromString(@"FindMyLocateSession");
@@ -132,165 +121,21 @@ static FindMyLocateSession *activeLocateSession;
         return nil;
     }
 
-    activeLocateSession = [[locateSessionClass alloc] init];
+    self.activeLocateSession = [[locateSessionClass alloc] init];
 
-    if ([activeLocateSession respondsToSelector:@selector(startUpdatingFriendsWithInitialUpdates:completion:)]) {
-        [activeLocateSession startUpdatingFriendsWithInitialUpdates:YES completion:^{
+    if ([self.activeLocateSession respondsToSelector:@selector(startUpdatingFriendsWithInitialUpdates:completion:)]) {
+        [self.activeLocateSession startUpdatingFriendsWithInitialUpdates:YES completion:^{
             os_log(helperLog, "Find My friend updates started");
         }];
     }
 
-    if ([activeLocateSession respondsToSelector:@selector(startMonitoringActiveLocationSharingDeviceChangeWithCompletion:)]) {
-        [activeLocateSession startMonitoringActiveLocationSharingDeviceChangeWithCompletion:^{
+    if ([self.activeLocateSession respondsToSelector:@selector(startMonitoringActiveLocationSharingDeviceChangeWithCompletion:)]) {
+        [self.activeLocateSession startMonitoringActiveLocationSharingDeviceChangeWithCompletion:^{
             os_log(helperLog, "Find My active-device monitoring started");
         }];
     }
 
-    return activeLocateSession;
-}
-
-- (nullable id)locationHandleForFriend:(nullable id)friendRecord {
-    if (friendRecord == nil) {
-        return nil;
-    }
-    if ([friendRecord isKindOfClass:NSClassFromString(@"FMLHandle")]) {
-        return friendRecord;
-    }
-    return [self valueForSelector:NSSelectorFromString(@"handle") onObject:friendRecord];
-}
-
-- (nullable id)cachedLocationForHandle:(id)locationHandle session:(FindMyLocateSession *)session {
-    if ([session respondsToSelector:@selector(cachedLocationForHandle:includeAddress:)]) {
-        return [session cachedLocationForHandle:locationHandle includeAddress:YES];
-    }
-    if ([session respondsToSelector:@selector(cachedLocationForHandle:)]) {
-        return [session cachedLocationForHandle:locationHandle];
-    }
-    return nil;
-}
-
-- (NSArray *)cachedFriendsForSession:(FindMyLocateSession *)session {
-    NSArray *cachedFriends = nil;
-    SEL singularLocationSelector = NSSelectorFromString(@"cachedFriendsSharingLocationWithMe");
-    if ([session respondsToSelector:singularLocationSelector]) {
-        cachedFriends = [self valueForSelector:singularLocationSelector onObject:session];
-    }
-    if (cachedFriends == nil && [session respondsToSelector:@selector(cachedFriendsSharingLocationsWithMe)]) {
-        cachedFriends = [self valueForSelector:@selector(cachedFriendsSharingLocationsWithMe) onObject:session];
-    }
-    return [cachedFriends isKindOfClass:[NSArray class]] ? cachedFriends : @[];
-}
-
-- (void)refreshAndSendLocationsForFriends:(NSArray *)friendRecords
-                                  session:(FindMyLocateSession *)session
-                    transactionIdentifier:(nullable NSString *)transactionIdentifier
-                       friendListTimedOut:(BOOL)friendListTimedOut {
-    NSMutableDictionary<NSString *, NSDictionary *> *locationsByFriendIdentifier = [[NSMutableDictionary alloc] init];
-    NSMutableSet<NSString *> *pendingFriendIdentifiers = [[NSMutableSet alloc] init];
-    NSMutableArray<void (^)(void)> *completeLocationRefreshBlocks = [[NSMutableArray alloc] init];
-    dispatch_group_t locationRefreshGroup = dispatch_group_create();
-    __block NSUInteger unidentifiedFriendCount = 0;
-
-    for (id friendRecord in friendRecords) {
-        id locationHandle = [self locationHandleForFriend:friendRecord];
-        NSString *friendIdentifier = [FindMyFriendPayload identifierForHandle:locationHandle];
-        if (friendIdentifier == nil) {
-            unidentifiedFriendCount += 1;
-            continue;
-        }
-
-        NSDictionary *cachedLocationPayload = [FindMyFriendPayload
-            locationPayloadForLocation:[self cachedLocationForHandle:locationHandle session:session]
-                                 handle:locationHandle];
-        if (cachedLocationPayload == nil) {
-            unidentifiedFriendCount += 1;
-            continue;
-        }
-
-        __block BOOL shouldRefreshLocation = NO;
-        @synchronized (pendingFriendIdentifiers) {
-            if (locationsByFriendIdentifier[friendIdentifier] == nil) {
-                locationsByFriendIdentifier[friendIdentifier] = cachedLocationPayload;
-                [pendingFriendIdentifiers addObject:friendIdentifier];
-                shouldRefreshLocation = YES;
-            }
-        }
-        if (!shouldRefreshLocation) {
-            continue;
-        }
-
-        dispatch_group_enter(locationRefreshGroup);
-        __block BOOL locationRefreshCompleted = NO;
-        void (^completeLocationRefresh)(void) = ^{
-            @synchronized (pendingFriendIdentifiers) {
-                if (locationRefreshCompleted) {
-                    return;
-                }
-                locationRefreshCompleted = YES;
-
-                NSDictionary *refreshedLocationPayload = [FindMyFriendPayload
-                    locationPayloadForLocation:[self cachedLocationForHandle:locationHandle session:session]
-                                         handle:locationHandle];
-                if (refreshedLocationPayload != nil) {
-                    locationsByFriendIdentifier[friendIdentifier] = refreshedLocationPayload;
-                }
-                [pendingFriendIdentifiers removeObject:friendIdentifier];
-            }
-            dispatch_group_leave(locationRefreshGroup);
-        };
-        [completeLocationRefreshBlocks addObject:completeLocationRefresh];
-
-        if ([session respondsToSelector:@selector(startRefreshingLocationForHandles:priority:isFromGroup:reverseGeocode:completion:)]) {
-            [session startRefreshingLocationForHandles:@[locationHandle]
-                                              priority:BBLocationRefreshPriority
-                                           isFromGroup:NO
-                                        reverseGeocode:YES
-                                            completion:completeLocationRefresh];
-        } else if ([session respondsToSelector:@selector(startRefreshingLocationForHandles:priority:isFromGroup:completion:)]) {
-            [session startRefreshingLocationForHandles:@[locationHandle]
-                                              priority:BBLocationRefreshPriority
-                                           isFromGroup:NO
-                                            completion:completeLocationRefresh];
-        } else {
-            completeLocationRefresh();
-        }
-    }
-
-    __block BOOL responseSent = NO;
-    void (^sendResponseOnce)(void) = ^{
-        NSDictionary *response = nil;
-        @synchronized (pendingFriendIdentifiers) {
-            if (responseSent) {
-                return;
-            }
-            responseSent = YES;
-            response = [FindMyFriendPayload
-                responseForTransactionIdentifier:transactionIdentifier
-                     locationsByFriendIdentifier:locationsByFriendIdentifier
-                        pendingFriendIdentifiers:pendingFriendIdentifiers
-                              friendListTimedOut:friendListTimedOut
-                       unidentifiedFriendCount:unidentifiedFriendCount];
-        }
-        [[ServerConnection sharedInstance] sendMessage:response];
-    };
-
-    dispatch_group_notify(locationRefreshGroup, dispatch_get_main_queue(), sendResponseOnce);
-
-    dispatch_after(
-        dispatch_time(DISPATCH_TIME_NOW, (int64_t)(BBLocationRefreshTimeoutSeconds * NSEC_PER_SEC)),
-        dispatch_get_main_queue(),
-        ^{
-            NSUInteger pendingFriendCount = 0;
-            @synchronized (pendingFriendIdentifiers) {
-                pendingFriendCount = pendingFriendIdentifiers.count;
-            }
-            os_log(helperLog, "Friend location deadline reached with %lu pending", (unsigned long)pendingFriendCount);
-            sendResponseOnce();
-            for (void (^completeLocationRefresh)(void) in completeLocationRefreshBlocks) {
-                completeLocationRefresh();
-            }
-        }
-    );
+    return self.activeLocateSession;
 }
 
 - (void)handleFriendsRefreshForTransactionIdentifier:(nullable NSString *)transactionIdentifier {
@@ -300,43 +145,23 @@ static FindMyLocateSession *activeLocateSession;
         return;
     }
 
-    __block BOOL friendListResolved = NO;
-    void (^resolveFriendListOnce)(NSArray *, BOOL) = ^(NSArray *requestedFriends, BOOL timedOut) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (friendListResolved) {
-                return;
+    __weak typeof(self) weakSelf = self;
+    __block __weak FindMyFriendsRefreshCoordinator *weakCoordinator = nil;
+    FindMyFriendsRefreshCoordinator *coordinator = [[FindMyFriendsRefreshCoordinator alloc]
+        initWithSession:session
+        transactionIdentifier:transactionIdentifier
+        friendListTimeout:BBFriendListTimeoutSeconds
+        locationRefreshTimeout:BBLocationRefreshTimeoutSeconds
+        responseHandler:^(NSDictionary *response) {
+            [[ServerConnection sharedInstance] sendMessage:response];
+            FindMyFriendsHelper *strongSelf = weakSelf;
+            if (strongSelf != nil && weakCoordinator != nil) {
+                [strongSelf.activeRefreshes removeObject:weakCoordinator];
             }
-            friendListResolved = YES;
-
-            NSArray *friendRecords = [requestedFriends isKindOfClass:[NSArray class]]
-                ? requestedFriends : [self cachedFriendsForSession:session];
-            [self refreshAndSendLocationsForFriends:friendRecords
-                                            session:session
-                              transactionIdentifier:transactionIdentifier
-                                 friendListTimedOut:timedOut];
-        });
-    };
-
-    if (![session respondsToSelector:@selector(getFriendsSharingLocationsWithMeWithCompletion:)]) {
-        resolveFriendListOnce([self cachedFriendsForSession:session], NO);
-        return;
-    }
-
-    [session getFriendsSharingLocationsWithMeWithCompletion:^(NSArray *requestedFriends) {
-        resolveFriendListOnce(requestedFriends, NO);
-    }];
-
-    dispatch_after(
-        dispatch_time(DISPATCH_TIME_NOW, (int64_t)(BBFriendListTimeoutSeconds * NSEC_PER_SEC)),
-        dispatch_get_main_queue(),
-        ^{
-            if (friendListResolved) {
-                return;
-            }
-            os_log(helperLog, "Friend list deadline reached; using cached friends");
-            resolveFriendListOnce([self cachedFriendsForSession:session], YES);
-        }
-    );
+        }];
+    weakCoordinator = coordinator;
+    [self.activeRefreshes addObject:coordinator];
+    [coordinator start];
 }
 
 @end

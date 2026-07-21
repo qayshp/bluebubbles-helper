@@ -49,5 +49,6 @@ The payload tests require Xcode and use only Foundation:
 ./Tests/run-tests.sh
 ```
 
-They cover stable-handle selection, missing locations, live locations,
-allowlisted fields, deterministic ordering, and partial timeout metadata.
+They cover stable-handle selection, missing and live locations, allowlisted
+fields, deterministic ordering, friend-list and per-handle timeouts, duplicate
+and late callbacks, and response delivery across a server reconnect.
