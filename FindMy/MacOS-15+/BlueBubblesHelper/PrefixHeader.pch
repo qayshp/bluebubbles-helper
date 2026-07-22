@@ -1,6 +1,0 @@
-#ifndef BlueBubblesHelper_PrefixHeader_pch
-#define BlueBubblesHelper_PrefixHeader_pch
-
-#import <Cocoa/Cocoa.h>
-
-#endif

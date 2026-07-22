@@ -7,11 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A62991D02972104E00B7E663 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A62991CF2972104E00B7E663 /* AppKit.framework */; };
 		A62991D12972106200B7E663 /* FindMyFriendsHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = 93AC09CB2565E45F0000C60C /* FindMyFriendsHelper.m */; };
 		A62991D22972106500B7E663 /* ServerConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 93FD99392568E7360060D430 /* ServerConnection.m */; };
 		A62991D7297210A500B7E663 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A62991D6297210A500B7E663 /* Foundation.framework */; };
-		A6490A0E2984697C002B0E1D /* PrefixHeader.pch in Resources */ = {isa = PBXBuildFile; fileRef = FBCE4ECD201C0F4D002F8A61 /* PrefixHeader.pch */; };
 		BBF100000000000000000001 /* FindMyFriendPayload.m in Sources */ = {isa = PBXBuildFile; fileRef = BBF100000000000000000003 /* FindMyFriendPayload.m */; };
 		BBF200000000000000000001 /* FindMyFriendsRefreshCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = BBF200000000000000000003 /* FindMyFriendsRefreshCoordinator.m */; };
 /* End PBXBuildFile section */
@@ -22,41 +20,16 @@
 		93AC09CB2565E45F0000C60C /* FindMyFriendsHelper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FindMyFriendsHelper.m; sourceTree = "<group>"; };
 		93FD99392568E7360060D430 /* ServerConnection.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ServerConnection.m; sourceTree = "<group>"; };
 		93FD993D2568E7500060D430 /* ServerConnection.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ServerConnection.h; sourceTree = "<group>"; };
-		A623AA3C2F9EC6930054D931 /* libCocoaAsyncSocket.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libCocoaAsyncSocket.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		A623AA3E2F9EC7190054D931 /* libCocoaAsyncSocket.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libCocoaAsyncSocket.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		A62991CB29720FAC00B7E663 /* BlueBubblesHelper.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = BlueBubblesHelper.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
-		A62991CF2972104E00B7E663 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		A62991CB29720FAC00B7E663 /* BlueBubblesFindMyHelper.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = BlueBubblesFindMyHelper.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		A62991D6297210A500B7E663 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		A67F85DA2FA7EB4300F04596 /* FindMyFriendsHelper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FindMyFriendsHelper.h; sourceTree = "<group>"; };
-		A69960ED2B2004540081FB69 /* FindMyLocateObjCWrapper.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyLocateObjCWrapper.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyLocateObjCWrapper.framework; sourceTree = "<group>"; };
 		A69960F12B2005100081FB69 /* FindMyLocateSession.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FindMyLocateSession.h; sourceTree = "<group>"; };
 		BBF100000000000000000002 /* FindMyFriendPayload.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FindMyFriendPayload.h; sourceTree = "<group>"; };
 		BBF100000000000000000003 /* FindMyFriendPayload.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FindMyFriendPayload.m; sourceTree = "<group>"; };
 		BBF200000000000000000002 /* FindMyFriendsRefreshCoordinator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FindMyFriendsRefreshCoordinator.h; sourceTree = "<group>"; };
 		BBF200000000000000000003 /* FindMyFriendsRefreshCoordinator.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FindMyFriendsRefreshCoordinator.m; sourceTree = "<group>"; };
 		AE20B1F38F795C02536396EA /* Pods-BlueBubblesHelper DyLib.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper DyLib.debug.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper DyLib/Pods-BlueBubblesHelper DyLib.debug.xcconfig"; sourceTree = "<group>"; };
-		B6E17DF925EE5FA4CB129B31 /* Pods-BlueBubblesHelper.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper.debug.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper/Pods-BlueBubblesHelper.debug.xcconfig"; sourceTree = "<group>"; };
-		BFA22E41EA07AA1C37D1B255 /* Pods-BlueBubblesHelper.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BlueBubblesHelper.release.xcconfig"; path = "Target Support Files/Pods-BlueBubblesHelper/Pods-BlueBubblesHelper.release.xcconfig"; sourceTree = "<group>"; };
-		FBCE4EBE201C0F4D002F8A61 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
-		FBCE4EC0201C0F4D002F8A61 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		FBCE4EC4201C0F4D002F8A61 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		FBCE4ECD201C0F4D002F8A61 /* PrefixHeader.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PrefixHeader.pch; sourceTree = "<group>"; };
-		BBF000000000000000000101 /* FindMyBase.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyBase.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyBase.framework; sourceTree = "<group>"; };
-		BBF000000000000000000102 /* FindMyBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyBluetooth.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyBluetooth.framework; sourceTree = "<group>"; };
-		BBF000000000000000000103 /* FindMyCloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyCloudKit.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyCloudKit.framework; sourceTree = "<group>"; };
-		BBF000000000000000000104 /* FindMyCommon.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyCommon.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyCommon.framework; sourceTree = "<group>"; };
-		BBF000000000000000000105 /* FindMyCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyCore.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyCore.framework; sourceTree = "<group>"; };
-		BBF000000000000000000106 /* FindMyCrypto.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyCrypto.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyCrypto.framework; sourceTree = "<group>"; };
-		BBF000000000000000000107 /* FindMyDaemonSupport.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyDaemonSupport.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyDaemonSupport.framework; sourceTree = "<group>"; };
-		BBF000000000000000000108 /* FindMyDevice.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyDevice.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyDevice.framework; sourceTree = "<group>"; };
-		BBF000000000000000000109 /* FindMyDeviceUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyDeviceUI.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyDeviceUI.framework; sourceTree = "<group>"; };
-		BBF000000000000000000110 /* FindMyLocate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyLocate.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyLocate.framework; sourceTree = "<group>"; };
-		BBF000000000000000000112 /* FindMyMac.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyMac.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyMac.framework; sourceTree = "<group>"; };
-		BBF000000000000000000113 /* FindMyMessaging.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyMessaging.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyMessaging.framework; sourceTree = "<group>"; };
-		BBF000000000000000000114 /* FindMyPairing.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyPairing.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyPairing.framework; sourceTree = "<group>"; };
-		BBF000000000000000000115 /* FindMyServerInteraction.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyServerInteraction.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyServerInteraction.framework; sourceTree = "<group>"; };
-		BBF000000000000000000116 /* FindMyStorage.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyStorage.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyStorage.framework; sourceTree = "<group>"; };
-		BBF000000000000000000117 /* FindMyUnsafeAsyncBridging.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = FindMyUnsafeAsyncBridging.framework; path = ../../../../../../System/Library/PrivateFrameworks/FindMyUnsafeAsyncBridging.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,7 +38,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A62991D7297210A500B7E663 /* Foundation.framework in Frameworks */,
-				A62991D02972104E00B7E663 /* AppKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -75,8 +47,6 @@
 		0D15172D954906F948D51F4C /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				B6E17DF925EE5FA4CB129B31 /* Pods-BlueBubblesHelper.debug.xcconfig */,
-				BFA22E41EA07AA1C37D1B255 /* Pods-BlueBubblesHelper.release.xcconfig */,
 				AE20B1F38F795C02536396EA /* Pods-BlueBubblesHelper DyLib.debug.xcconfig */,
 				72EF502B6438F8F18EC16DBF /* Pods-BlueBubblesHelper DyLib.release.xcconfig */,
 			);
@@ -105,7 +75,7 @@
 		FBCE4EBC201C0F4D002F8A61 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A62991CB29720FAC00B7E663 /* BlueBubblesHelper.dylib */,
+				A62991CB29720FAC00B7E663 /* BlueBubblesFindMyHelper.dylib */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -113,27 +83,7 @@
 		FBCE4EBD201C0F4D002F8A61 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				A623AA3E2F9EC7190054D931 /* libCocoaAsyncSocket.a */,
-				A623AA3C2F9EC6930054D931 /* libCocoaAsyncSocket.a */,
-				BBF000000000000000000101 /* FindMyBase.framework */,
-				BBF000000000000000000102 /* FindMyBluetooth.framework */,
-				BBF000000000000000000103 /* FindMyCloudKit.framework */,
-				BBF000000000000000000104 /* FindMyCommon.framework */,
-				BBF000000000000000000105 /* FindMyCore.framework */,
-				BBF000000000000000000106 /* FindMyCrypto.framework */,
-				BBF000000000000000000107 /* FindMyDaemonSupport.framework */,
-				BBF000000000000000000108 /* FindMyDevice.framework */,
-				BBF000000000000000000109 /* FindMyDeviceUI.framework */,
-				BBF000000000000000000110 /* FindMyLocate.framework */,
-				A69960ED2B2004540081FB69 /* FindMyLocateObjCWrapper.framework */,
-				BBF000000000000000000112 /* FindMyMac.framework */,
-				BBF000000000000000000113 /* FindMyMessaging.framework */,
-				BBF000000000000000000114 /* FindMyPairing.framework */,
-				BBF000000000000000000115 /* FindMyServerInteraction.framework */,
-				BBF000000000000000000116 /* FindMyStorage.framework */,
-				BBF000000000000000000117 /* FindMyUnsafeAsyncBridging.framework */,
 				A62991D6297210A500B7E663 /* Foundation.framework */,
-				A62991CF2972104E00B7E663 /* AppKit.framework */,
 				2A31F700CE646BC3B6A3921F /* libPods-BlueBubblesHelper DyLib.a */,
 			);
 			name = Frameworks;
@@ -159,7 +109,6 @@
 			isa = PBXGroup;
 			children = (
 				FBCE4EC4201C0F4D002F8A61 /* Info.plist */,
-				FBCE4ECD201C0F4D002F8A61 /* PrefixHeader.pch */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -174,25 +123,13 @@
 		};
 /* End PBXGroup section */
 
-/* Begin PBXHeadersBuildPhase section */
-		A62991C729720FAC00B7E663 /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXHeadersBuildPhase section */
-
 /* Begin PBXNativeTarget section */
 		A62991CA29720FAC00B7E663 /* BlueBubblesHelper DyLib */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A62991CE29720FAC00B7E663 /* Build configuration list for PBXNativeTarget "BlueBubblesHelper DyLib" */;
 			buildPhases = (
-				A62991C729720FAC00B7E663 /* Headers */,
 				A62991C829720FAC00B7E663 /* Sources */,
 				A62991C929720FAC00B7E663 /* Frameworks */,
-				A6490A0D29846973002B0E1D /* Resources */,
 			);
 			buildRules = (
 			);
@@ -200,7 +137,7 @@
 			);
 			name = "BlueBubblesHelper DyLib";
 			productName = "BlueBubblesHelper DyLib";
-			productReference = A62991CB29720FAC00B7E663 /* BlueBubblesHelper.dylib */;
+			productReference = A62991CB29720FAC00B7E663 /* BlueBubblesFindMyHelper.dylib */;
 			productType = "com.apple.product-type.library.dynamic";
 		};
 /* End PBXNativeTarget section */
@@ -237,17 +174,6 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXResourcesBuildPhase section */
-		A6490A0D29846973002B0E1D /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				A6490A0E2984697C002B0E1D /* PrefixHeader.pch in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXResourcesBuildPhase section */
-
 /* Begin PBXSourcesBuildPhase section */
 		A62991C829720FAC00B7E663 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -268,7 +194,6 @@
 			baseConfigurationReference = AE20B1F38F795C02536396EA /* Pods-BlueBubblesHelper DyLib.debug.xcconfig */;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
@@ -277,13 +202,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 22;
 				DEAD_CODE_STRIPPING = YES;
-				DEFINES_MODULE = YES;
 				DSTROOT = /;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
-				ENABLE_MODULE_VERIFIER = YES;
 				EXECUTABLE_PREFIX = "";
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = "$(SRCROOT)/BlueBubblesHelper/Info.plist";
 				INSTALL_PATH = "@rpath";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -293,32 +215,12 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 0.0.20;
-				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
-				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++20";
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-ObjC",
-					"-framework",
-					"\"CoreServices\"",
-					"-framework",
-					"\"Security\"",
-					"-undefined",
-					dynamic_lookup,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.bluebubbles.findmy;
 				PRODUCT_NAME = BlueBubblesFindMyHelper;
 				SDKROOT = macosx;
 				SKIP_INSTALL = NO;
-				SWIFT_OBJC_BRIDGING_HEADER = "BlueBubblesHelper DyLib-Bridging-Header.h";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks",
-				);
+				SUPPORTED_PLATFORMS = macosx;
 			};
 			name = Debug;
 		};
@@ -327,7 +229,6 @@
 			baseConfigurationReference = 72EF502B6438F8F18EC16DBF /* Pods-BlueBubblesHelper DyLib.release.xcconfig */;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD)";
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
@@ -336,13 +237,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 22;
 				DEAD_CODE_STRIPPING = YES;
-				DEFINES_MODULE = YES;
 				DSTROOT = /;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
-				ENABLE_MODULE_VERIFIER = YES;
 				EXECUTABLE_PREFIX = "";
-				FRAMEWORK_SEARCH_PATHS = "$(inherited)";
 				INFOPLIST_FILE = "$(SRCROOT)/BlueBubblesHelper/Info.plist";
 				INSTALL_PATH = "@rpath";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -352,29 +250,11 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 0.0.20;
-				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
-				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu11 gnu++20";
-				MTL_FAST_MATH = YES;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-ObjC",
-					"-framework",
-					"\"CoreServices\"",
-					"-framework",
-					"\"Security\"",
-					"-undefined",
-					dynamic_lookup,
-				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.bluebubbles.findmy;
 				PRODUCT_NAME = BlueBubblesFindMyHelper;
 				SDKROOT = macosx;
 				SKIP_INSTALL = NO;
-				SWIFT_OBJC_BRIDGING_HEADER = "BlueBubblesHelper DyLib-Bridging-Header.h";
-				SWIFT_VERSION = 5.0;
-				SYSTEM_FRAMEWORK_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks",
-				);
+				SUPPORTED_PLATFORMS = macosx;
 			};
 			name = Release;
 		};

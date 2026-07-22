@@ -43,7 +43,8 @@ helpers. Unknown Find My actions still return an explicit transaction error.
 
 ## Tests
 
-The payload tests require Xcode and use only Foundation:
+The tests require Xcode but do not load private frameworks or inject into Find
+My:
 
 ```sh
 ./Tests/run-tests.sh

@@ -2,11 +2,6 @@
 
 #import <math.h>
 
-@protocol BBFindMyHandle <NSObject>
-- (id)identifier;
-- (id)comparisonIdentifier;
-@end
-
 @protocol BBFindMyLocation <NSObject>
 - (double)altitude;
 - (id)coarseAddressLabel;
@@ -73,12 +68,14 @@
 }
 
 + (nullable NSString *)identifierForHandle:(nullable id)handle {
-    NSString *primaryIdentifier = [self nonEmptyString:[self valueForSelector:@selector(identifier) onObject:handle]];
+    SEL identifierSelector = NSSelectorFromString(@"identifier");
+    NSString *primaryIdentifier = [self nonEmptyString:[self valueForSelector:identifierSelector onObject:handle]];
     if (primaryIdentifier != nil) {
         return primaryIdentifier;
     }
 
-    return [self nonEmptyString:[self valueForSelector:@selector(comparisonIdentifier) onObject:handle]];
+    SEL comparisonIdentifierSelector = NSSelectorFromString(@"comparisonIdentifier");
+    return [self nonEmptyString:[self valueForSelector:comparisonIdentifierSelector onObject:handle]];
 }
 
 + (nullable NSDictionary *)locationPayloadForLocation:(nullable id)location handle:(nullable id)handle {
