@@ -461,7 +461,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "killall -q Messages; exit 0;\n";
+			shellScript = ":;\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -541,7 +541,7 @@
 					"$(inherited)",
 					"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks",
 				);
-				SYSTEM_HEADER_SEARCH_PATHS = "/Users/tanay/StudioProjects/bluebubbles-helper/Messages/MacOS-11+/BlueBubblesHelper";
+				SYSTEM_HEADER_SEARCH_PATHS = "$(SRCROOT)/BlueBubblesHelper";
 			};
 			name = Debug;
 		};
@@ -604,7 +604,7 @@
 					"$(inherited)",
 					"$(SYSTEM_LIBRARY_DIR)/PrivateFrameworks",
 				);
-				SYSTEM_HEADER_SEARCH_PATHS = "/Users/tanay/StudioProjects/bluebubbles-helper/Messages/MacOS-11+/BlueBubblesHelper";
+				SYSTEM_HEADER_SEARCH_PATHS = "$(SRCROOT)/BlueBubblesHelper";
 			};
 			name = Release;
 		};
