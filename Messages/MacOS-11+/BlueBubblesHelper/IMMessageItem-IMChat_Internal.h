@@ -22,7 +22,6 @@
 - (BOOL)_isInvitation;
 - (void)_setInivtation:(BOOL)arg1;
 - (IMMessage*)message;
-- (NSString *)descriptionForPurpose:(IMMessageDescriptionType)descriptionType isGroupMessage:(BOOL)isGroupMessage senderDisplayName:(NSString*)senderDisplayName messageDataSource:(BOOL (^)(NSString *guid, IMMessageItem** associatedMessage, IMMessagePartChatItem** associatedMessagePart))messageDataSource attachmentDataSource:(BOOL (^)(NSString *guid, NSURL **url, NSString **utiType, BOOL *isSticker, BOOL *incoming))attachementInfoProvider;
 - (BOOL)isIncomingTypingOrCancelTypingMessage;
 - (BOOL)isTypingOrCancelTypingMessage;
 - (BOOL)isCancelTypingMessage;

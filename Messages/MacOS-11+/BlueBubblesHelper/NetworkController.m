@@ -121,7 +121,14 @@ static os_log_t logger;
     if ([dictionary objectForKey:(@"transactionId")] != [NSNull null]) {
         transaction = dictionary[@"transactionId"];
     }
-    [[BlueBubblesHelper sharedInstance] handleServerEvent:event data:eventData transactionId:transaction];
+    
+    @try {
+        [[BlueBubblesHelper sharedInstance] handleServerEvent:event data:eventData transactionId:transaction];
+    }
+    @catch (NSException *exception) {
+        os_log_error(logger, "Caught exception: %@ - %@", exception.name, exception.reason);
+        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": exception.name, @"reason": exception.reason}];
+    }
 }
 
 - (void)socketDidDisconnect:(GCDAsyncSocket *)sock withError:(NSError *)err {

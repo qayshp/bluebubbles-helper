@@ -1,124 +1,93 @@
-//
-//  whosTyping.m
-//  whosTyping
-//
-//  Created by Wolfgang Baird on 1/21/18.
-//  Copyright © 2018 Wolfgang Baird. All rights reserved.
-//
-
 @import AppKit;
 
 #import <Foundation/Foundation.h>
 #import <CoreSpotlight/CoreSpotlight.h>
 #import "BlueBubblesHelper.h"
-
-#import "IMTextMessagePartChatItem.h"
-#import "IMHandle.h"
-#import "IMPerson.h"
-#import "IMAccount.h"
-#import "IMAccountController.h"
-#import "IMService.h"
-#import "IMChat.h"
-#import "IMMessage.h"
-#import "IMMessageItem.h"
-#import "IMMessageItem-IMChat_Internal.h"
-#import "IMChatRegistry.h"
-#import "NetworkController.h"
 #import "Logging.h"
-#import "IMHandleRegistrar.h"
-#import "IMCore.h"
-#import "IMChatHistoryController.h"
-#import "IMPinnedConversationsController.h"
-#import "IMDPersistentAttachmentController.h"
-#import "IMFileTransfer.h"
-#import "IMFileTransferCenter.h"
-#import "IMAggregateAttachmentMessagePartChatItem.h"
+#import "NetworkController.h"
 #import "ZKSwizzle.h"
-#import "IMTranscriptPluginChatItem.h"
-#import "ETiOSMacBalloonPluginDataSource.h"
-#import "HWiOSMacBalloonDataSource.h"
-#import "IMHandleAvailabilityManager.h"
-#import "IDSIDQueryController.h"
-#import "IDS.h"
-#import "IDSDestination-Additions.h"
-#import "IMDDController.h"
-#import "IMNicknameController.h"
-#import "IMNickname.h"
-#import "IMNicknameAvatarImage.h"
-#import "IMFMFSession.h"
-#import "FMFSession.h"
-#import "FMFLocation.h"
-#import "FMLSession.h"
-#import "CTBlockDescription.h"
-#import "FMLHandle.h"
-#import "FMLLocation.h"
-#import "FMFSessionDataManager.h"
 
-#import "CKConversation.h"
-#import "CKConversationList.h"
+// import system headers with angle brackets to prevent Xcode analysis
+// ChatKit
+#import <CKChatController.h>
+#import <CKChatItem.h>
+#import <CKComposition.h>
+#import <CKConversation.h>
+#import <CKConversationList.h>
+#import <CKCoreChatController.h>
+#import <CKMediaObject.h>
+#import <CKMediaObjectManager.h>
 
-// todo remove
-@interface IMChat (TahoeEdit)
-- (void)editMessageItem:(id)arg1 atPartIndex:(long)arg2 withNewPartText:(id)arg3 newPartTranslation:(id)arg4 backwardCompatabilityText:(id)arg5;
-@end
+// Balloon Bundle Plugins
+#import <ETiOSMacBalloonPluginDataSource.h>
+#import <HWiOSMacBalloonDataSource.h>
 
-// This can be used to dump the methods of any class
-//@interface NSObject (Private)
-//- (NSString*)_methodDescription;
-//@end
+// FindMy
+#import <FMFLocation.h>
+#import <FMFSession.h>
+#import <FMFSessionDataManager.h>
+#import <FMLHandle.h>
+#import <FMLLocation.h>
+#import <FMLSession.h>
 
-//// This can be used to dump the methods of any class
-//@interface NSObject (Private)
-//- (NSString*)_methodDescription;
-//@end
-//
-//-(void) DumpObjcMethods:(Class) clz {
-//
-//    unsigned int methodCount = 0;
-//    Method *methods = class_copyMethodList(clz, &methodCount);
-//
-//    DLog("BLUEBUBBLESHELPER: Found %d methods on '%s'\n", methodCount, class_getName(clz));
-//
-//    for (unsigned int i = 0; i < methodCount; i++) {
-//        Method method = methods[i];
-//
-//        DLog("\tBLUEBUBBLESHELPER: '%s' of encoding '%s'\n",
-//               sel_getName(method_getName(method)),
-//               method_getTypeEncoding(method));
-//    }
-//
-//    free(methods);
-//}
+// IMCore
+#import <IDS.h>
+#import <IDSDestination-Additions.h>
+#import <IDSIDQueryController.h>
+#import <IMAccount.h>
+#import <IMAccountController.h>
+#import <IMAggregateAttachmentMessagePartChatItem.h>
+#import <IMChat.h>
+#import <IMChatHistoryController.h>
+#import <IMChatRegistry.h>
+#import <IMCore.h>
+#import <IMEmojiTapback.h>
+#import <IMFileTransfer.h>
+#import <IMFileTransferCenter.h>
+#import <IMFMFSession.h>
+#import <IMHandle.h>
+#import <IMHandleAvailabilityManager.h>
+#import <IMHandleRegistrar.h>
+#import <IMMessage.h>
+#import <IMMessageItem-IMChat_Internal.h>
+#import <IMMessageItem.h>
+#import <IMNickname.h>
+#import <IMNicknameController.h>
+#import <IMService.h>
+#import <IMTranscriptPluginChatItem.h>
 
+// ShareKit
+#import <SKStatusSubscription.h>
 
 @implementation BlueBubblesHelper
 
 static os_log_t logger;
 static NetworkController *networkController;
 static NSMutableArray* vettedAliases;
+static NSMutableDictionary *handleAvailabilityStatuses;
 
-// BlueBubblesHelper is a singleton
 + (instancetype)sharedInstance {
     static BlueBubblesHelper *plugin = nil;
     @synchronized(self) {
         if (!plugin) {
             plugin = [[self alloc] init];
             logger = os_log_create("BlueBubblesHelper", "helper");
+            handleAvailabilityStatuses = [[NSMutableDictionary alloc] init];
         }
     }
     return plugin;
 }
 
-// Called when plugin is inserted into iMessage
+/// Class entrypoint
 + (void)load {
     // Create the singleton
     [BlueBubblesHelper sharedInstance];
-
+    
     // Get OS version for debugging purposes
     NSUInteger major = [[NSProcessInfo processInfo] operatingSystemVersion].majorVersion;
     NSUInteger minor = [[NSProcessInfo processInfo] operatingSystemVersion].minorVersion;
     os_log(logger, "%{public}@ loaded into %{public}@ on macOS %ld.%ld", [self className], [[NSBundle mainBundle] bundleIdentifier], (long)major, (long)minor);
-
+    
     if ([[[NSBundle mainBundle] bundleIdentifier] isEqualToString:@"com.apple.MobileSMS"]) {
         // Delay by 5 seconds so the server has a chance to initialize all the socket services
         dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC));
@@ -128,16 +97,10 @@ static NSMutableArray* vettedAliases;
             networkController = [NetworkController sharedInstance];
             [networkController connect];
             
-//            NSArray* aliases = @[@"tanay@neotia.in", @"zshames2@icloud.com", @"bluebubblesapp@gmail.com", @"hijoelj@gmail.com"];
-//            CKConversation* convo = [CKConversation conversationForAddresses:aliases allowRetargeting:TRUE candidateConversation:nil];
-//            DLog("BLUEBUBBLESHELPER: %@", convo);
-//            
-//            NSAttributedString* text = [[NSAttributedString alloc] initWithString:@"https://google.com"];
-//            CKComposition* composition = [[CKComposition alloc] initWithText:text subject:nil];
-//            
-//            NSObject* message = [convo messageWithComposition:composition];
-//            //And finally, send the message in the conversation
-//            [convo sendMessage:message newComposition:YES];
+            os_log(logger, "Initializing NSNotificationCenter listeners...");
+            [[BlueBubblesHelper sharedInstance] addHandleAvailabilityObserver];
+            [[BlueBubblesHelper sharedInstance] addFindMyFriendsObserver];
+            [[BlueBubblesHelper sharedInstance] addTypingIndicatorObserver];
         });
     } else {
         os_log_error(logger,  "Injected into non-iMessage process %@, aborting.", [[NSBundle mainBundle] bundleIdentifier]);
@@ -145,138 +108,1205 @@ static NSMutableArray* vettedAliases;
     }
 }
 
-#pragma mark - Find Chat Objects
+#pragma mark - Notification Handlers
 
-// Retreive a IMChat instance from a given guid
-//
-// Uses the chat registry to get an existing instance of a chat based on the chat guid
-- (IMChat *) getIMChatFromGuid:(NSString *)guid transaction:(NSString *)transaction {
+/// @brief Adds observer for IMHandle availability (focus mode / DND status) using NSNotificationCenter
+///
+/// @return Sends socket event "focus-status-updated" with data.
+///
+/// @code
+/// {
+///     "event": "focus-status-updated",
+///     "handle": "<address>",
+///     "silenced": "BOOL",
+/// }
+/// @endcode
+- (void) addHandleAvailabilityObserver {
+    [[NSNotificationCenter defaultCenter] addObserverForName:@"IMHandleAvailabilityChangedNotification" object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
+        os_log(logger, "Helper caught notification: %@", note.name);
+        
+        if ([note object] && [[note object] isKindOfClass:NSClassFromString(@"SKStatusSubscription")]) {
+            SKStatusSubscription *subscription = (SKStatusSubscription *)[note object];
+            
+            NSString *contactHandle = [[[subscription ownerHandles] firstObject] handleString];
+            NSDictionary *payloadDict = [[[subscription currentStatus] statusPayload] payloadDictionary];
+            NSNumber *availabilityValue = payloadDict[@"a"];
+            BOOL isFocusModeOn = ![availabilityValue boolValue];
+            
+            [handleAvailabilityStatuses setValue:@(isFocusModeOn) forKey:contactHandle];
+            os_log(logger, "Got focus mode update for handle %@ (%@)", contactHandle, isFocusModeOn ? @"NOT AVAILABLE" : @"AVAILABLE");
+            os_log(logger, "Updated focus dict:\r\n%@", handleAvailabilityStatuses);
+            
+            [[NetworkController sharedInstance] sendMessage: @{@"event": @"focus-status-updated", @"handle": contactHandle, @"silenced": @(isFocusModeOn)}];
+        }
+    }];
+}
+
+/// @brief Adds observer for IMHandle location (FindMy) using NSNotificationCenter
+///
+/// @return TBD.
+///
+/// @code
+/// {
+///
+/// }
+/// @endcode
+- (void) addFindMyFriendsObserver {
+    [[NSNotificationCenter defaultCenter] addObserverForName:@"FMFSessionDidUpdateLocationsNotification" object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
+        os_log(logger, "Helper caught notification: %@", note.name);
+        
+
+        NSDictionary *userInfo = note.userInfo;
+        if (userInfo) {
+            // Under the hood, this usually maps to a key named @"locations" containing NSSet/NSArray
+            id locations = userInfo[@"locations"];
+            os_log(logger, " -> Updated locations payload: %@", locations);
+        }
+    }];
+}
+
+/// @brief Adds observer for chat typing indicators using NSNotificationCenter
+///
+/// @return Sends socket event "started-typing" or "stopped-typing" with data.
+///
+/// @code
+/// {
+///     "event": "started-typing" OR "stopped-typing",
+///     "guid": "<chat GUID>",
+/// }
+/// @endcode
+- (void) addTypingIndicatorObserver {
+    [[NSNotificationCenter defaultCenter] addObserverForName:@"__kIMChatItemsDidChangeNotification" object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
+        os_log(logger, "Helper caught notification: %@", note.name);
+        
+        IMChat *chat = (IMChat *)note.object;
+            
+        if ([[chat lastIncomingMessage] isTypingMessage]) {
+            [[NetworkController sharedInstance] sendMessage: @{@"event": @"started-typing", @"guid": [chat guid]}];
+            os_log(logger, "%{public}@ started typing in %@", [[chat lastIncomingMessage] senderName], [chat guid]);
+        } else {
+            [[NetworkController sharedInstance] sendMessage: @{@"event": @"stopped-typing", @"guid": [chat guid]}];
+            os_log(logger, "%{public}@ stopped typing in %@", [[chat lastIncomingMessage] senderName], [chat guid]);
+        }
+    }];
+}
+
+// try IMAccountAliasesChangedNotification and IMAccountAliasValidationStatusChangedNotification later
+
+#pragma mark - Find Chat / Message Objects
+
+/// @brief Retreives a IMChat instance from a given guid
+/// @param guid chat GUID
+/// @param transaction transaction ID
+/// @return IMChat instance
+///
+/// Uses the chat registry to get an existing instance of a chat based on the chat guid
+- (IMChat *)getIMChatFromGuid:(NSString *)guid transaction:(NSString *)transaction {
     if (guid == nil) {
-        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Provide a chat GUID! (chatGuid parameter missing)"}];
-        return nil;
+        [NSException raise:@"MissingValueException" format:@"Provide a chat GUID!"];
     }
-
+    
     IMChat* imChat = [[IMChatRegistry sharedInstance] existingChatWithGUID: guid];
-
+    
     if (imChat == nil) {
-        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Chat does not exist in IMChatRegistry!"}];
+        [NSException raise:@"MissingChatException" format:@"Chat does not exist in IMChatRegistry!"];
     }
     return imChat;
 }
 
-// Retreive a CKConversation instance from a given guid
-//
-// Uses the chat-kit conversation list to get an existing instance of a chat based on the chat guid
-- (CKConversation *) getCKConversationFromGuid:(NSString *)guid transaction:(NSString *)transaction {
+/// Retreives a CKConversation instance from a given guid
+/// @param guid chat GUID
+/// @param transaction transaction ID
+/// @return CKConversation instance
+///
+/// Uses the chat-kit conversation list to get an existing instance of a chat based on the chat guid
+- (CKConversation *)getCKConversationFromGuid:(NSString *)guid transaction:(NSString *)transaction {
     if (guid == nil) {
-        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Provide a chat GUID! (chatGuid parameter missing)"}];
-        return nil;
+        [NSException raise:@"MissingValueException" format:@"Provide a chat GUID!"];
     }
-
+    
     // necessary due to runtime checking (CKConversationList not loaded at time of dylib load)
     Class CKConversationListClass = NSClassFromString(@"CKConversationList");
     id list = [CKConversationListClass performSelector:@selector(sharedConversationList)];
     CKConversation* ckConversation = [list conversationForExistingChatWithGUID: guid];
-
+    
     if (ckConversation == nil) {
-        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Chat does not exist in CKConversationList!"}];
+        [NSException raise:@"MissingChatException" format:@"Chat does not exist in CKConversationList!"];
     }
     return ckConversation;
 }
 
+/// Retreive a CKChatController instance from a given CKConversation
+/// @param transaction transaction ID
+/// @return CKChatController instance
+- (CKChatController *)getCKChatControllerFromConversation:(CKConversation *)conversation transaction:(NSString *)transaction {
+    CKChatController* chatController = [[CKChatController alloc] initWithConversation: conversation];
+    
+    if (chatController == nil) {
+        [NSException raise:NSGenericException format:@"Unable to create CKChatController!"];
+    }
+    return chatController;
+}
+
+/// Retrieve an IMMessage instance from a given message guid
+/// @param guid message GUID
+/// @param block block which will complete with the IMMessage
+/// @return IMMessage instance
+- (void)getIMMessageFromGuid:(NSString *)guid completionBlock:(void (^)(IMMessage *message))block {
+    [[IMChatHistoryController sharedInstance] loadMessageWithGUID:(guid) completionBlock:^(IMMessage *message) {
+        os_log(logger, "Got message with guid %{public}@", guid);
+        block(message);
+    }];
+}
+
+/// Retrieve an IMMessagePartChatItem instance from a given message guid
+/// @param guid message GUID
+/// @param partIndex index [0, ...] of the message item in the message parts
+/// @param block block which will complete with the IMMessage
+/// @return IMMessagePartChatItem instance
+- (void)getIMMessagePartChatItemFromGuid:(NSString *)guid atPartIndex:(NSUInteger)partIndex completionBlock:(void (^)(IMMessagePartChatItem *messageItem))block {
+    [[IMChatHistoryController sharedInstance] loadMessageWithGUID:(guid) completionBlock:^(IMMessage *message) {
+        os_log(logger, "Got message with guid %{public}@", guid);
+        IMMessageItem *imMessageItem = message._imMessageItem;
+        os_log(logger, "Got IMMessageItem for IMMessage: %@", imMessageItem);
+        // This can be an array, or a singular IMMessagePartChatItem
+        NSObject *chatItems = imMessageItem._newChatItems;
+        os_log(logger, "Got IMMessagePartChatItem(s) for IMMessageItem: %@", chatItems);
+        IMMessagePartChatItem *chatItem;
+        
+        if ([chatItems isKindOfClass:[NSArray class]]) {
+            NSUInteger arrayCount = [(NSArray *)chatItems count] - 1;
+            // usually indicates a photo gallery (IMAggregateAttachmentMessagePartChatItem) which is a single
+            // message item but has the subparts within the class
+            if (partIndex > arrayCount) {
+                os_log(logger, "Part index greater than items in array, checking if type is IMAggregateAttachmentMessage");
+                // Only available on macOS 12+, use reference to class loaded at runtime to avoid crashes on macOS 11
+                Class cls = NSClassFromString(@"IMAggregateAttachmentMessagePartChatItem");
+                if ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion > 11 && [[(NSArray *)chatItems firstObject] isKindOfClass:cls]) {
+                    IMAggregateAttachmentMessagePartChatItem *aggregate = [(NSArray *)chatItems firstObject];
+                    chatItem = [[aggregate aggregateAttachmentParts] objectAtIndex:partIndex];
+                    os_log(logger, "Found IMAggregateAttachmentMessage, extracted chat item from subparts!");
+                } else {
+                    [NSException raise:@"InvalidValueException" format:@"Part index is greater than number of parts in the message!"];
+                }
+            } else {
+                chatItem = [(NSArray *)chatItems objectAtIndex:partIndex];
+            }
+        } else {
+            chatItem = (IMMessagePartChatItem *)chatItems;
+        }
+        os_log(logger, "Extracted IMMessagePartChatItem at partIndex: %@", chatItem);
+        block(chatItem);
+    }];
+}
+
 #pragma mark - Chat Actions
 
+/// @brief Set the user's typing status on a chat
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "start-typing" OR "stop-typing",
+///     "data": {
+///         "chatGuid": "<chat GUID>",
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "transactionId": "<Transaction ID>",
+/// }
 - (void)handleTypingIndicatorForChat:(NSString *)chatGuid isTyping:(BOOL)isTyping transaction:(NSString *)transaction {
     IMChat *chat = [self getIMChatFromGuid:chatGuid transaction:transaction];
     
-    if (chat != nil) {
-        // If the IMChat instance is not null, start typing
-        [chat setLocalUserIsTyping:isTyping];
-        os_log(logger, "Set local user is typing %d on chat %@", isTyping, chatGuid);
-        
-        [networkController sendMessage: @{@"transactionId": transaction}];
-    }
+    [chat setLocalUserIsTyping:isTyping];
+    os_log(logger, "Set local user is typing %d on chat %@", isTyping, chatGuid);
+    
+    [networkController sendMessage: @{@"transactionId": transaction}];
 }
 
+/// @brief Get the typing status of a chat
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "check-typing-status",
+///     "data": {
+///         "chatGuid": "<chat GUID>",
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "event": "started-typing" OR "stopped-typing"
+///     "guid": "<chat GUID>",
+/// }
+/// @endcode
 - (void)checkTypingIndicatorForChat:(NSString *)chatGuid transaction:(NSString *)transaction {
     IMChat *chat = [self getIMChatFromGuid:chatGuid transaction:transaction];
     
-    if (chat != nil) {
-        NSString *event = chat.lastIncomingMessage.isTypingMessage == YES ? @"started-typing" : @"stopped-typing";
-        
-        [networkController sendMessage: @{@"event": event, @"guid": chat.guid}];
-    }
-}
-
-- (void)handleReadStatusForChat:(NSString *)chatGuid isRead:(BOOL)isRead transaction:(NSString *)transaction {
-    IMChat *chat = [self getIMChatFromGuid:chatGuid transaction:transaction];
+    NSString *event = chat.lastIncomingMessage.isTypingMessage == YES ? @"started-typing" : @"stopped-typing";
     
-    if (chat != nil) {
-        if (isRead) {
-            [chat markAllMessagesAsRead];
-        } else {
-            [chat markLastMessageAsUnread];
-        }
-        
-        os_log(logger, "Set chat read status %d on chat %@", isRead, chatGuid);
-
-        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
-    }
+    [networkController sendMessage: @{@"event": event, @"guid": chatGuid}];
 }
 
+/// @brief Mark a chat read or unread. Marking unread requires macOS 13+
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "mark-chat-read" OR "mark-chat-unread",
+///     "data": {
+///         "chatGuid": "<chat GUID>",
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "transactionId": "<Transaction ID>",
+/// }
+- (void)handleReadStatusForChat:(NSString *)chatGuid isRead:(BOOL)isRead transaction:(NSString *)transaction {
+    CKConversation *conversation = [self getCKConversationFromGuid:chatGuid transaction:transaction];
+    
+    if (isRead) {
+        [conversation markAllMessagesAsRead];
+    } else {
+        if (@available(macOS 13.0, *)) {
+            [conversation markLastMessageAsUnread];
+        } else {
+            [NSException raise:@"IllegalCommandException" format:@"Marking chats unread requires macOS 13+"];
+        }
+    }
+    
+    os_log(logger, "Set chat read status %d on chat %@", isRead, chatGuid);
+    
+    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
+}
+
+/// @brief Set display name / title of a chat (notifies other participants in the chat)
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "set-display-name",
+///     "data": {
+///         "chatGuid": "<chat GUID>",
+///         "newName": "<new name>",
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "transactionId": "<Transaction ID>",
+/// }
 - (void)setDisplayNameForChat:(NSString *)chatGuid withData:(NSDictionary *)data transaction:(NSString *)transaction {
     NSString *newName = data[@"newName"];
     
     if (newName == nil) {
-        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Provide a new name for the chat! (newName parameter missing)"}];
-        return;
+        [NSException raise:@"MissingValueException" format:@"Provide a new name for the chat! (newName parameter)"];
     }
     
     IMChat *chat = [self getIMChatFromGuid:chatGuid transaction:transaction];
+    [chat _setDisplayName:newName];
+    
+    os_log(logger, "Set new display name '%@' on chat %@", newName, chatGuid);
+    
+    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
+}
+
+/// @brief Add/remove participants from a chat (notifies other participants in the chat)
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "add-participant" OR "remove-participant",
+///     "data": {
+///         "chatGuid": "<chat GUID>",
+///         "address": "<address (e164)>",
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "transactionId": "<Transaction ID>",
+/// }
+- (void)updateParticipantsForChat:(NSString *)chatGuid address:(NSString *)address isAdding:(BOOL)isAdding transaction:(NSString *)transaction {
+    if (address == nil) {
+        [NSException raise:@"MissingValueException" format:@"Provide an address! (address parameter)"];
+    }
+    
+    CKConversation *chat = [self getCKConversationFromGuid:chatGuid transaction:transaction];
+    
+    if (isAdding && !chat.canInsertMoreRecipients) {
+        [NSException raise:NSGenericException format:@"Cannot add more recipients to the chat!"];
+    } else if (!isAdding && chat.recipients.count == 1) {
+        [NSException raise:@"MissingValueException" format:@"Cannot remove recipients from the chat!"];
+    }
+    
+    IMHandle *handle = [[[IMAccountController sharedInstance] activeIMessageAccount] imHandleWithID:(address)];
+    
+    if (handle == nil) {
+        [NSException raise:NSGenericException format:@"Failed to find handle for provided address!"];
+    }
+    
+    if (isAdding) {
+        [chat addRecipientHandles:(@[handle])];
+    } else {
+        [chat removeRecipientHandles:(@[handle])];
+    }
+    
+    os_log(logger, "%@ participant '%@' to chat %{public}@", isAdding ? @"Added" : @"Removed", chatGuid, address);
+    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
+}
+
+/// @brief Change/remove group photo for a chat (notifies other participants in the chat).
+/// To remove the photo, do not pass the "filePath" parameter.
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "update-group-photo",
+///     "data": {
+///         "chatGuid": "<chat GUID>",
+///         "filePath": "<file path>" (OPTIONAL),
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "transactionId": "<Transaction ID>",
+/// }
+/// @endcode
+- (void)updateGroupPhotoForChat:(NSString *)chatGuid withData:(NSDictionary *)data transaction:(NSString *)transaction {
+    IMChat *chat = [self getIMChatFromGuid:chatGuid transaction:transaction];
+    
+    if (data[@"filePath"] && data[@"filePath"] != [NSNull null]) {
+        NSString *filePath = data[@"filePath"];
+        NSURL *fileUrl = [NSURL fileURLWithPath:filePath];
+        
+        CKMediaObject *mediaObject = [[CKMediaObjectManager sharedInstance] mediaObjectWithFileURL:fileUrl filename:nil transcoderUserInfo:nil];
+        [chat sendGroupPhotoUpdate:([mediaObject transferGUID])];
+    } else {
+        [chat sendGroupPhotoUpdate:nil];
+    }
+    
+    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
+}
+
+/// @brief Create a chat and send a message. Select service as iMessage or SMS (use iMessage availability endpoint to query)
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "create-chat",
+///     "data": {
+///         "addresses": ["<str array of addresses (e164)>"],
+///         "service": "iMessage" OR "SMS",
+///         <see docs for sendMessageToChat for other allowable data>
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// see docs for <sendMessageToChat> for socket response
+- (void)createChatWithData:(NSDictionary *)data transaction:(NSString *)transaction {
+    NSMutableArray<IMHandle*> *handles = [[NSMutableArray alloc] initWithArray:(@[])];
+    NSString *service = data[@"service"];
+    
+    if (service == nil) {
+        [NSException raise:@"MissingValueException" format:@"Provide a service! (service parameter)"];
+    }
+    if (!data[@"addresses"] || data[@"addresses"] == [NSNull null]) {
+        [NSException raise:@"MissingValueException" format:@"Provide a list of addresses! (addresses parameter)"];
+    }
+
+    for (NSString* str in data[@"addresses"]) {
+        IMHandle *handle;
+        if ([service isEqualToString:@"iMessage"]) {
+            handle = [[[IMAccountController sharedInstance] activeIMessageAccount] imHandleWithID:(str)];
+        } else {
+            handle = [[[IMAccountController sharedInstance] activeSMSAccount] imHandleWithID:(str)];
+        }
+
+        if (handle != nil) {
+            [handles addObject:handle];
+        } else {
+            [NSException raise:NSGenericException format:@"Failed to find handle for provided address!"];
+        }
+    }
+    
+    // necessary due to runtime checking (CKConversationList not loaded at time of dylib load)
+    Class CKConversationListClass = NSClassFromString(@"CKConversationList");
+    id list = [CKConversationListClass performSelector:@selector(sharedConversationList)];
+    CKConversation *newConvo = [list conversationForHandles:handles displayName:nil joinedChatsOnly:FALSE create:TRUE];
+    
+    [self sendMessageToChat:nil newConversationObject:newConvo withData:data transaction:transaction];
+}
+
+// TODO TEST THIS
+/// @brief Delete a chat
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "delete-chat",
+///     "data": {
+///         "chatGuid": "<chat GUID>",
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "transactionId": "<Transaction ID>",
+/// }
+/// @endcode
+- (void)deleteChat:(NSString *)chatGuid transaction:(NSString *)transaction {
+    CKConversation *chat = [self getCKConversationFromGuid:chatGuid transaction:transaction];
+    
+    // necessary due to runtime checking (CKConversationList not loaded at time of dylib load)
+    Class CKConversationListClass = NSClassFromString(@"CKConversationList");
+    id list = [CKConversationListClass performSelector:@selector(sharedConversationList)];
+    [list deleteConversation: chat];
+    
+    os_log(logger, "Deleted chat %{public}@", chatGuid);
+    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
+}
+
+/// @brief Leave a group chat
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "leave-chat",
+///     "data": {
+///         "chatGuid": "<chat GUID>",
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "transactionId": "<Transaction ID>",
+/// }
+/// @endcode
+- (void)leaveChat:(NSString *)chatGuid transaction:(NSString *)transaction {
+    IMChat *chat = [self getIMChatFromGuid: chatGuid transaction:transaction];
+    
+    if ([chat respondsToSelector:@selector(leave)]) {
+        [chat leave];
+        os_log(logger, "Left chat %{public}@ using leave method", chatGuid);
+    } else if ([chat respondsToSelector:@selector(leaveiMessageGroup)]) {
+        [chat leaveiMessageGroup];
+        os_log(logger, "Left chat %{public}@ using leaveiMessageGroup method", chatGuid);
+    } else {
+        [NSException raise:NSGenericException format:@"Failed to find selector to leave chat!"];
+    }
+    
+    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
+}
+
+// TODO TEST THIS
+/// @brief Check if nickname sharing should be offered
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "should-offer-nickname-sharing",
+///     "data": {
+///         "chatGuid": "<chat GUID>",
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "transactionId": "<Transaction ID>",
+///     "share": <BOOL>
+/// }
+/// @endcode
+- (void)shouldOfferNicknameSharingForChat:(NSString *)chatGuid transaction:(NSString *)transaction {
+    IMChat *chat = [self getIMChatFromGuid:chatGuid transaction: transaction];
+    
+    BOOL offer = [[IMNicknameController sharedInstance] shouldOfferNicknameSharingForChat:chat];
+    os_log(logger, "Chat %@ %@ offer to share nickname", chatGuid, offer ? @"should" : @"should not");
+    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"share": @(offer)}];
+}
+
+// TODO TEST THIS
+/// @brief Share or deny nickname with chat
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "share-nickname" OR "deny-nickname",
+///     "data": {
+///         "chatGuid": "<chat GUID>",
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "transactionId": "<Transaction ID>",
+/// }
+/// @endcode
+- (void)shareNicknameWithChat:(NSString *)chatGuid allow:(BOOL)allow transaction:(NSString *)transaction {
+    IMChat *chat = [self getIMChatFromGuid:chatGuid transaction: transaction];
+    
+    //    if ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion >= 11) {
+    //        [[IMNicknameController sharedInstance] whitelistHandlesForNicknameSharing:[chat participants] forChat:chat];
+    //    } else {
+    //    }
+    
+    if (allow) {
+        [[IMNicknameController sharedInstance] allowHandlesForNicknameSharing:[chat participants] forChat:chat];
+    } else {
+        [[IMNicknameController sharedInstance] denyHandlesForNicknameSharing:[chat participants]];
+    }
+    
+    os_log(logger, "%@ sharing nickname with chat %@", allow ? @"Allowed" : @"Denied", chatGuid);
+    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
+}
+
+# pragma mark Handle/User Actions
+
+/// @brief Check Focus status for a handle (DND) - requires macOS 12+
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "share-nickname" OR "deny-nickname",
+///     "data": {
+///         "chatGuid": "<chat GUID>",
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "transactionId": "<Transaction ID>",
+/// }
+/// @endcode
+- (void)checkFocusStatusForHandle:(NSString *)address transaction:(NSString *)transaction {
+    if (!@available(macOS 12.0, *)) {
+        [NSException raise:@"IllegalCommandException" format:@"Checking focus status requires macOS 12+!"];
+    }
+    IMHandle *handle = [[[IMAccountController sharedInstance] activeIMessageAccount] imHandleWithID:address];
+    
+    // necessary due to runtime checking (IMHandleAvailabilityManager doesn't exist on Big Sur)
+    Class cls = NSClassFromString(@"IMHandleAvailabilityManager");
+    id instance = [cls sharedInstance];
+    if (handle != nil && cls != nil) {
+        // 2 possible selectors, find which one to use
+        if ([instance respondsToSelector:@selector(fetchUpdatedStatusForHandle:completion:)]) {
+            [instance fetchUpdatedStatusForHandle:(handle) completion:^() {
+                [instance availabilityForHandle:(handle)];
+                
+                // after 5 seconds, the latest status should have populated from NSNotificationCenter
+                // this only works on cold start of Messages app, afterwards the notification will populate automatically within
+                // ~1-5 minutes of the status being changed
+                NSTimeInterval delayInSeconds = 5.0;
+                dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+                dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+                    NSNumber *status = handleAvailabilityStatuses[address];
+                    
+                    if (status != nil) {
+                        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"silenced": status}];
+                    } else {
+                        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"silenced": @"null"}];
+                    }
+                });
+            }];
+        } else {
+            [instance _fetchUpdatedStatusForHandle:(handle) completion:^() {
+                [instance availabilityForHandle:(handle)];
+                
+                // after 5 seconds, the latest status should have populated from NSNotificationCenter
+                // this only works on cold start of Messages app, afterwards the notification will populate automatically within
+                // ~1-5 minutes of the status being changed
+                NSTimeInterval delayInSeconds = 5.0;
+                dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+                dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
+                    NSNumber *status = handleAvailabilityStatuses[address];
+                    
+                    if (status != nil) {
+                        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"silenced": status}];
+                    } else {
+                        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"silenced": @"null"}];
+                    }
+                });
+            }];
+        }
+    }
+}
+
+/// @brief Check iMessage or FaceTime availability for a handle address
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "check-imessage-availability" OR "check-facetime-availability",
+///     "data": {
+///         "address": "<e164 phone number or email>",
+///         "aliasType": "phone" OR "email",
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "available": 1 OR 0,
+///     "transactionId": "<Transaction ID>",
+/// }
+/// @endcode
+- (void)checkServiceAvailabilityForHandle:(NSString *)address addressType:(NSString *)type event:(NSString *)event transaction:(NSString *)transaction {
+    NSString* serviceName;
+    if ([event isEqualToString:@"check-imessage-availability"]) {
+        serviceName = IDSServiceNameiMessage;
+    } else if ([event isEqualToString:@"check-facetime-availability"]) {
+        serviceName = IDSServiceNameFaceTime;
+    }
+    
+    IDSDestination *destination;
+    if ([type isEqualToString:@"phone"]) {
+        destination = IDSCopyIDForPhoneNumber((__bridge CFStringRef) address);
+    } else {
+        destination = IDSCopyIDForEmailAddress((__bridge CFStringRef) address);
+    }
+    
+    [[IDSIDQueryController sharedInstance] forceRefreshIDStatusForDestinations:(@[destination]) service:(serviceName) listenerID:(@"SOIDSListener-com.apple.imessage-rest") queue:(dispatch_queue_create("HandleIDS", NULL)) completionBlock:^(NSDictionary *response) {
+        NSInteger status = [response.allValues.firstObject integerValue];
+        BOOL available = status == 1;
+        os_log(logger, "%@ for %{public}@ is %{public}ld", event, address, (long)available);
+        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"available": @(available)}];
+    }];
+}
+
+/// @brief Get nickname info for handle address
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "get-nickname-info",
+///     "data": {
+///         "address": "<e164 phone number or email>",
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "name": "<nickname>",
+///     "avatar_path": "<absolute path to user avatar>",
+///     "transactionId": "<Transaction ID>",
+/// }
+/// @endcode
+- (void)getNicknameInfoForHandle:(NSString *)address transaction:(NSString *)transaction {
+    NSString *name;
+    NSString *avatarPath;
+    
+    if (address == nil) {
+        name = [[[IMNicknameController sharedInstance] personalNickname] displayName];
+        avatarPath = [[[[IMNicknameController sharedInstance] personalNickname] avatar] imageFilePath];
+    } else {
+        IMHandle *handle = [[[IMAccountController sharedInstance] activeIMessageAccount] imHandleWithID:address];
+        IMNickname *nickname = [[IMNicknameController sharedInstance] nicknameForHandle:(handle)];
+        name = [nickname displayName];
+        avatarPath = [[nickname avatar] imageFilePath];
+    }
+    
+    if (transaction != nil) {
+        NSDictionary *data = @{
+            @"transactionId": transaction,
+            @"name": name ?: [NSNull null],
+            @"avatar_path": avatarPath ?: [NSNull null],
+        };
+        [[NetworkController sharedInstance] sendMessage:data];
+    }
+}
+
+#pragma mark Account Actions
+
+/// @brief Check if current account is enabled (active, registered, operational, and connected)
+///
+/// @return TRUE/FALSE.
+- (BOOL)isAccountEnabled {
+    IMAccount *account = [[IMAccountController sharedInstance] activeIMessageAccount];
+    return [account isActive] && [account isRegistered] && [account isOperational] && [account isConnected];
+}
+
+/// @brief Get vetted aliases for current account
+///
+/// @return Arrray of vetted aliases with format below:
+///
+/// @code
+/// {
+///     "Alias": "<account alias (phone number or email)>",
+/// }
+/// @endcode
+- (NSMutableArray *)getAliasesWithVettedOnly:(BOOL)vetted {
+    if ([self isAccountEnabled]) {
+        IMAccount *account = [[IMAccountController sharedInstance] activeIMessageAccount];
+        NSArray* aliases = @[];
+        if (vetted) {
+            aliases = [account vettedAliases];
+        } else {
+            aliases = [account aliases];
+        }
+        
+        NSMutableArray* returnedAliases = [[NSMutableArray alloc] init];
+        for (NSObject* alias in aliases) {
+            NSDictionary* info = [account _aliasInfoForAlias:(alias)];
+            if (info == nil) {
+                [returnedAliases addObject: @{@"Alias": alias}];
+            } else {
+                [returnedAliases addObject: info];
+            }
+        }
+        
+        return returnedAliases;
+    } else {
+        os_log_error(logger, "Can't get aliases - account not enabled!");
+        return [[NSMutableArray alloc] init];
+    }
+    return [[NSMutableArray alloc] init];
+}
+
+/// @brief Get account info for current account
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "get-account-info",
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// see {data} dictionary below
+- (void)getAccountInfoWithTransaction:(NSString *)transaction {
+    IMAccountController *controller = [IMAccountController sharedInstance];
+    IMAccount *account = [controller activeIMessageAccount];
+    IMAccount *smsAccount = [controller activeSMSAccount];
+    
+    NSDictionary *data = @{
+        @"transactionId": transaction,
+        @"apple_id": [account strippedLogin] ?: [NSNull null],
+        @"account_name": [[account loginIMHandle] fullName] ?: [NSNull null],
+        @"sms_forwarding_enabled": [NSNumber numberWithBool:[smsAccount allowsSMSRelay] ?: FALSE],
+        @"sms_forwarding_capable": [NSNumber numberWithBool:[smsAccount isSMSRelayCapable] ?: FALSE],
+        @"vetted_aliases": [self getAliasesWithVettedOnly:true],
+        @"aliases": [self getAliasesWithVettedOnly:false],
+        @"login_status_message": [account loginStatusMessage] ?: [NSNull null],
+        @"active_alias": [account displayName] ?: [NSNull null]
+    };
+    [[NetworkController sharedInstance] sendMessage: data];
+}
+
+/// @brief Set default alias for account
+///
+/// @return Sends socket message.
+///
+/// SOCKET MESSAGE:
+/// @code
+/// {
+///     "action": "modify-active-alias",
+///     "data": {
+///         "address": "<e164 phone number or email>",
+///     },
+///     "transactionId": "<transaction ID>",
+/// }
+/// @endcode
+///
+/// SOCKET RESPONSE:
+/// @code
+/// {
+///     "transactionId": "<Transaction ID>",
+/// }
+/// @endcode
+- (void)changeActiveAliasToAddress:(NSString *)alias transaction:(NSString *)transaction {
+    if ([self isAccountEnabled]) {
+        IMAccountController *controller = [IMAccountController sharedInstance];
+        IMAccount *account = [controller activeIMessageAccount];
+        [account setDisplayName:alias];
+        
+        os_log(logger, "Set active alias to %@", alias);
+        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
+    } else {
+        os_log_error(logger, "Can't set aliases - account not enabled!");
+        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Unable to modify aliases, account not enabled"}];
+    }
+}
+
+# pragma mark Message Actions
+
+- (void)sendMessageToChat:(NSString *)chatGuid newConversationObject:(CKConversation *)convo withData:(NSDictionary *)data transaction:(NSString *)transaction {
+    // not creating a new chat (use existing guid)
+    if (convo == nil) {
+        convo = [self getCKConversationFromGuid:chatGuid transaction:transaction];
+    }
+    
+    // audio messages have a simpler pipeline
+    if (data[@"isAudioMessage"] && data[@"isAudioMessage"] != [NSNull null] && [data[@"isAudioMessage"] integerValue] == 1) {
+        NSString *filePath = data[@"filePath"];
+        NSURL * fileUrl = [NSURL fileURLWithPath:filePath];
+        
+        CKMediaObject *mediaObject = [[CKMediaObjectManager sharedInstance] mediaObjectWithFileURL:fileUrl filename:nil transcoderUserInfo:nil];
+        CKComposition* composition = [CKComposition audioCompositionWithMediaObject:mediaObject];
+        IMMessage* newMessage = [convo messageWithComposition:composition];
+        [convo sendMessage:newMessage newComposition:YES];
+        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"identifier": [newMessage guid]}];
+        return;
+    }
+    
+    // add subject, if needed
+    NSAttributedString *subjectAttributedString = nil;
+    if (data[@"subject"] && data[@"subject"] != [NSNull null] && [data[@"subject"] length] != 0) {
+        subjectAttributedString = [[NSAttributedString alloc] initWithString: data[@"subject"]];
+    }
+    
+    // initialize with an empty string (helps for multipart messages)
+    CKComposition *composition = [[CKComposition alloc] initWithText:[[NSAttributedString alloc] initWithString:@""] subject:subjectAttributedString];
+    
+    if (data[@"parts"] && data[@"parts"] != [NSNull null]) {
+        // if multipart, add the parts in the specified order
+        for (NSDictionary *dict in data[@"parts"]) {
+            if (dict[@"filePath"] != [NSNull null] && [dict[@"filePath"] length] != 0) {
+                // add attachemnt objects
+                NSString *filePath = dict[@"filePath"];
+                NSURL * fileUrl = [NSURL fileURLWithPath:filePath];
+                CKMediaObject *mediaObject = [[CKMediaObjectManager sharedInstance] mediaObjectWithFileURL:fileUrl filename:nil transcoderUserInfo:nil];
+                
+                composition = [composition compositionByAppendingMediaObject:mediaObject];
+            } else {
+                // add text objects (with mentions if needed)
+                NSMutableAttributedString *messageStr = [[NSMutableAttributedString alloc] initWithString: dict[@"text"]];
+                if (dict[@"mention"] != [NSNull null] && [dict[@"mention"] length] != 0) {
+                    [messageStr addAttributes:@{
+                        @"__kIMMentionConfirmedMention": dict[@"mention"],
+                    } range:NSMakeRange(0, [[messageStr string] length])];
+                }
+                // TODO probably need to combine back-to-back attributed strings into one, cannot append
+                composition = [composition compositionByAppendingText:[messageStr copy]];
+            }
+        }
+    } else {
+        // if normal message, attachments should appear before the message string
+        if (data[@"filePath"] && data[@"filePath"] != [NSNull null]) {
+            NSString *filePath = data[@"filePath"];
+            NSURL * fileUrl = [NSURL fileURLWithPath:filePath];
+            CKMediaObject *mediaObject = [[CKMediaObjectManager sharedInstance] mediaObjectWithFileURL:fileUrl filename:nil transcoderUserInfo:nil];
+            
+            composition = [composition compositionByAppendingMediaObject:mediaObject];
+        }
+        
+        // Attachments will not have the message parameter provided, so set an empty string
+        NSString *message = (data[@"message"] && data[@"message"] != [NSNull null]) ? data[@"message"] : @"";
+        NSAttributedString *attributedString = [[NSAttributedString alloc] initWithString: message];
+        composition = [composition compositionByAppendingText:attributedString];
+    }
+    
+    // Effects
+    if (data[@"effectId"] && data[@"effectId"] != [NSNull null] && [data[@"effectId"] length] != 0) {
+        [composition setExpressiveSendStyleID:data[@"effectId"]];
+    }
+    
+    IMMessage* newMessage = [convo messageWithComposition:composition];
+    
+    // Replies (macOS 13+)
+    // TODO FIX ISSUE OF REPLYING TO EXISTING THREAD ON MULTIPART MSG SHOWS ON THE FIRST PART NOT ON THE SPECIFIED ONE
+    if (data[@"selectedMessageGuid"] && data[@"selectedMessageGuid"] != [NSNull null]) {
+        [self getIMMessagePartChatItemFromGuid:data[@"selectedMessageGuid"] atPartIndex:[data[@"partIndex"] unsignedIntValue] completionBlock:^(IMMessagePartChatItem *chatItem) {
+            NSString *identifier;
+            IMMessage *originator;
+            // if an existing thread exists, use it's thread identifier, otherwise create a new one
+            if (chatItem.threadIdentifier != nil) {
+                identifier = chatItem.threadIdentifier;
+                originator = [chatItem.threadOriginator message];
+            } else if (chatItem != nil) {
+                identifier = IMCreateThreadIdentifierForMessagePartChatItem(chatItem);
+                originator = [chatItem message];
+            }
+            
+            os_log(logger, "Got thread identifier: %@\r\nthread originator: %@", identifier, originator);
+            
+            newMessage.threadIdentifier = identifier;
+            newMessage.threadOriginator = originator;
+            
+            [convo sendMessage:newMessage newComposition:YES];
+            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"identifier": [newMessage guid]}];
+        }];
+    // Normal message
+    } else {
+        [convo sendMessage:newMessage newComposition:YES];
+        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"identifier": [newMessage guid]}];
+    }
+}
+
+- (void)sendTapbackToChat:(NSString *)chatGuid withData:(NSDictionary *)data transaction:(NSString *)transaction {
+    IMChat *chat = [self getIMChatFromGuid:chatGuid transaction:transaction];
+    
     if (chat != nil) {
-        [chat _setDisplayName:newName];
+        [self getIMMessagePartChatItemFromGuid:data[@"selectedMessageGuid"] atPartIndex:[data[@"partIndex"] unsignedIntValue] completionBlock:^(IMMessagePartChatItem *chatItem) {
+            // make a "fake" CKChatItem so the [chat sendTapback] or [chat sendMessageAcknowledgment] selectors can be used
+            CKChatItem *ckChatItem = nil;
+            if ([CKChatItem respondsToSelector:@selector(chatItemWithIMChatItem:balloonMaxWidth:)]) {
+                ckChatItem = [CKChatItem chatItemWithIMChatItem:chatItem balloonMaxWidth:100];
+            } else {
+                ckChatItem = [CKChatItem chatItemWithIMChatItem:chatItem balloonMaxWidth:100 fullMaxWidth:100 transcriptTraitCollection:nil overlayLayout:FALSE];
+            }
+
+            // emoji tapbacks (macOS 26+)
+            if ([data[@"reactionType"] containsString:@"emoji"]) {
+                // necessary due to runtime checking (IMEmojiTapback only exists on macOS 26+)
+                Class IMEmojiTapbackClass = NSClassFromString(@"IMEmojiTapback");
+                id instance = [IMEmojiTapbackClass alloc];
+                id tapback = [instance initWithEmoji:data[@"reactionEmoji"] isRemoved:[data[@"reactionType"] containsString:@"-"]];
+                [chat sendTapback:tapback forChatItem:ckChatItem];
+            // normal tapbacks
+            } else {
+                long long reactionLong = [self parseReactionType:data[@"reactionType"]];
+                [chat sendMessageAcknowledgment:reactionLong forChatItem:ckChatItem];
+            }
+            
+            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"identifier": [[chat lastSentMessage] guid]}];
+        }];
+    }
+}
+
+- (void)editMessageInChat:(NSString *)chatGuid withData:(NSDictionary *)data transaction:(NSString *)transaction {
+    [self getIMMessageFromGuid:data[@"messageGuid"] completionBlock:^(IMMessage *message) {
+        IMMessageItem *imMessageItem = message._imMessageItem;
+
+        NSAttributedString *editedString = [[NSAttributedString alloc] initWithString: data[@"editedMessage"]];
+        NSInteger partIndex = [data[@"partIndex"] integerValue];
+        CKComposition* composition = [[CKComposition alloc] initWithText:editedString subject:nil];
         
-        os_log(logger, "Set new display name '%@' on chat %@", newName, chatGuid);
+        CKConversation* convo = [self getCKConversationFromGuid:chatGuid transaction:transaction];
+        if (convo != nil) {
+            if ([convo respondsToSelector:@selector(editMessageItem:partIndex:withNewComposition:)]) {
+                [convo editMessageItem:imMessageItem partIndex:partIndex withNewComposition:composition];
+            } else {
+                [convo editMessage:message partIndex:partIndex withNewComposition:composition];
+            }
+            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
+        }
+    }];
+}
+
+- (void)unsendMessageInChat:(NSString *)chatGuid withData:(NSDictionary *)data transaction:(NSString *)transaction {
+    [self getIMMessagePartChatItemFromGuid:data[@"messageGuid"] atPartIndex:[data[@"partIndex"] unsignedIntValue] completionBlock:^(IMMessagePartChatItem *chatItem) {
+        CKConversation* convo = [self getCKConversationFromGuid:chatGuid transaction:transaction];
+        if (convo != nil) {
+            [convo retractMessagePart:chatItem];
+            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
+        }
+    }];
+}
+
+// TODO TEST THIS
+- (void)forceNotifyMessageInChat:(NSString *)chatGuid withData:(NSDictionary *)data transaction:(NSString *)transaction {
+    IMChat *chat = [self getIMChatFromGuid:chatGuid transaction:transaction];
+    
+    if (chat != nil) {
+        [self getIMMessagePartChatItemFromGuid:data[@"messageGuid"] atPartIndex:0 completionBlock:^(IMMessagePartChatItem *chatItem) {
+            [chat markChatItemAsNotifyRecipient:chatItem];
+            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
+        }];
+    }
+}
+
+// TODO TEST THIS
+- (void)deleteMessageInChat:(NSString *)chatGuid withData:(NSDictionary *)data transaction:(NSString *)transaction {
+    [self getIMMessageFromGuid:data[@"messageGuid"] completionBlock:^(IMMessage *message) {
+        CKConversation *convo = [self getCKConversationFromGuid:chatGuid transaction:transaction];
+        CKChatController *controller = [self getCKChatControllerFromConversation:convo transaction:transaction];
         
+        IMMessageItem *imMessageItem = message._imMessageItem;
+        // This can be an array, or a singular IMMessagePartChatItem
+        NSObject *chatItems = imMessageItem._newChatItems;
+        
+        if ([chatItems isKindOfClass:[NSArray class]]) {
+            for (NSObject *chatItem in (NSArray *)chatItems) {
+                [controller deleteChatItem:chatItem];
+            }
+        } else {
+            [controller deleteChatItem:chatItems];
+        }
+        
+        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
+    }];
+}
+
+- (void)searchMessagesWithQuery:(NSString *)searchQuery matchType:(NSString *)matchType transaction:(NSString *)transaction {
+    // c -> Performs a case-insensitive search.
+    // d -> Performs a search that ignores diacritical marks.
+    // w -> Matches on word boundaries. This modifier treats transitions from lowercase to uppercase as word boundaries.
+    // t -> Performs a search on a tokenized value. For example, a search field can contain tokenized values.
+    NSString *queryString = [NSString stringWithFormat:@"kMDItemTextContent=\"%@\"cwdt", searchQuery];
+    
+    // When "t" is used, the tokens do not need to match the order provided.
+    // That's why when the matchType is exact, we exclude it.
+    // I'm not sure how to do a true exact match query.
+    if ([matchType isEqualToString:@"exact"]) {
+        queryString = [NSString stringWithFormat:@"kMDItemTextContent=\"%@\"cwd", searchQuery];
+    }
+    
+    if (!@available(macOS 13.0, *)) {
+        os_log_error(logger, "Message searching is not supported before macOS 13.0!");
+        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Message searching is not supported before macOS 13"}];
+        return;
+    }
+    
+    CSSearchQueryContext *queryContext = [[CSSearchQueryContext alloc] init];
+    // attributes.uniqueIdentifier -> Message GUID
+    // attributes.domainIdentifier -> Chat GUID
+    // attributes.displayName -> Group Chat Name (null if none)
+    // Leaving empty unless we want something specific...
+    queryContext.fetchAttributes = @[];
+    CSSearchQuery *query = [[CSSearchQuery alloc] initWithQueryString:queryString queryContext:queryContext];
+
+    NSMutableArray<NSString *> *results = [NSMutableArray array];
+    query.foundItemsHandler = ^(NSArray<CSSearchableItem *> * _Nonnull items) {
+        for (CSSearchableItem *item in items) {
+            // Add the unique identifier to the results array
+            [results addObject:item.uniqueIdentifier];
+        }
+    };
+    
+    query.completionHandler = ^(NSError * _Nullable error) {
+        if (error) {
+            os_log_error(logger, "Message search error: %@", error.localizedDescription);
+            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": error.localizedDescription}];
+        } else {
+            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"results": results}];
+        }
+    };
+    
+    [query start];
+}
+
+// TODO TEST THIS
+- (void)downloadPurgedAttachment:(NSString *)attachmentGuid transaction:(NSString *)transaction {
+    IMFileTransfer* transfer = [[IMFileTransferCenter sharedInstance] transferForGUID:attachmentGuid];
+    
+    if ([transfer transferState] != 0 || ![transfer isIncoming]) {
+        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"No need to unpurge!"}];
+    } else {
+        [[IMFileTransferCenter sharedInstance] registerTransferWithDaemon:[transfer guid]];
+        [[IMFileTransferCenter sharedInstance] acceptTransfer:[transfer guid]];
         [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
     }
 }
 
-- (void)updateParticipantsForChat:(NSString *)chatGuid withData:(NSDictionary *)data isAdding:(BOOL)isAdding transaction:(NSString *)transaction {
-    NSString *address = data[@"address"];
-    
-    if (address == nil) {
-        [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Provide an address to update!"}];
-        return;
-    }
-    
-    CKConversation *chat = [self getCKConversationFromGuid:chatGuid transaction:transaction];
-    if (chat != nil) {
-        if (isAdding && !chat.canInsertMoreRecipients) {
-            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Unable to add more recipients!"}];
-            return;
-        }
-        
-        IMHandle *handle = [[[IMAccountController sharedInstance] activeIMessageAccount] imHandleWithID:(address)];
-        
-        if (handle != nil) {
-            if (isAdding) {
-                [chat addRecipientHandles:(@[handle])];
-            } else {
-                [chat removeRecipientHandles:(@[handle])];
+// TODO TEST THIS
+- (void)getBalloonBundleMediaPathForMessage:(NSString *)messageGuid transaction:(NSString *)transaction {
+    [self getIMMessagePartChatItemFromGuid:messageGuid atPartIndex:0 completionBlock:^(IMMessagePartChatItem *chatItem) {
+        // balloon items will only be an IMTranscriptPluginChatItem
+        if ([chatItem isKindOfClass:[IMTranscriptPluginChatItem class]]) {
+            NSObject *dataSource = [(IMTranscriptPluginChatItem *)chatItem dataSource];
+            // The data source is this weird class, no idea what framework its from. Class methods dumped via _methodDescription on cls
+            Class digitalTouchClass = NSClassFromString(@"ETiOSMacBalloonPluginDataSource");
+            Class handwrittenClass = NSClassFromString(@"HWiOSMacBalloonDataSource");
+            if ([dataSource isKindOfClass:digitalTouchClass]) {
+                ETiOSMacBalloonPluginDataSource *digitalTouch = (ETiOSMacBalloonPluginDataSource *)dataSource;
+                // Force iMessage to generate the .mov and return the path
+                [digitalTouch generateMedia:^() {
+                    NSString *path = [(NSURL *)[digitalTouch assetURL] absoluteString];
+                    os_log(logger, "Digital Touch generated at path: %@", path);
+                    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"path": path}];
+                }];
+            } else if ([dataSource isKindOfClass:handwrittenClass]) {
+                HWiOSMacBalloonDataSource *digitalTouch = (HWiOSMacBalloonDataSource *)dataSource;
+                CGSize size = [digitalTouch sizeThatFits:CGSizeMake(300, 300)];
+                [digitalTouch generateImageForSize:size completionHandler:^(NSObject *url) {
+                    NSString *path = [(NSURL *)url absoluteString];
+                    os_log(logger, "Handwritten Message generated at path: %@", path);
+                    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"path": path}];
+                }];
             }
-            
-            os_log(logger, "%@ participant '%@' to chat %{public}@", isAdding ? @"Added" : @"Removed", chatGuid, address);
-            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
-        } else {
-            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Failed to find handle!"}];
-            os_log(logger, "Failed to find handle '%@' (%@ participant)", address, isAdding ? @"add" : @"remove");
         }
-    }
+    }];
 }
 
+# pragma mark Helpers
+
 -(void) handleServerEvent: (NSString*)event data: (NSDictionary*)data transactionId: (NSString*)transaction {
+    if (data == nil) {
+        data = [[NSDictionary alloc] init];
+    }
     NSString *chatGuid = data[@"chatGuid"];
+    NSString *handle = data[@"address"];
+    
+    if (transaction == nil) {
+        os_log_error(logger, "[WARNING] No transaction ID provided! Creating empty transaction...");
+        transaction = @"";
+    }
     
     if ([event isEqualToString:@"start-typing"]) {
         [self handleTypingIndicatorForChat:chatGuid isTyping:YES transaction:transaction];
@@ -290,473 +1320,55 @@ static NSMutableArray* vettedAliases;
         [self handleReadStatusForChat:chatGuid isRead:NO transaction:transaction];
     } else if ([event isEqualToString:@"set-display-name"]) {
         [self setDisplayNameForChat:chatGuid withData:data transaction:transaction];
-    } else if ([event isEqualToString:@"add-participant"]) {
-        [self updateParticipantsForChat:chatGuid withData:data isAdding:YES transaction:transaction];
-    } else if ([event isEqualToString:@"remove-participant"]) {
-        [self updateParticipantsForChat:chatGuid withData:data isAdding:NO transaction:transaction];
-    } 
-    
-    if ([event isEqualToString:@"send-message"] || [event isEqualToString:@"send-reaction"]) {
-        [BlueBubblesHelper sendMessage:(data) transfers:nil attributedString:nil transaction:(transaction)];
-    // If the server tells us to edit a message
-    } else if ([event isEqualToString:@"edit-message"]) {
-        IMChat *chat = [self getIMChatFromGuid: data[@"chatGuid"] transaction: transaction];
-
-        if (chat == nil) {
-            return;
-        }
-
-        [BlueBubblesHelper getMessageItem:(chat) :(data[@"messageGuid"]) completionBlock:^(IMMessage *message) {
-            if (message == nil) {
-                DLog("BLUEBUBBLESHELPER: Edit failed - message is nil");
-                return;
-            }
-
-            NSMutableAttributedString *editedString = [[NSMutableAttributedString alloc] initWithString: data[@"editedMessage"]];
-            NSMutableAttributedString *bcString = [[NSMutableAttributedString alloc] initWithString: data[@"backwardsCompatibilityMessage"]];
-            NSInteger partIndex = [data[@"partIndex"] integerValue];
-
-            @try {
-                IMMessageItem *messageItem = (IMMessageItem *)message._imMessageItem;
-
-                // Try Tahoe method first (has newPartTranslation parameter)
-                SEL tahoeSel = @selector(editMessageItem:atPartIndex:withNewPartText:newPartTranslation:backwardCompatabilityText:);
-                if ([chat respondsToSelector:tahoeSel]) {
-                    [chat editMessageItem:(messageItem) atPartIndex:((long)partIndex) withNewPartText:(editedString) newPartTranslation:nil backwardCompatabilityText:(bcString)];
-                    DLog("BLUEBUBBLESHELPER: Edit succeeded with editMessageItem (newPartTranslation)");
-                }
-                // Try macOS 14+ method
-                else if ([chat respondsToSelector:@selector(editMessageItem:atPartIndex:withNewPartText:backwardCompatabilityText:)]) {
-                    [chat editMessageItem:(messageItem) atPartIndex:((long)partIndex) withNewPartText:(editedString) backwardCompatabilityText:(bcString)];
-                    DLog("BLUEBUBBLESHELPER: Edit succeeded with editMessageItem");
-                }
-                // Try older method
-                else if ([chat respondsToSelector:@selector(editMessage:atPartIndex:withNewPartText:backwardCompatabilityText:)]) {
-                    [chat editMessage:(message) atPartIndex:(partIndex) withNewPartText:(editedString) backwardCompatabilityText:(bcString)];
-                    DLog("BLUEBUBBLESHELPER: Edit succeeded with editMessage");
-                } else {
-                    DLog("BLUEBUBBLESHELPER: No edit selector found");
-                }
-            } @catch (NSException *e) {
-                DLog("BLUEBUBBLESHELPER: Edit message exception: %@", e);
-            }
-        }];
-
-        if (transaction != nil) {
-            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
-        }
-    // If the server tells us to unsend a message
-    } else if ([event isEqualToString:@"unsend-message"]) {
-        IMChat *chat = [self getIMChatFromGuid: data[@"chatGuid"] transaction: transaction];
-
-        [BlueBubblesHelper getMessageItem:(chat) :(data[@"messageGuid"]) completionBlock:^(IMMessage *message) {
-            IMMessageItem *messageItem = (IMMessageItem *)message._imMessageItem;
-            NSObject *items = messageItem._newChatItems;
-            IMMessagePartChatItem *item;
-            // sometimes items is an array so we need to account for that
-            if ([items isKindOfClass:[NSArray class]]) {
-                for (IMMessagePartChatItem *i in (NSArray *) items) {
-                    // IMAggregateAttachmentMessagePartChatItem is a photo gallery and has subparts
-                    // Only available Monterey+, use reference to class loaded at runtime to avoid crashes on Big Sur
-                    Class cls = NSClassFromString(@"IMAggregateAttachmentMessagePartChatItem");
-                    if ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion > 11 && [i isKindOfClass:cls]) {
-                        IMAggregateAttachmentMessagePartChatItem *aggregate = i;
-                        for (IMMessagePartChatItem *i2 in [aggregate aggregateAttachmentParts]) {
-                            if ([i2 index] == [data[@"partIndex"] integerValue]) {
-                                item = i2;
-                                break;
-                            }
-                        }
-                    } else {
-                        if ([i index] == [data[@"partIndex"] integerValue]) {
-                            item = i;
-                            break;
-                        }
-                    }
-                }
-            } else {
-                item = (IMMessagePartChatItem *)items;
-            }
-
-            [chat retractMessagePart:(item)];
-        }];
-
-        if (transaction != nil) {
-            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
-        }
-    // If the server tells us to mark a chat as read
-    } else if ([event isEqualToString:@"update-chat-pinned"]) {
-        IMChat *chat = [self getIMChatFromGuid: data[@"chatGuid"] transaction: transaction];
-        if (!chat.isPinned) {
-            NSArray* arr = [[[IMPinnedConversationsController sharedInstance] pinnedConversationIdentifierSet] array];
-            NSMutableArray<NSString*>* chatArr = [[NSMutableArray alloc] initWithArray:(arr)];
-            [chatArr addObject:(chat.pinningIdentifier)];
-            NSArray<NSString*>* finalArr = [chatArr copy];
-            IMPinnedConversationsController* controller = [IMPinnedConversationsController sharedInstance];
-            [controller setPinnedConversationIdentifiers:(finalArr) withUpdateReason:(@"contextMenu")];
-        } else {
-            NSArray* arr = [[[IMPinnedConversationsController sharedInstance] pinnedConversationIdentifierSet] array];
-            NSMutableArray<NSString*>* chatArr = [[NSMutableArray alloc] initWithArray:(arr)];
-            [chatArr removeObject:(chat.pinningIdentifier)];
-            NSArray<NSString*>* finalArr = [chatArr copy];
-            IMPinnedConversationsController* controller = [IMPinnedConversationsController sharedInstance];
-            [controller setPinnedConversationIdentifiers:(finalArr) withUpdateReason:(@"contextMenu")];
-        }
-    // If the server tells us to create a chat
-    } else if ([event isEqualToString:@"create-chat"]) {
-        NSMutableArray<IMHandle*> *handles = [[NSMutableArray alloc] initWithArray:(@[])];
-        BOOL failed = false;
-        for (NSString* str in data[@"addresses"]) {
-            IMHandle *handle;
-            if ([data[@"service"] isEqualToString:@"iMessage"]) {
-                handle = [[[IMAccountController sharedInstance] activeIMessageAccount] imHandleWithID:(str)];
-            } else {
-                handle = [[[IMAccountController sharedInstance] activeSMSAccount] imHandleWithID:(str)];
-            }
-
-            if (handle != nil) {
-                [handles addObject:handle];
-            } else {
-                failed = true;
-                break;
-            }
-        }
-
-        if (failed) {
-            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Failed to find all handles for specified service!"}];
-            return;
-        }
-
-        IMChat *chat;
-        if (handles.count > 1) {
-            chat = [[IMChatRegistry sharedInstance] chatForIMHandles:(handles)];
-        } else {
-            chat = [[IMChatRegistry sharedInstance] chatForIMHandle:(handles[0])];
-        }
-        NSMutableDictionary *mutableData = [[NSMutableDictionary alloc] initWithDictionary:data];
-        [mutableData setValue:[chat guid] forKey:@"chatGuid"];
-        [BlueBubblesHelper sendMessage:(mutableData) transfers:nil attributedString:nil transaction:(transaction)];
-    // If server tells us to delete a chat
-    } else if ([event isEqualToString:@"delete-chat"]) {
-        IMChat *chat = [self getIMChatFromGuid: data[@"chatGuid"] transaction: transaction];
-
-        if (chat != nil) {
-            [[IMChatRegistry sharedInstance] _chat_remove:(chat)];
-            if (transaction != nil) {
-                [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
-            }
-        }
-    // If server tells us to delete a message
-    } else if ([event isEqualToString:@"delete-message"]) {
-        IMChat *chat = [self getIMChatFromGuid: data[@"chatGuid"] transaction: transaction];
-
-        if (chat != nil) {
-            [BlueBubblesHelper getMessageItem:(chat) :(data[@"messageGuid"]) completionBlock:^(IMMessage *message) {
-                IMMessageItem *messageItem = (IMMessageItem *)message._imMessageItem;
-                NSObject *items = messageItem._newChatItems;
-                IMMessagePartChatItem *item;
-                // sometimes items is an array so we need to account for that
-                if ([items isKindOfClass:[NSArray class]]) {
-                    [chat deleteChatItems:(items)];
-                } else {
-                    [chat deleteChatItems:(@[items])];
-                }
-            }];
-
-            if (transaction != nil) {
-                [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
-            }
-        }
-    // If the server tells us to send a single attachment
-    } else if ([event isEqualToString:@"send-attachment"]) {
-        NSString *filePath = data[@"filePath"];
-        NSURL * fileUrl = [NSURL fileURLWithPath:filePath];
-        IMFileTransfer* fileTransfer = [BlueBubblesHelper prepareFileTransferForAttachment:fileUrl filename:[fileUrl lastPathComponent]];
-        NSMutableAttributedString *attachmentStr = [[NSMutableAttributedString alloc] initWithString: @"\ufffc"];
-        [attachmentStr addAttributes:@{
-            @"__kIMBaseWritingDirectionAttributeName": @"-1",
-            @"__kIMFileTransferGUIDAttributeName": fileTransfer.guid,
-            @"__kIMFilenameAttributeName": [fileUrl lastPathComponent],
-            @"__kIMMessagePartAttributeName": @0,
-        } range:NSMakeRange(0, 1)];
-        [BlueBubblesHelper sendMessage:(data) transfers:@[[fileTransfer guid]] attributedString:attachmentStr transaction:(transaction)];
-    // If the server tells us to send a single attachment
-    } else if ([event isEqualToString:@"send-multipart"]) {
-        NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString: @""];
-        NSMutableArray<NSString*> *transfers = [[NSMutableArray alloc] init];
-        for (NSDictionary *dict in data[@"parts"]) {
-            NSUInteger index = [dict[@"partIndex"] integerValue];
-            if (dict[@"filePath"] != [NSNull null] && [dict[@"filePath"] length] != 0) {
-                NSString *filePath = dict[@"filePath"];
-                NSURL * fileUrl = [NSURL fileURLWithPath:filePath];
-                IMFileTransfer* fileTransfer = [BlueBubblesHelper prepareFileTransferForAttachment:fileUrl filename:[fileUrl lastPathComponent]];
-                [transfers addObject:[fileTransfer guid]];
-                NSMutableAttributedString *attachmentStr = [[NSMutableAttributedString alloc] initWithString: @"\ufffc"];
-                [attachmentStr addAttributes:@{
-                    @"__kIMBaseWritingDirectionAttributeName": @"-1",
-                    @"__kIMFileTransferGUIDAttributeName": fileTransfer.guid,
-                    @"__kIMFilenameAttributeName": [fileUrl lastPathComponent],
-                    @"__kIMMessagePartAttributeName": [NSNumber numberWithInt:index],
-                } range:NSMakeRange(0, 1)];
-                [attributedString appendAttributedString:attachmentStr];
-            } else {
-                if (dict[@"mention"] != [NSNull null] && [dict[@"mention"] length] != 0) {
-                    NSMutableAttributedString *mentionStr = [[NSMutableAttributedString alloc] initWithString: dict[@"text"]];
-                    [mentionStr addAttributes:@{
-                        @"__kIMBaseWritingDirectionAttributeName": @"-1",
-                        @"__kIMMentionConfirmedMention": dict[@"mention"],
-                        @"__kIMMessagePartAttributeName": [NSNumber numberWithInt:index],
-                    } range:NSMakeRange(0, [[mentionStr string] length])];
-                    [attributedString appendAttributedString:mentionStr];
-                } else {
-                    NSMutableAttributedString *messageStr = [[NSMutableAttributedString alloc] initWithString: dict[@"text"]];
-                    [messageStr addAttributes:@{
-                        @"__kIMBaseWritingDirectionAttributeName": @"-1",
-                        @"__kIMMessagePartAttributeName": [NSNumber numberWithInt:index],
-                    } range:NSMakeRange(0, [[messageStr string] length])];
-                    [attributedString appendAttributedString:messageStr];
-                }
-            }
-        }
-        [BlueBubblesHelper sendMessage:(data) transfers:[transfers copy] attributedString:attributedString transaction:(transaction)];
-    // If the server wants to get media for a balloon bundle item
-    } else if ([event isEqualToString:@"balloon-bundle-media-path"]) {
-        IMChat *chat = [self getIMChatFromGuid: data[@"chatGuid"] transaction: transaction];
-
-        [BlueBubblesHelper getMessageItem:(chat) :(data[@"messageGuid"]) completionBlock:^(IMMessage *message) {
-            IMMessageItem *messageItem = (IMMessageItem *)message._imMessageItem;
-            NSObject *items = messageItem._newChatItems;
-            // balloon items will only be an IMTranscriptPluginChatItem
-            if ([items isKindOfClass:[IMTranscriptPluginChatItem class]]) {
-                IMTranscriptPluginChatItem *item = (IMTranscriptPluginChatItem *) items;
-                NSObject *temp = [item dataSource];
-                // The data source is this weird class, no idea what framework its from. Class methods dumped via _methodDescription on cls
-                Class digitalTouchClass = NSClassFromString(@"ETiOSMacBalloonPluginDataSource");
-                Class handwrittenClass = NSClassFromString(@"HWiOSMacBalloonDataSource");
-                if ([temp isKindOfClass:digitalTouchClass]) {
-                    ETiOSMacBalloonPluginDataSource *digitalTouch = (ETiOSMacBalloonPluginDataSource *)[item dataSource];
-                    // Force iMessage to generate the .mov and return the path
-                    [digitalTouch generateMedia:^() {
-                        NSString *path = [(NSURL *)[digitalTouch assetURL] absoluteString];
-                        DLog("BLUEBUBBLESHELPER: Digital Touch generated! %@", path);
-                        if (transaction != nil) {
-                            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"path": path}];
-                        }
-                    }];
-                } else if ([temp isKindOfClass:handwrittenClass]) {
-                    HWiOSMacBalloonDataSource *digitalTouch = (HWiOSMacBalloonDataSource *)[item dataSource];
-                    CGSize size = [digitalTouch sizeThatFits:CGSizeMake(300, 300)];
-                    [digitalTouch generateImageForSize:size completionHandler:^(NSObject *url) {
-                        NSString *path = [(NSURL *)url absoluteString];
-                        DLog("BLUEBUBBLESHELPER: Handwritten Message generated! %@", path);
-                        if (transaction != nil) {
-                            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"path": path}];
-                        }
-                    }];
-                }
-            }
-        }];
-    // If the server requests us to update the group photo
     } else if ([event isEqualToString:@"update-group-photo"]) {
-        IMChat *chat = [self getIMChatFromGuid: data[@"chatGuid"] transaction: transaction];
-        if (data[@"filePath"] != [NSNull null] && [data[@"filePath"] length] != 0) {
-            NSURL * fileUrl = [NSURL fileURLWithPath: data[@"filePath"]];
-            IMFileTransfer* fileTransfer = [BlueBubblesHelper prepareFileTransferForAttachment:fileUrl filename:[fileUrl lastPathComponent]];
-            [chat sendGroupPhotoUpdate:([fileTransfer guid])];
-        } else {
-            [chat sendGroupPhotoUpdate:nil];
-        }
-        if (transaction != nil) {
-            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
-        }
-    // If server tells us to leave a chat
-   } else if ([event isEqualToString:@"leave-chat"]) {
-        IMChat *chat = [self getIMChatFromGuid: data[@"chatGuid"] transaction:transaction];
-        if (chat != nil) {
-            @try {
-                if ([chat respondsToSelector:@selector(leave)]) {
-                    [chat leave];
-                } else if ([chat respondsToSelector:@selector(leaveiMessageGroup)]) {
-                    [chat leaveiMessageGroup];
-                }
-                if (transaction != nil) {
-                    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
-                }
-            } @catch (NSException *e) {
-                DLog("BLUEBUBBLESHELPER: Leave chat exception: %@", e);
-            }
-        }
-    // If the server asks us to check the focus status of a user
+        [self updateGroupPhotoForChat:chatGuid withData:data transaction:transaction];
+    } else if ([event isEqualToString:@"add-participant"]) {
+        [self updateParticipantsForChat:chatGuid address:handle isAdding:YES transaction:transaction];
+    } else if ([event isEqualToString:@"remove-participant"]) {
+        [self updateParticipantsForChat:chatGuid address:handle isAdding:NO transaction:transaction];
+    } else if ([event isEqualToString:@"create-chat"]) {
+        [self createChatWithData:data transaction:transaction];
+    } else if ([event isEqualToString:@"delete-chat"]) {
+        [self deleteChat:chatGuid transaction:transaction];
+    } else if ([event isEqualToString:@"leave-chat"]) {
+        [self leaveChat:chatGuid transaction:transaction];
     } else if ([event isEqualToString:@"check-focus-status"]) {
-        IMHandle *handle = [[[IMAccountController sharedInstance] activeIMessageAccount] imHandleWithID:(data[@"address"])];
-        // Use reference to class since it doesn't exist on Big Sur
-        Class cls = NSClassFromString(@"IMHandleAvailabilityManager");
-        if (handle != nil && cls != nil) {
-            if ([cls instancesRespondToSelector:NSSelectorFromString(@"_fetchUpdatedStatusForHandle:completion:")]) {
-                [[cls sharedInstance] _fetchUpdatedStatusForHandle:(handle) completion:^() {
-                    // delay for 1 second to ensure we have latest status
-                    NSTimeInterval delayInSeconds = 1.0;
-                    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
-                    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-                        NSInteger *status = [[cls sharedInstance] availabilityForHandle:(handle)];
-                        DLog("BLUEBUBBLESHELPER: Found status %{public}ld for %{public}@", (long)status, data[@"address"]);
-                        if (transaction != nil) {
-                            BOOL silenced = status == 2;
-                            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"silenced": [NSNumber numberWithBool:silenced]}];
-                        }
-                    });
-                }];
-            } else {
-                if (transaction != nil) {
-                    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Selector not found!"}];
-                }
-            }
-        }
-    } else if ([event isEqualToString:@"notify-anyways"]) {
-        IMChat *chat = [self getIMChatFromGuid:data[@"chatGuid"] transaction: transaction];
-
-        [BlueBubblesHelper getMessageItem:(chat) :(data[@"messageGuid"]) completionBlock:^(IMMessage *message) {
-            IMMessageItem *messageItem = (IMMessageItem *)message._imMessageItem;
-            NSObject *items = messageItem._newChatItems;
-            IMMessagePartChatItem *item;
-            // sometimes items is an array so we need to account for that
-            if ([items isKindOfClass:[NSArray class]]) {
-                item = [(NSArray*) items firstObject];
-            } else {
-                item = (IMMessagePartChatItem *)items;
-            }
-
-            if (item != nil) {
-                [chat markChatItemAsNotifyRecipient:item];
-                if (transaction != nil) {
-                    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
-                }
-            }
-        }];
-    // If the server tells us to check iMessage availability
+        [self checkFocusStatusForHandle:handle transaction:transaction];
     } else if ([event isEqualToString:@"check-imessage-availability"] || [event isEqualToString:@"check-facetime-availability"]) {
-        NSString *type = data[@"aliasType"];
-        IDSDestination *dest;
-        NSString* serviceName;
-
-        if ([event isEqualToString:@"check-imessage-availability"]) {
-            serviceName = IDSServiceNameiMessage;
-        } else {
-            serviceName = IDSServiceNameFaceTime;
-        }
-
-        if ([type isEqualToString:@"phone"]) {
-            dest = IDSCopyIDForPhoneNumber((__bridge CFStringRef)data[@"address"]);
-        } else {
-            dest = IDSCopyIDForEmailAddress((__bridge CFStringRef)data[@"address"]);
-        }
-
-        [[IDSIDQueryController sharedInstance] forceRefreshIDStatusForDestinations:(@[dest]) service:(serviceName) listenerID:(@"SOIDSListener-com.apple.imessage-rest") queue:(dispatch_queue_create("HandleIDS", NULL)) completionBlock:^(NSDictionary *response) {
-            NSInteger *status = [response.allValues.firstObject integerValue];
-            BOOL available = status == 1;
-            DLog("BLUEBUBBLESHELPER: Status for %{public}@ is %{public}ld", data[@"address"], (long)available);
-            if (transaction != nil) {
-                [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"available": [NSNumber numberWithBool:(available)]}];
-            }
-        }];
-    // If the server tells us to download a purged attachment
-    } else if ([event isEqualToString:@"download-purged-attachment"]) {
-        IMFileTransfer* transfer = [[IMFileTransferCenter sharedInstance] transferForGUID:(data[@"attachmentGuid"])];
-        if ([transfer transferState] != 0 || ![transfer isIncoming]) {
-            if (transaction != nil) {
-                [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"No need to unpurge!"}];
-            }
-        }
-
-        [[IMFileTransferCenter sharedInstance] registerTransferWithDaemon:([transfer guid])];
-        [[IMFileTransferCenter sharedInstance] acceptTransfer:([transfer guid])];
-        if (transaction != nil) {
-            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
-        }
-    // If the server asks us if the chat can have a nickname shared
-    } else if ([event isEqualToString:@"should-offer-nickname-sharing"]) {
-        IMChat *chat = [self getIMChatFromGuid:data[@"chatGuid"] transaction: transaction];
-
-        BOOL offer = [[IMNicknameController sharedInstance] shouldOfferNicknameSharingForChat:chat];
-        if (transaction != nil) {
-            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"share": [NSNumber numberWithBool:offer]}];
-        }
-    // If the server tells us to share a nickname
-    } else if ([event isEqualToString:@"share-nickname"]) {
-        IMChat *chat = [self getIMChatFromGuid:data[@"chatGuid"] transaction: transaction];
-
-        if ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion >= 11) {
-            [[IMNicknameController sharedInstance] whitelistHandlesForNicknameSharing:[chat participants] forChat:chat];
-        } else {
-            [[IMNicknameController sharedInstance] allowHandlesForNicknameSharing:[chat participants] forChat:chat];
-        }
-        if (transaction != nil) {
-            [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
-        }
-    // If the server tells us to get nickname info
+        [self checkServiceAvailabilityForHandle:handle addressType:data[@"aliasType"] event:event transaction:transaction];
     } else if ([event isEqualToString:@"get-nickname-info"]) {
-        NSString *address = data[@"address"];
-        NSString *name;
-        NSString *avatarPath;
-        
-        if (address == [NSNull null]) {
-            name = [[[IMNicknameController sharedInstance] personalNickname] displayName];
-            avatarPath = [[[[IMNicknameController sharedInstance] personalNickname] avatar] imageFilePath];
-        } else {
-            IMHandle *handle = [[[IMAccountController sharedInstance] activeIMessageAccount] imHandleWithID:(data[@"address"])];
-            IMNickname *nickname = [[IMNicknameController sharedInstance] nicknameForHandle:(handle)];
-            name = [nickname displayName];
-            avatarPath = [[nickname avatar] imageFilePath];
-        }
-        
-        if (transaction != nil) {
-            NSDictionary *data = @{
-                @"transactionId": transaction,
-                @"name": name ?: [NSNull null],
-                @"avatar_path": avatarPath ?: [NSNull null],
-            };
-            [[NetworkController sharedInstance] sendMessage:data];
-        }
-    // If the server tells us to get the current account info
+        [self getNicknameInfoForHandle:handle transaction:transaction];
+    } else if ([event isEqualToString:@"should-offer-nickname-sharing"]) {
+        [self shouldOfferNicknameSharingForChat:chatGuid transaction:transaction];
+    } else if ([event isEqualToString:@"share-nickname"]) {
+        [self shareNicknameWithChat:chatGuid allow:YES transaction:transaction];
+    } else if ([event isEqualToString:@"deny-nickname"]) {
+        [self shareNicknameWithChat:chatGuid allow:NO transaction:transaction];
     } else if ([event isEqualToString:@"get-account-info"]) {
-        IMAccountController *controller = [IMAccountController sharedInstance];
-        IMAccount *account = [controller activeIMessageAccount];
-        IMAccount *smsAccount = [controller activeSMSAccount];
-        
-        if (transaction != nil) {
-            NSDictionary *data = @{
-                @"transactionId": transaction,
-                @"apple_id": [account strippedLogin] ?: [NSNull null],
-                @"account_name": [[account loginIMHandle] fullName] ?: [NSNull null],
-                @"sms_forwarding_enabled": [NSNumber numberWithBool:[smsAccount allowsSMSRelay] ?: FALSE],
-                @"sms_forwarding_capable": [NSNumber numberWithBool:[smsAccount isSMSRelayCapable] ?: FALSE],
-                @"vetted_aliases": [BlueBubblesHelper getAliases:true],
-                @"aliases": [BlueBubblesHelper getAliases:false],
-                @"login_status_message": [account loginStatusMessage] ?: [NSNull null],
-                @"active_alias": [account displayName] ?: [NSNull null]
-            };
-            [[NetworkController sharedInstance] sendMessage: data];
-        }
-    // If the server tells us to modify the active alias used to start chats
+        [self getAccountInfoWithTransaction:transaction];
     } else if ([event isEqualToString:@"modify-active-alias"]) {
-        NSString* alias = data[@"alias"];
-
-        if ([BlueBubblesHelper isAccountEnabled]) {
-            IMAccountController *controller = [IMAccountController sharedInstance];
-            IMAccount *account = [controller activeIMessageAccount];
-            [account setDisplayName:alias];
-            
-            if (transaction != nil) {
-                [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction}];
-            }
-        } else {
-            DLog("BLUEBUBBLESHELPER: Can't modify aliases, account not enabled");
-            if (transaction != nil) {
-                [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"error": @"Unable to modify alias"}];
-            }
-        }
-    // If the server tells us to get findmy friends locations
-    } else if ([event isEqualToString:@"refresh-findmy-friends"]) {
+        [self changeActiveAliasToAddress:data[@"alias"] transaction:transaction];
+    } else if ([event isEqualToString:@"send-message"] || [event isEqualToString:@"send-attachment"] || [event isEqualToString:@"send-multipart"]) {
+        [self sendMessageToChat:chatGuid newConversationObject:nil withData:data transaction:transaction];
+    } else if ([event isEqualToString:@"send-reaction"]) {
+        [self sendTapbackToChat:chatGuid withData:data transaction:transaction];
+    } else if ([event isEqualToString:@"edit-message"]) {
+        [self editMessageInChat:chatGuid withData:data transaction:transaction];
+    } else if ([event isEqualToString:@"unsend-message"]) {
+        [self unsendMessageInChat:chatGuid withData:data transaction:transaction];
+    } else if ([event isEqualToString:@"notify-anyway"]) {
+        [self forceNotifyMessageInChat:chatGuid withData:data transaction:transaction];
+    } else if ([event isEqualToString:@"delete-message"]) {
+        [self deleteMessageInChat:chatGuid withData:data transaction:transaction];
+    } else if ([event isEqualToString:@"download-purged-attachment"]) {
+        [self downloadPurgedAttachment:data[@"attachmentGuid"] transaction:transaction];
+    } else if ([event isEqualToString:@"balloon-bundle-media-path"]) {
+        [self getBalloonBundleMediaPathForMessage:data[@"messageGuid"] transaction:transaction];
+    } else if ([event isEqualToString:@"search-messages"]) {
+        [self searchMessagesWithQuery:data[@"query"] matchType:data[@"matchType"] transaction:transaction];
+    }
+    
+    if ([event isEqualToString:@"refresh-findmy-friends"]) {
         if ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion > 13) {
             FindMyLocateSession *session = [[IMFMFSession sharedInstance] fmlSession];
             DLog("BLUEBUBBLESHELPER: block 1: %@", [session locationUpdateCallback]);
@@ -798,7 +1410,7 @@ static NSMutableArray* vettedAliases;
             NSMutableArray* locations = [[NSMutableArray alloc] initWithArray:@[]];
             for (NSObject* handle in handles) {
                 FMFLocation* location = [[IMFMFSession sharedInstance] locationForFMFHandle:handle];
-                NSInteger* type = ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion < 13) ? 0 : [location locationType];
+                NSInteger type = ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion < 13) ? 0 : [location locationType];
                 NSDictionary* locDetails = @{
                     @"handle": [[location handle] identifier] ?: [NSNull null],
                     @"coordinates": @[@([location coordinate].latitude), @([location coordinate].longitude)],
@@ -825,47 +1437,14 @@ static NSMutableArray* vettedAliases;
             [session addHandles:handles];
             [session forceRefresh];
         }
-    } else if ([event isEqualToString:@"search-messages"]) {
-        NSString* query = data[@"query"];
-        NSString* matchType = data[@"matchType"];
-        [self searchMessages:query matchType:matchType completionBlock:^(NSArray<NSString *> *results) {
-            if (results) {
-                if (transaction != nil) {
-                    NSDictionary *data = @{
-                        @"transactionId": transaction,
-                        @"results": results,
-                    };
-                    [[NetworkController sharedInstance] sendMessage: data];
-                }
-            } else {
-                if (transaction != nil) {
-                    NSDictionary *data = @{
-                        @"transactionId": transaction,
-                        @"error": @"Failed to execute search! Search returned null.",
-                    };
-                    [[NetworkController sharedInstance] sendMessage: data];
-                }
-            }
-        } errorBlock:^(NSString *err) {
-            if (transaction != nil) {
-                NSDictionary *data = @{
-                    @"transactionId": transaction,
-                    @"error": err,
-                };
-                [[NetworkController sharedInstance] sendMessage: data];
-            }
-        }];
-    // If the event is something that hasn't been implemented, we simply ignore it and put this log
     } else {
         DLog("BLUEBUBBLESHELPER: Not implemented %{public}@", event);
     }
 
 }
 
-+(long long) parseReactionType:(NSString *)reactionType {
+-(long long) parseReactionType:(NSString *)reactionType {
     NSString *lowerCaseType = [reactionType lowercaseString];
-
-    DLog("BLUEBUBBLESHELPER: %{public}@", lowerCaseType);
 
     if([@"love" isEqualToString:(lowerCaseType)]) return 2000;
     if([@"like" isEqualToString:(lowerCaseType)]) return 2001;
@@ -880,31 +1459,6 @@ static NSMutableArray* vettedAliases;
     if([@"-emphasize" isEqualToString:(lowerCaseType)]) return 3004;
     if([@"-question" isEqualToString:(lowerCaseType)]) return 3005;
     return 0;
-}
-
-+(NSString *) reactionToVerb:(NSString *)reactionType {
-    NSString *lowerCaseType = [reactionType lowercaseString];
-
-    if([@"love" isEqualToString:(lowerCaseType)]) return @"Loved ";
-    if([@"like" isEqualToString:(lowerCaseType)]) return @"Liked ";
-    if([@"dislike" isEqualToString:(lowerCaseType)]) return @"Disliked ";
-    if([@"laugh" isEqualToString:(lowerCaseType)]) return @"Laughed at ";
-    if([@"emphasize" isEqualToString:(lowerCaseType)]) return @"Emphasized ";
-    if([@"question" isEqualToString:(lowerCaseType)]) return @"Questioned ";
-    if([@"-love" isEqualToString:(lowerCaseType)]) return @"Removed a heart from ";
-    if([@"-like" isEqualToString:(lowerCaseType)]) return @"Removed a like from ";
-    if([@"-dislike" isEqualToString:(lowerCaseType)]) return @"Removed a dislike from ";
-    if([@"-laugh" isEqualToString:(lowerCaseType)]) return @"Removed a laugh from ";
-    if([@"-emphasize" isEqualToString:(lowerCaseType)]) return @"Removed an exclamation from ";
-    if([@"-question" isEqualToString:(lowerCaseType)]) return @"Removed a question mark from ";
-    return @"";
-}
-
-+(void) getMessageItem:(IMChat *)chat :(NSString *)actionMessageGuid completionBlock:(void (^)(IMMessage *message))block {
-    [[IMChatHistoryController sharedInstance] loadMessageWithGUID:(actionMessageGuid) completionBlock:^(IMMessage *message) {
-        DLog("BLUEBUBBLESHELPER: Got message for guid %{public}@", actionMessageGuid);
-        block(message);
-    }];
 }
 
 // Apply text formatting ranges to an attributed string created from the message body.
@@ -957,353 +1511,6 @@ static NSMutableArray* vettedAliases;
     return attributedString;
 }
 
-/**
- Creates a new file transfer & moves file to attachment location
- @param originalPath The url of the file to be transferred ( Must be in a location IMessage.app has permission to access )
- @param filename The filename of the transfer to show in IMessage.app
- @return The IMFileTransfer registered with IMessage.app or nil if unable to properly create file transfer
- @warning The `originalPath` must be a URL that IMessage.app can access even with Full Disk Access some locations are off limits. One location that is safe is always safe is `~/Library/Messages`
- */
-+(IMFileTransfer *) prepareFileTransferForAttachment:(NSURL *) originalPath filename:(NSString *) filename {
-    // Creates the initial guid for the file transfer (cannot use for sending)
-    NSString *transferInitGuid = [[IMFileTransferCenter sharedInstance] guidForNewOutgoingTransferWithLocalURL:originalPath];
-    DLog("BLUEBUBBLESHELPER: Transfer GUID: %{public}@", transferInitGuid);
-
-    // Creates the initial transfer object
-    IMFileTransfer *newTransfer = [[IMFileTransferCenter sharedInstance] transferForGUID:transferInitGuid];
-    // Get location of where attachments should be placed
-    NSString *persistentPath = [[IMDPersistentAttachmentController sharedInstance] _persistentPathForTransfer:newTransfer filename:filename highQuality:TRUE chatGUID:nil storeAtExternalPath:TRUE];
-    DLog("BLUEBUBBLESHELPER: Requested persistent path: %{public}@", persistentPath);
-
-    if (persistentPath) {
-        NSError *folder_creation_error;
-        NSError *file_move_error;
-        NSURL *persistentURL = [NSURL fileURLWithPath:persistentPath];
-
-        // Create the attachment location
-        [[NSFileManager defaultManager] createDirectoryAtURL:[persistentURL URLByDeletingLastPathComponent] withIntermediateDirectories:TRUE attributes:nil error:&folder_creation_error];
-        // Handle error and exit
-        if (folder_creation_error) {
-            DLog("BLUEBUBBLESHELPER:  Failed to create folder: %{public}@", folder_creation_error);
-            return nil;
-        }
-
-        // Copy the file to the attachment location
-        [[NSFileManager defaultManager] copyItemAtURL:originalPath toURL:persistentURL error:&file_move_error];
-        // Handle error and exit
-        if (file_move_error) {
-            DLog("BLUEBUBBLESHELPER:  Failed to move file: %{public}@", file_move_error);
-            return nil;
-        }
-
-        // We updated the transfer location
-        [[IMFileTransferCenter sharedInstance] retargetTransfer:[newTransfer guid] toPath:persistentPath];
-        // Update the local url inside of the transfer
-        newTransfer.localURL = persistentURL;
-    }
-
-    // Register the transfer (The file must be in correct location before this)
-    // *Warning* Can fail but gives only warning in console that failed
-    [[IMFileTransferCenter sharedInstance] registerTransferWithDaemon:[newTransfer guid]];
-    DLog("BLUEBUBBLESHELPER: Transfer registered successfully!");
-    return newTransfer;
-}
-
-
-+ (void) sendMessage: (NSDictionary *) data transfers: (NSArray *) transfers attributedString:(NSMutableAttributedString *) attributedString transaction:(NSString *) transaction {
-    IMChat *chat = [[BlueBubblesHelper sharedInstance] getIMChatFromGuid: data[@"chatGuid"] transaction: transaction];
-    if (chat == nil) {
-        DLog("BLUEBUBBLESHELPER: chat is null, aborting");
-        return;
-    }
-    
-    // If we didn't get a multipart message, create a simple attributed string
-    if (attributedString == nil) {
-        NSString *message = data[@"message"];
-        // Tapbacks will not have message text, but messages sent must have some sort of text
-        if (message == nil) {
-            message = @"TEMP";
-        }
-        NSArray *textFormatting = data[@"textFormatting"];
-        attributedString = [BlueBubblesHelper applyTextFormatting:textFormatting toMessage:message];
-    }
-
-    NSMutableAttributedString *subjectAttributedString = nil;
-    if (data[@"subject"] != [NSNull null] && [data[@"subject"] length] != 0) {
-        subjectAttributedString = [[NSMutableAttributedString alloc] initWithString: data[@"subject"]];
-    }
-    NSString *effectId = nil;
-    if (data[@"effectId"] != [NSNull null] && [data[@"effectId"] length] != 0) {
-        effectId = data[@"effectId"];
-    }
-    
-    BOOL isAudioMessage = false;
-    if (data[@"isAudioMessage"] != [NSNull null]) {
-        isAudioMessage = [data[@"isAudioMessage"] integerValue] == 1;
-    }
-    
-    BOOL ddScan = false;
-    if (data[@"ddScan"] != [NSNull null]) {
-        ddScan = [data[@"ddScan"] integerValue] == 1;
-    }
-
-    void (^createMessage)(NSAttributedString*, NSAttributedString*, NSString*, NSString*, NSString*, long long*, NSRange, NSDictionary*, NSArray*, BOOL, BOOL) = ^(NSAttributedString *message, NSAttributedString *subject, NSString *effectId, NSString *threadIdentifier, NSString *associatedMessageGuid, long long *reaction, NSRange range, NSDictionary *summaryInfo, NSArray *transferGUIDs, BOOL isAudioMessage, BOOL ddScan) {
-        IMMessage *messageToSend = [[IMMessage alloc] init];
-        if (reaction == nil) {
-            messageToSend = [messageToSend initWithSender:(nil) time:(nil) text:(message) messageSubject:(subject) fileTransferGUIDs:(transferGUIDs) flags:(isAudioMessage ? 0x300005 : (subject ? 0x10000d : 0x100005)) error:(nil) guid:(nil) subject:(nil) balloonBundleID:(nil) payloadData:(nil) expressiveSendStyleID:(effectId)];
-            messageToSend.threadIdentifier = threadIdentifier;
-        } else {
-            messageToSend = [messageToSend initWithSender:(nil) time:(nil) text:(message) messageSubject:(subject) fileTransferGUIDs:(nil) flags:(0x5) error:(nil) guid:(nil) subject:(nil) associatedMessageGUID:(associatedMessageGuid) associatedMessageType:*(reaction) associatedMessageRange:(range) messageSummaryInfo:(summaryInfo)];
-        }
-
-        if (ddScan && [[NSProcessInfo processInfo] operatingSystemVersion].majorVersion >= 13) {
-            __strong typeof(messageToSend) strongMessage = messageToSend;
-            __strong typeof(chat) strongChat = chat;
-            
-            [[IMDDController sharedInstance] scanMessage:strongMessage outgoing:TRUE waitUntilDone:TRUE completionBlock:^(NSInteger status, BOOL success, id result) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [strongChat sendMessage:(strongMessage)];
-                    if (transaction != nil) {
-                        [[NetworkController sharedInstance]sendMessage:@{@"transactionId": transaction, @"identifier": [[strongChat lastSentMessage] guid]}];
-                    }
-                });
-             }];
-        } else if (ddScan) {
-            [[IMDDController sharedInstance] scanMessage:messageToSend outgoing:TRUE waitUntilDone:TRUE completionBlock:^(NSObject* temp, NSObject* ddMessageToSend) {
-                [chat sendMessage:(ddMessageToSend)];
-                if (transaction != nil) {
-                    [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"identifier": [[chat lastSentMessage] guid]}];
-                }
-            }];
-        } else {
-            [chat sendMessage:(messageToSend)];
-            if (transaction != nil) {
-                [[NetworkController sharedInstance] sendMessage: @{@"transactionId": transaction, @"identifier": [[chat lastSentMessage] guid]}];
-            }
-        }
-    };
-
-    if (data[@"selectedMessageGuid"] != [NSNull null] && [data[@"selectedMessageGuid"] length] != 0) {
-        [BlueBubblesHelper getMessageItem:(chat) :(data[@"selectedMessageGuid"]) completionBlock:^(IMMessage *message) {
-            IMMessageItem *messageItem = (IMMessageItem *)message._imMessageItem;
-            NSObject *items = messageItem._newChatItems;
-            IMMessagePartChatItem *item;
-            // sometimes items is an array so we need to account for that
-            if ([items isKindOfClass:[NSArray class]]) {
-                for (IMMessagePartChatItem *i in (NSArray *) items) {
-                    // IMAggregateAttachmentMessagePartChatItem is a photo gallery and has subparts
-                    // Only available Monterey+, use reference to class loaded at runtime to avoid crashes on Big Sur
-                    Class cls = NSClassFromString(@"IMAggregateAttachmentMessagePartChatItem");
-                    if ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion > 11 && [i isKindOfClass:cls]) {
-                        IMAggregateAttachmentMessagePartChatItem *aggregate = i;
-                        for (IMMessagePartChatItem *i2 in [aggregate aggregateAttachmentParts]) {
-                            if ([i2 index] == [data[@"partIndex"] integerValue]) {
-                                item = i2;
-                                break;
-                            }
-                        }
-                    } else {
-                        if ([i index] == [data[@"partIndex"] integerValue]) {
-                            item = i;
-                            break;
-                        }
-                    }
-                }
-            } else {
-                item = (IMMessagePartChatItem *)items;
-            }
-            if (data[@"reactionType"] != [NSNull null] && [data[@"reactionType"] length] != 0) {
-                NSString *reaction = data[@"reactionType"];
-                long long reactionLong = [BlueBubblesHelper parseReactionType:(reaction)];
-                NSDictionary *messageSummary;
-                if (item != nil) {
-                    NSAttributedString *text = [item text];
-                    if (text == nil) {
-                        text = [message text];
-                    }
-                    messageSummary = @{@"amc":@1,@"ams":text.string};
-                    // Send the tapback
-                    // check if the body happens to be an object (ie an attachment) and send the tapback accordingly to show the proper summary
-                    NSData *dataenc = [text.string dataUsingEncoding:NSNonLossyASCIIStringEncoding];
-                    NSString *encodevalue = [[NSString alloc]initWithData:dataenc encoding:NSUTF8StringEncoding];
-                    if ([encodevalue isEqualToString:@"\\ufffc"]) {
-                        NSMutableAttributedString *newAttributedString = [[NSMutableAttributedString alloc] initWithString: [[BlueBubblesHelper reactionToVerb:(reaction)] stringByAppendingString:(@"an attachment")]];
-                        createMessage(newAttributedString, subjectAttributedString, effectId, nil, [NSString stringWithFormat:@"p:%@/%@", data[@"partIndex"], [message guid]], &reactionLong, [item messagePartRange], @{}, nil, false, ddScan);
-                    } else {
-                        NSMutableAttributedString *newAttributedString = [[NSMutableAttributedString alloc] initWithString: [[BlueBubblesHelper reactionToVerb:(reaction)] stringByAppendingString:([NSString stringWithFormat:(@"“%@”"), text.string])]];
-                        if ([item text] == nil) {
-                            createMessage(newAttributedString, subjectAttributedString, effectId, nil, [NSString stringWithFormat:@"bp:%@", [message guid]], &reactionLong, [item messagePartRange], messageSummary, nil, false, ddScan);
-                        } else {
-                            createMessage(newAttributedString, subjectAttributedString, effectId, nil, [NSString stringWithFormat:@"p:%@/%@", data[@"partIndex"], [message guid]], &reactionLong, [item messagePartRange], messageSummary, nil, false, ddScan);
-                        }
-                    }
-                } else {
-                    messageSummary = @{@"amc":@1,@"ams":message.text.string};
-                    // Send the tapback
-                    // check if the body happens to be an object (ie an attachment) and send the tapback accordingly to show the proper summary
-                    NSData *dataenc = [[message text].string dataUsingEncoding:NSNonLossyASCIIStringEncoding];
-                    NSString *encodevalue = [[NSString alloc]initWithData:dataenc encoding:NSUTF8StringEncoding];
-                    NSRange range = NSMakeRange(0, [message text].string.length);
-                    if ([encodevalue isEqualToString:@"\\ufffc"] || [encodevalue length] == 0) {
-                        NSMutableAttributedString *newAttributedString = [[NSMutableAttributedString alloc] initWithString: [[BlueBubblesHelper reactionToVerb:(reaction)] stringByAppendingString:(@"an attachment")]];
-                        createMessage(newAttributedString, subjectAttributedString, effectId, nil, [message guid], &reactionLong, range, @{}, nil, false, ddScan);
-                    } else {
-                        NSMutableAttributedString *newAttributedString = [[NSMutableAttributedString alloc] initWithString: [[BlueBubblesHelper reactionToVerb:(reaction)] stringByAppendingString:([NSString stringWithFormat:(@"“%@”"), [message text].string])]];
-                        createMessage(newAttributedString, subjectAttributedString, effectId, nil, [message guid], &reactionLong, range, messageSummary, nil, false, ddScan);
-                    }
-                }
-            } else {
-                NSString *identifier = @"";
-                // either reply to an existing thread or create a new thread
-                if (message.threadIdentifier != nil) {
-                    identifier = message.threadIdentifier;
-                } else if (item != nil) {
-                    identifier = IMCreateThreadIdentifierForMessagePartChatItem(item);
-                }
-                createMessage(attributedString, subjectAttributedString, effectId, identifier, nil, nil, NSMakeRange(0, 0), nil, transfers, isAudioMessage, ddScan);
-            }
-        }];
-    } else {
-        createMessage(attributedString, subjectAttributedString, effectId, nil, nil, nil, NSMakeRange(0, 0), nil, transfers, isAudioMessage, ddScan);
-    }
-}
-
-- (void)searchMessages:(NSString *)searchQuery matchType:(NSString *)matchType completionBlock:(void (^)(NSMutableArray<NSString *> *results))onComplete errorBlock:(void (^)(NSString *err))onError {
-    NSString *queryString = [NSString stringWithFormat:@"kMDItemTextContent=\"%@\"cwdt", searchQuery];
-    
-    // c -> Performs a case-insensitive search.
-    // d -> Performs a search that ignores diacritical marks.
-    // w -> Matches on word boundaries. This modifier treats transitions from lowercase to uppercase as word boundaries.
-    // t -> Performs a search on a tokenized value. For example, a search field can contain tokenized values.
-    
-    // When "t" is used, the tokens do not need to match the order provided.
-    // That's why when the matchType is exact, we exclude it.
-    // I'm not sure how to do a true exact match query.
-    if ([matchType isEqualToString:@"exact"]) {
-        queryString = [NSString stringWithFormat:@"kMDItemTextContent=\"%@\"cwd", searchQuery];
-    }
-    
-    if ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion < 13) {
-        DLog("BLUEBUBBLESHELPER: Message searching is not supported before macOS 13.0");
-        if (onError) {
-            onError(@"Message searching is not supported before macOS 13.0");
-        }
-        
-        return;
-    }
-    
-    // Create a query context if needed, otherwise pass nil
-    CSSearchQueryContext *queryContext = [[CSSearchQueryContext alloc] init];
-    
-    // uniqueIdentifier -> Message GUID
-    // attributes.domainIdentifier -> Chat GUID
-    // attributes.displayName -> Group Chat Name (null if none)
-    // Leaving empty unless we want something specific...
-    queryContext.fetchAttributes = @[];
-    CSSearchQuery *query = [[CSSearchQuery alloc] initWithQueryString:queryString queryContext:queryContext];
-
-    NSMutableArray<NSString *> *results = [NSMutableArray array];
-    query.foundItemsHandler = ^(NSArray<CSSearchableItem *> * _Nonnull items) {
-        for (CSSearchableItem *item in items) {
-            // Add the unique identifier to the results array
-            [results addObject:item.uniqueIdentifier];
-        }
-    };
-    
-    query.completionHandler = ^(NSError * _Nullable error) {
-        if (error) {
-            DLog("BLUEBUBBLESHELPER: Message search error: %@", error.localizedDescription);
-            if (onError) {
-                onError(error.localizedDescription);
-            }
-        } else {
-            if (onComplete) {
-                onComplete([results copy]);
-            }
-        }
-    };
-    
-    [query start];
-}
-
-/**
- Get the account enabled state
- @return True if the account enabled state is 4 or false if else or not signed in
- */
-+(BOOL) isAccountEnabled {
-    IMAccount *account = [[IMAccountController sharedInstance] activeIMessageAccount];
-    return [account isActive] && [account isRegistered] && [account isOperational] && [account isConnected];
-}
-
-/**
-  Gets the active alias associated with the signed account
-  @return The active alias's names if not logged in returns a empty list
-  */
-+(NSMutableArray *) getAliases:(BOOL)vetted {
-    if ([self isAccountEnabled]) {
-        IMAccount *account = [[IMAccountController sharedInstance] activeIMessageAccount];
-        NSArray* aliases = @[];
-        if (vetted) {
-            aliases = [account vettedAliases];
-        } else {
-            aliases = [account aliases];
-        }
-        DLog("BLUEBUBBLESHELPER: Vetted Aliases %{public}@", aliases);
-
-        NSMutableArray* returnedAliases = [[NSMutableArray alloc] init];
-        for (NSObject* alias in aliases) {
-            NSDictionary* info = [account _aliasInfoForAlias:(alias)];
-            if (info == nil) {
-                [returnedAliases addObject: @{@"Alias": alias}];
-            } else {
-                [returnedAliases addObject: info];
-            }
-        }
-
-        return returnedAliases;
-    } else {
-        DLog("BLUEBUBBLESHELPER: Can't get aliases - account not enabled");
-        return [[NSMutableArray alloc] initWithArray:@[]];
-    }
-    return [[NSMutableArray alloc] initWithArray:@[]];
-}
-
-@end
-
-ZKSwizzleInterface(BBH_IMChat, IMChat, NSObject)
-@implementation BBH_IMChat
-
-- (BOOL)_handleIncomingItem:(id)arg1 {
-    IMMessageItem* item = arg1;
-    //Complete the normal functions like writing to database and everything
-    BOOL hasBeenHandled = ZKOrig(BOOL, arg1);
-    NSString *guid = (NSString *)ZKHookIvar(self, NSString*, "_guid");
-    if (guid != nil) {
-        // check if incoming item is a typing indicator or not, and update the status accordingly. check if the class responds to the selector to avoid crashes
-        if ([item respondsToSelector:@selector(isIncomingTypingMessage)] && [item isIncomingTypingMessage]) {
-            [[NetworkController sharedInstance] sendMessage: @{@"event": @"started-typing", @"guid": guid}];
-            DLog("BLUEBUBBLESHELPER: %{public}@ started typing", guid);
-        } else if ([item respondsToSelector:@selector(isCancelTypingMessage)] && [item isCancelTypingMessage]) {
-            [[NetworkController sharedInstance] sendMessage: @{@"event": @"stopped-typing", @"guid": guid}];
-            DLog("BLUEBUBBLESHELPER: %{public}@ stopped typing", guid);
-        } else if ([item respondsToSelector:@selector(isTypingMessage)] && [[item message] isTypingMessage] == NO) {
-            [[NetworkController sharedInstance] sendMessage: @{@"event": @"stopped-typing", @"guid": guid}];
-            DLog("BLUEBUBBLESHELPER: %{public}@ stopped typing", guid);
-        }
-    }
-    return hasBeenHandled;
-}
-
-@end
-
-ZKSwizzleInterface(BBH_FindMyLocateSession, FindMyLocateSession, NSObject)
-@implementation BBH_FindMyLocateSession
-
-- (id /* block */)locationUpdateCallback {
-    DLog("BLUEBUBBLESHELPER: fired");
-    return ZKOrig(id);
-}
-
 @end
 
 // Handle FindMy data changes
@@ -1316,7 +1523,7 @@ ZKSwizzleInterface(BBH_FMFSessionDataManager, FMFSessionDataManager , NSObject)
     DLog("BLUEBUBBLESHELPER: Got new locations: %{public}@", locations);
     
     for (FMFLocation* location in locations) {
-        NSInteger* type = ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion < 13) ? 0 : [location locationType];
+        NSInteger type = ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion < 13) ? 0 : [location locationType];
         NSMutableDictionary* locDetails = [[NSMutableDictionary alloc] initWithDictionary: @{
             @"handle": [[location handle] identifier] ?: [NSNull null],
             @"coordinates": @[@([location coordinate].latitude), @([location coordinate].longitude)],
@@ -1371,142 +1578,3 @@ ZKSwizzleInterface(BBH_IMAccount, IMAccount, NSObject)
 }
 
 @end
-// macOS Tahoe (26+) typing indicator support
-ZKSwizzleInterface(BBH_CKConversationListStandardCell, CKConversationListStandardCell, NSObject)
-@implementation BBH_CKConversationListStandardCell
-
-- (void)setShowTypingIndicator:(BOOL)show {
-    ZKOrig(void, show);
-
-    if ([[NSProcessInfo processInfo] operatingSystemVersion].majorVersion < 26) {
-        return;
-    }
-
-    @try {
-        SEL convSel = NSSelectorFromString(@"conversation");
-        if ([self respondsToSelector:convSel]) {
-            id conversation = [self performSelector:convSel];
-            if (conversation != nil) {
-                SEL chatSel = NSSelectorFromString(@"chat");
-                if ([conversation respondsToSelector:chatSel]) {
-                    id chat = [conversation performSelector:chatSel];
-                    if (chat != nil) {
-                        SEL guidSel = NSSelectorFromString(@"guid");
-                        if ([chat respondsToSelector:guidSel]) {
-                            NSString *guid = [chat performSelector:guidSel];
-                            if (guid != nil) {
-                                if (show) {
-                                    [[NetworkController sharedInstance] sendMessage: @{@"event": @"started-typing", @"guid": guid}];
-                                    DLog("BLUEBUBBLESHELPER: %{public}@ started typing (Tahoe)", guid);
-                                } else {
-                                    [[NetworkController sharedInstance] sendMessage: @{@"event": @"stopped-typing", @"guid": guid}];
-                                    DLog("BLUEBUBBLESHELPER: %{public}@ stopped typing (Tahoe)", guid);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    } @catch (NSException *e) {
-        DLog("BLUEBUBBLESHELPER: Typing indicator exception: %@", e);
-    }
-}
-
-@end
-//ZKSwizzleInterface(BBH_NSNotificationCenter, NSNotificationCenter, NSObject)
-//@implementation BBH_NSNotificationCenter
-//
-//- (void)addObserver:(id)observer selector:(SEL)aSelector name:(nullable NSNotificationName)aName object:(nullable id)anObject {
-//    if ([aName isEqualToString:@"CNContactStoreDidChangeNotification"]) {
-//        return ZKOrig(void, observer, aSelector, aName, anObject);
-//    }
-//    DLog("BLUEBUBBLESFACETIMEHELPER: >>>>>>>>>>>>> name %{public}@", aName);
-//    DLog("BLUEBUBBLESFACETIMEHELPER: observer %{public}@", observer);
-//    DLog("BLUEBUBBLESFACETIMEHELPER: sel %{public}@", NSStringFromSelector(aSelector));
-//    DLog("BLUEBUBBLESFACETIMEHELPER: object %{public}@", anObject);
-//    return ZKOrig(void, observer, aSelector, aName, anObject);
-//}
-//
-//@end
-//
-//-(void)sendMessageAcknowledgment:(long long)arg1 forChatItem:(id)arg2 withAssociatedMessageInfo:(id)arg3 withGuid:(id)arg4 {
-//    DLog("BLUEBUBBLESHELPER: sending reaction 1");
-//    return;
-//}
-//
-//-(void)sendMessageAcknowledgment:(long long)arg1 forChatItem:(id)arg2 withAssociatedMessageInfo:(id)arg3 {
-//    DLog("BLUEBUBBLESHELPER: sending reaction 2");
-//    return;
-//}
-//
-//-(void)sendMessageAcknowledgment:(long long)arg1 forChatItem:(id)arg2 withMessageSummaryInfo:(id)arg3 withGuid:(id)arg4 {
-//    DLog("BLUEBUBBLESHELPER: sending reaction 3");
-//    return;
-//}
-//
-//-(void)sendMessageAcknowledgment:(long long)arg1 forChatItem:(id)arg2 withMessageSummaryInfo:(id)arg3 {
-//    DLog("BLUEBUBBLESHELPER: sending reaction 4");
-//    DLog("BLUEBUBBLESHELPER: %lld", arg1);
-//    DLog("BLUEBUBBLESHELPER: %{public}@", arg2);
-//    DLog("BLUEBUBBLESHELPER: %{public}@", arg3);
-//
-//
-//    return;
-//}
-//
-//@end
-
-//ZKSwizzleInterface(WBWT_IMChat, IMChat, NSObject)
-//@implementation WBWT_IMChat
-//
-//- (void) sendMessage:(id)arg1 {
-//    /* REGULAR MESSAGE
-//     InstantMessage[from=e:; msg-subject=(null); account:053CB8C2-3D2E-4DA6-8D29-419A2F5D4D49; flags=5; subject='(null)' text='(null)' messageID: 0 GUID:'D5E40A69-68EF-4C5D-8F3C-C1543988666F' sortID: 0 date:'627629434.853740' date-delivered:'0.000000' date-read:'0.000000' date-played:'0.000000' empty: NO finished: YES sent: NO read: NO delivered: NO audio: NO played: NO from-me: YES emote: NO dd-results: NO dd-scanned: NO error: (null) associatedMessageGUID: (null) associatedMessageType: 0 balloonBundleID: (null) expressiveSendStyleID: (null) timeExpressiveSendStylePlayed: 0.000000 bizIntent:(null) locale:(null), ]
-//        REACTION
-//     IMMessage[from=(null); msg-subject=(null); account:(null); flags=5; subject='(null)' text='(null)' messageID: 0 GUID:'79045C8B-1E6E-480B-8819-37E36C517578' sortID: 0 date:'627629508.210384' date-delivered:'0.000000' date-read:'0.000000' date-played:'0.000000' empty: NO finished: YES sent: NO read: NO delivered: NO audio: NO played: NO from-me: YES emote: NO dd-results: NO dd-scanned: NO error: (null) associatedMessageGUID: p:0/0C14634E-563D-408C-B9D4-805FEF7ADC7B associatedMessageType: 2001 balloonBundleID: (null) expressiveSendStyleID: (null) timeExpressiveSendStylePlayed: 0.000000 bizIntent:(null) locale:(null), ]
-//
-//     */
-//    DLog("BLUEBUBBLESHELPER: sendMessage %{public}@", arg1);
-//    ZKOrig(void, arg1);
-//}
-//
-//@end
-
-
-
-
-
-
-//@interface IMDMessageStore : NSObject
-//+ (id)sharedInstance;
-//- (id)messageWithGUID:(id)arg1;
-//@end
-//
-//ZKSwizzleInterface(WBWT_IMDServiceSession, IMDServiceSession, NSObject)
-//@implementation WBWT_IMDServiceSession
-//
-//+ (id)sharedInstance {
-//    return ZKOrig(id);
-//}
-//
-//- (id)messageWithGUID:(id)arg1 {
-//    return ZKOrig(id, arg1);
-//}
-//
-//- (void)didReceiveMessageReadReceiptForMessageID:(NSString *)messageID date:(NSDate *)date completionBlock:(id)completion {
-//    ZKOrig(void, messageID, date, completion);
-//    Class IMDMS = NSClassFromString(@"IMDMessageStore");
-//}
-//
-//@end
-
-//ZKSwizzleInterface(WBWT_IMMessage, IMMessage, NSObject)
-//@implementation WBWT_IMMessage
-//
-//- (void)_updateTimeRead:(id)arg1 {
-//    ZKOrig(void, arg1);
-//    DLog("typeStatus : _updateTimeRead");
-//}
-//
-//@end

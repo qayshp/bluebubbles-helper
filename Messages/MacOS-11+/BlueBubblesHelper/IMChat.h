@@ -416,6 +416,8 @@
 - (void)sendMessageAcknowledgment:(long long)arg1 forChatItem:(id)arg2 withAssociatedMessageInfo:(id)arg3;
 - (void)sendMessageAcknowledgment:(long long)arg1 forChatItem:(id)arg2 withMessageSummaryInfo:(id)arg3 withGuid:(id)arg4;
 - (void)sendMessageAcknowledgment:(long long)arg1 forChatItem:(id)arg2 withMessageSummaryInfo:(id)arg3;
+- (void)sendMessageAcknowledgment:(long long)arg1 forChatItem:(id)arg2;
+- (void)sendTapback:(id)arg1 forChatItem:(id)arg2;
 - (void)deleteExtensionPayloadData;
 - (void)closeSession;
 @property(readonly, nonatomic) BOOL isAppleChat;

@@ -9,7 +9,6 @@
 @class CNGroupIdentity, NSNumber, IMHandle, IMChat, NSString, NSDate, NSArray, NSAttributedString, NSSet, IMService;
 @protocol NSItemProviderWriting;
 
-#import "CKEntity.h"
 #import "CKComposition.h"
 
 @interface CKConversation : NSObject
@@ -73,7 +72,6 @@
 @property (copy, nonatomic) NSAttributedString *previewText; // ivar: _previewText
 @property (readonly, nonatomic) NSString *rawAddressedName;
 @property (readonly, nonatomic, getter=isReadOnlyChat) BOOL readOnlyChat;
-@property (readonly, nonatomic) CKEntity *recipient;
 @property (readonly, nonatomic) NSUInteger recipientCount;
 @property (readonly, copy, nonatomic) NSArray *recipientStrings;
 @property (retain, nonatomic) NSArray *recipients; // ivar: _recipients
@@ -212,6 +210,7 @@
 -(void)deleteAllMessagesAndRemoveGroup;
 -(void)didBecomeActive;
 -(void)editMessage:(id)arg0 partIndex:(NSInteger)arg1 withNewComposition:(id)arg2 ;
+-(void)editMessageItem:(id)arg1 partIndex:(long long)arg2 withNewComposition:(id)arg3;
 -(void)enumerateMessagesWithOptions:(NSUInteger)arg0 usingBlock:(id)arg1 ;
 -(void)fetchAllMessages:(id)arg0 ;
 -(void)fetchMoreMessages:(id)arg0 ;

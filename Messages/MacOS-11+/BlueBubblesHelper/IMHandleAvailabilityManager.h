@@ -41,6 +41,7 @@
 -(id)statusSubscriptionForHandle:(id)arg0 ;
 -(void)_clearCurrentSubscriptionCache;
 -(void)_fetchUpdatedStatusForHandle:(id)arg0 completion:(id)arg1 ;
+-(void)fetchUpdatedStatusForHandle:(id)arg0 completion:(id)arg1 ;
 -(void)_postNotificationForUpdatedStatusWithSubscription:(id)arg0 ;
 -(void)beginObservingAvailabilityForHandle:(id)arg0 ;
 -(void)endObservingAvailabilityForHandle:(id)arg0 ;
